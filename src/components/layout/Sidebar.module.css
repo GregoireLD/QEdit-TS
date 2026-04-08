@@ -1,0 +1,204 @@
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sectionHead {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+.item:hover { background: var(--bg-hover); }
+.item.selected {
+  background: var(--bg-select);
+  border-left-color: var(--accent);
+}
+
+.check {
+  font-size: 10px;
+  color: var(--accent);
+  width: 12px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.floorName {
+  flex: 1;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floorCount {
+  font-size: 10px;
+  color: var(--text-dim);
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.disabled:hover { background: transparent; }
+
+/* Episode selector */
+.epRow {
+  display: flex;
+  padding: 6px 8px 4px;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.epBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 0;
+  cursor: default;
+  user-select: none;
+  text-align: center;
+}
+.epActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
+/* Expand triangle */
+.triangle {
+  font-size: 8px;
+  color: var(--text-dim);
+  transition: transform 0.12s;
+  display: inline-block;
+  width: 10px;
+  flex-shrink: 0;
+}
+.triOpen {
+  transform: rotate(90deg);
+}
+.triPlaceholder {
+  display: inline-block;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+/* Variant sub-rows */
+.variantList {
+  list-style: none;
+  border-left: 2px solid var(--border);
+  margin: 0 0 0 22px;
+}
+
+.variantItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-radius: 2px;
+}
+.variantItem:hover { background: var(--bg-hover); color: var(--text); }
+
+.variantCommitted {
+  color: var(--accent);
+}
+
+.variantPreviewed {
+  color: var(--text);
+  background: rgba(255,255,255,0.04);
+}
+
+.radio {
+  font-size: 10px;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.variantLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variantTag {
+  font-size: 9px;
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Commit button shown on the area row when a preview differs from committed */
+.commitBtn {
+  font-size: 10px;
+  color: var(--accent);
+  padding: 0 3px;
+  border-radius: 2px;
+  border: 1px solid var(--accent);
+  line-height: 1.4;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.commitBtn:hover { background: var(--accent); color: #000; }
+
+.empty {
+  padding: 16px 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.questInfoBox {
+  border-top: 1px solid var(--border);
+  padding: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 10px;
+  font-size: 11px;
+}
+.infoRow span:first-child { color: var(--text-dim); }
+.infoRow span:last-child  { color: var(--text-head); font-family: monospace; }

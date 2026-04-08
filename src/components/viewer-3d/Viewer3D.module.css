@@ -1,0 +1,73 @@
+.wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+.viewport {
+  width: 100%;
+  height: 100%;
+}
+
+/* "Click to enter" overlay — only shown when pointer is not locked */
+.hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.hintHidden {
+  opacity: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-style: italic;
+  pointer-events: none;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolbar {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolBtn {
+  background: rgba(40,40,40,0.9);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.toolBtn:hover { background: rgba(60,60,60,0.9); }
+.toolBtnActive { background: var(--accent) !important; color: #000; border-color: var(--accent); }

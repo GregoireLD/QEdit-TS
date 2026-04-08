@@ -1,0 +1,80 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ─── Main tab bar ─────────────────────────────────────────────────────── */
+.main-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: #2d2d2d;
+  padding: 0 8px;
+}
+
+.main-tab {
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 5px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.1s;
+  margin-bottom: -1px;
+}
+.main-tab:hover  { color: var(--text); background: transparent; }
+.main-tab.active {
+  color: var(--text-head);
+  border-bottom-color: var(--accent);
+}
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Error toast ──────────────────────────────────────────────────────── */
+.error-toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #5a1d1d;
+  border: 1px solid var(--danger);
+  color: #f8a0a0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: 600px;
+  cursor: pointer;
+  z-index: 999;
+}
+
+.error-dismiss {
+  margin-left: 8px;
+  opacity: 0.7;
+  font-size: 11px;
+}

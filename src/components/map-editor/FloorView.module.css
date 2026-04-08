@@ -1,0 +1,119 @@
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-panel);
+}
+
+.tab {
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.tab:hover  { color: var(--text); background: var(--bg-hover); }
+.tab.active { color: var(--text-head); border-bottom-color: var(--accent); }
+
+/* ─── Table ────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  flex: 1;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table th {
+  background: #2d2d2d;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 11px;
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid #2a2a2a;
+  white-space: nowrap;
+}
+
+.table tbody tr:hover { background: var(--bg-hover); }
+
+.idx  { color: var(--text-dim); width: 32px; text-align: right; }
+.name { color: var(--text-head); }
+.num  { color: #9cdcfe; text-align: right; }
+
+.empty {
+  padding: 24px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ─── Inline editing ───────────────────────────────────────────────────── */
+
+.editable {
+  cursor: text;
+}
+.editable:hover {
+  background: #1e2a3a !important;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.editing {
+  padding: 0 !important;
+  background: #0d1b2a !important;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cellInput {
+  width: 100%;
+  min-width: 60px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 3px 8px;
+  box-sizing: border-box;
+}

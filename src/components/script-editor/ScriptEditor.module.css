@@ -1,0 +1,50 @@
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.label {
+  font-weight: 700;
+  color: var(--text-head);
+  font-size: 12px;
+}
+
+.meta {
+  color: var(--text-dim);
+}
+
+.loading {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.err {
+  color: #f08080;
+}
+
+.editor {
+  flex: 1;
+  overflow: hidden;
+}
