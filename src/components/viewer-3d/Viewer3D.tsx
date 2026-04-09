@@ -16,7 +16,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile } from '../../platform/fs';
 import { useUiStore } from '../../stores/uiStore';
 import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
 import { AREA_BY_ID } from '../../core/map/areaData';

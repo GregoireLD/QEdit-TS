@@ -9,7 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # ─── Desktop builds ─────────────────────────────────────────────────────────
+  build-desktop:
     strategy:
       fail-fast: false
       matrix:
@@ -17,9 +18,15 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             rust_targets: x86_64-pc-windows-msvc
+            bundles: nsis
           - os: macos-latest
             target: universal-apple-darwin
             rust_targets: x86_64-apple-darwin,aarch64-apple-darwin
+            bundles: dmg
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
+            bundles: appimage
 
     runs-on: ${{ matrix.os }}
 
@@ -36,6 +43,20 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_targets }}
+
+      - name: Install macOS universal targets
+        if: matrix.target == 'universal-apple-darwin'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -62,4 +83,37 @@ jobs:
             QEdit ${{ github.ref_name }}
           releaseDraft: true
           prerelease: false
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+  # ─── Web build ───────────────────────────────────────────────────────────────
+  build-web:
+    needs: build-desktop
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web version
+        run: npm run build
+
+      - name: Zip web build
+        run: |
+          cd dist
+          zip -r ../QEdit-web-${{ github.ref_name }}.zip .
+
+      - name: Upload web build to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} \
+            QEdit-web-${{ github.ref_name }}.zip \
+            --clobber

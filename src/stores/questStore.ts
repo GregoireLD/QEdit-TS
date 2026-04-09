@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { open as dialogOpen } from '@tauri-apps/plugin-dialog';
-import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { openFileDialog, saveFile, saveFileDialog } from '../platform/fs';
 import { parseQst, serialiseQst } from '../core/formats/qst';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
 import { EP_OFFSET } from '../core/map/areaData';
@@ -43,16 +42,15 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   error: null,
 
   openQuest: async () => {
-    const selected = await dialogOpen({
-      title: 'Open Quest',
+    const opened = await openFileDialog({
+      title:   'Open Quest',
       filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin'] }],
-      multiple: false,
     });
-    if (!selected || typeof selected !== 'string') return;
+    if (!opened) return;
 
     set({ isLoading: true, error: null });
     try {
-      const bytes  = await readFile(selected);
+      const bytes  = opened.data;
       const parsed = parseQst(new Uint8Array(bytes));
 
       // Detect episode + per-area variant from bytecode
@@ -71,7 +69,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const offset     = EP_OFFSET[quest.episode];
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
 
-      set({ quest, filePath: selected, selectedFloorId: firstAbsId, isLoading: false });
+      set({ quest, filePath: opened.path, selectedFloorId: firstAbsId, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -83,7 +81,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const bytes = serialiseQst(quest);
-      await writeFile(filePath, bytes);
+      await saveFile(filePath, bytes);
       set({ isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
@@ -93,14 +91,15 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   saveQuestAs: async () => {
     const { quest } = get();
     if (!quest) return;
-    const dest = await dialogOpen({
-      title: 'Save Quest As',
-      filters: [{ name: 'PSO Quest', extensions: ['qst'] }],
-      multiple: false,
+    const bytes = serialiseQst(quest);
+    const dest  = await saveFileDialog({
+      title:       'Save Quest As',
+      filters:     [{ name: 'PSO Quest', extensions: ['qst'] }],
+      defaultName: 'quest.qst',
+      data:        bytes,
     });
-    if (!dest || typeof dest !== 'string') return;
+    if (!dest) return;
     set({ filePath: dest });
-    await get().saveQuest();
   },
 
   selectFloor:  id  => set({ selectedFloorId: id }),

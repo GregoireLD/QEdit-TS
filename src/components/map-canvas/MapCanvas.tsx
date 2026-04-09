@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
-import { open as dialogOpen } from '@tauri-apps/plugin-dialog';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile, openDirectoryDialog } from '../../platform/fs';
 import type { Floor } from '../../core/model/types';
 import { parseNRel, parseCRel, toWorldPos } from '../../core/formats/rel';
 import type { RelSection, RelTriangle } from '../../core/formats/rel';
@@ -254,8 +253,8 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
   const onMouseUp = useCallback(() => { dragRef.current = null; }, []);
 
   const handleSetDir = useCallback(async () => {
-    const sel = await dialogOpen({ directory: true, title: 'Select map folder (*c.rel / *n.rel)' });
-    if (sel && typeof sel === 'string') setMapDir(sel);
+    const sel = await openDirectoryDialog('Select map folder (*c.rel / *n.rel)');
+    if (sel) setMapDir(sel);
   }, [setMapDir]);
 
   const resetView = useCallback(() => {

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { BROWSER_FS_PREFIX } from '../platform/browserFs';
+import { isTauri } from '../platform/index';
 
 type MainTab = 'map' | 'script' | 'metadata' | '3d';
 
@@ -27,9 +29,10 @@ export const useUiStore = create<UiStore>(set => ({
   mainTab:    'map',
   setMainTab: tab => set({ mainTab: tab }),
 
-  mapDir: localStorage.getItem(MAP_DIR_KEY),
+  // In browser mode, directory handles don't survive page reloads — always start without one.
+  mapDir: isTauri() ? localStorage.getItem(MAP_DIR_KEY) : null,
   setMapDir: dir => {
-    localStorage.setItem(MAP_DIR_KEY, dir);
+    if (isTauri()) localStorage.setItem(MAP_DIR_KEY, dir);
     set({ mapDir: dir });
   },
 
