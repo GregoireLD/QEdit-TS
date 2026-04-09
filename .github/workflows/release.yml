@@ -16,8 +16,10 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
           - os: macos-latest
             target: universal-apple-darwin
+            rust_targets: x86_64-apple-darwin,aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
 
@@ -33,11 +35,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
-
-      - name: Install macOS universal targets
-        if: matrix.target == 'universal-apple-darwin'
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          targets: ${{ matrix.rust_targets }}
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
