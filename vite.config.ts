@@ -8,6 +8,10 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // Relative asset paths so the built folder works from any subfolder on any host.
+  // Tauri uses the dist folder directly and is unaffected by this setting.
+  base: './',
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors
