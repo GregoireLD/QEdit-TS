@@ -33,7 +33,11 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }},x86_64-apple-darwin,aarch64-apple-darwin
+          targets: ${{ matrix.target }}
+
+      - name: Install macOS universal targets
+        if: matrix.target == 'universal-apple-darwin'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
