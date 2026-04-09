@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { BROWSER_FS_PREFIX } from '../platform/browserFs';
 import { isTauri } from '../platform/index';
 
 type MainTab = 'map' | 'script' | 'metadata' | '3d';

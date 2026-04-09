@@ -101,10 +101,9 @@ export async function openFileDialog(opts: {
 // ─── Save-as dialog ──────────────────────────────────────────────────────────
 
 /**
- * Show a save-file dialog.
- * - Tauri: returns the chosen path (caller then writes with saveFile).
- * - Browser: immediately downloads `data` and returns a virtual path.
- *   Pass `data` so the browser version can do everything in one step.
+ * Show a save-file dialog, then write the data.
+ * - Tauri: opens a native save dialog, writes the file, returns the chosen path.
+ * - Browser: triggers a download and returns the filename.
  */
 export async function saveFileDialog(opts: {
   title?:       string;
@@ -113,18 +112,27 @@ export async function saveFileDialog(opts: {
   data:         Uint8Array;
 }): Promise<string | null> {
   if (isTauri()) {
-    const { open } = await import('@tauri-apps/plugin-dialog');
-    const dest = await open({
-      title:    opts.title,
-      filters:  opts.filters,
-      multiple: false,
+    const { save }      = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const dest = await save({
+      title:   opts.title,
+      filters: opts.filters,
     });
-    return typeof dest === 'string' ? dest : null;
+    if (typeof dest !== 'string') return null;
+    await writeFile(dest, opts.data);
+    return dest;
   }
 
-  // Browser: just download
-  await saveFile('', opts.data, opts.defaultName ?? 'quest.qst');
-  return opts.defaultName ?? 'quest.qst';
+  // Browser: trigger download
+  const name = opts.defaultName ?? 'quest.qst';
+  const blob  = new Blob([opts.data]);
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href      = url;
+  a.download  = name;
+  a.click();
+  URL.revokeObjectURL(url);
+  return name;
 }
 
 // ─── Directory picker ────────────────────────────────────────────────────────

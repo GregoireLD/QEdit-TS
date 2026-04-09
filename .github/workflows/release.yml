@@ -44,10 +44,6 @@ jobs:
         with:
           targets: ${{ matrix.rust_targets }}
 
-      - name: Install macOS universal targets
-        if: matrix.target == 'universal-apple-darwin'
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
-
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -87,7 +83,6 @@ jobs:
 
   # ─── Web build ───────────────────────────────────────────────────────────────
   build-web:
-    needs: build-desktop
     runs-on: ubuntu-latest
 
     steps:
@@ -104,16 +99,22 @@ jobs:
 
       - name: Build web version
         run: npm run build
+        working-directory: ${{ github.workspace }}
 
       - name: Zip web build
         run: |
           cd dist
           zip -r ../QEdit-web-${{ github.ref_name }}.zip .
 
-      - name: Upload web build to release
+      - name: Ensure release exists, then upload web build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh release create ${{ github.ref_name }} \
+            --title "QEdit ${{ github.ref_name }}" \
+            --draft \
+            --notes "QEdit ${{ github.ref_name }}" \
+            || true
           gh release upload ${{ github.ref_name }} \
             QEdit-web-${{ github.ref_name }}.zip \
             --clobber
