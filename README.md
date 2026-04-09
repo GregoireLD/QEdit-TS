@@ -1,8 +1,12 @@
-# QEdit v3
+# QEdit TypeScript v3
 
-A cross-platform quest editor for **Phantasy Star Online** (Blue Burst), built with Tauri, React, and TypeScript.
+This is a port test that grew quickly out of hand.
 
-QEdit v3 is a ground-up rewrite of [QEdit v2](https://github.com/schthack/qedit) by Schthack. No source code is shared — the file format knowledge was reverse-engineered from the original Delphi source.
+A cross-platform quest editor for **Phantasy Star Online**, built with Tauri, React, and TypeScript.
+
+QEdit TypeScript is a ground-up rewrite of [QEdit](https://github.com/schthack/qedit) by Schthack. No source code is shared — the file format knowledge was reverse-engineered from the original Delphi source.
+
+This is a test project and it's not ready for public consumption.
 
 ---
 
@@ -67,14 +71,15 @@ Compiled binaries are placed in `src-tauri/target/release/bundle/`.
 
 1. Launch QEdit v3
 2. Use **File → Open Quest** to load a `.qst` file
-3. Set the **map directory** to your PSO Blue Burst `map/` folder (needed for 3D preview)
+3. Set the **map directory** to your PSO Blue Burst `map/` folder (needed for 3D preview, asked when displaying the 2D map)
 4. Navigate floors in the sidebar — the 3D viewer loads the area automatically
 
 ### 3D viewer controls
 | Input | Action |
 |-------|--------|
-| Right-click drag | Look around |
+| Right-click drag | Look around and/or Mouse capture |
 | W / A / S / D | Move |
+| E | Fast Forward Move |
 | Space | Fly up |
 | Shift | Fly down |
 
@@ -82,9 +87,8 @@ Compiled binaries are placed in `src-tauri/target/release/bundle/`.
 
 ## Releases
 
-Pre-built binaries for Windows and macOS (Intel + Apple Silicon) are available on the [Releases](../../releases) page.
-
-macOS builds are unsigned for now. You must run command line `xattr -c <AppPath>` prior to first launch.
+Pre-built binaries for Windows, macOS (Universal Binary), and Linux (AppImage) are available on the [Releases](../../releases) page.
+A Web-version can also be found on the [Releases](../../releases) page. Running it requires a web browser supporting folder targets when oppening files (Chrome suports it, Safari doesn't)
 
 ---
 
