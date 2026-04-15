@@ -22,7 +22,7 @@ import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
 import { AREA_BY_ID } from '../../core/map/areaData';
 import { parseCRel, parseNRel, toWorldPos } from '../../core/formats/rel';
 import { parseNRelMeshes, TexAddrMode } from '../../core/formats/nrel';
-import type { NRelMesh } from '../../core/formats/nrel';
+import type { NRelMesh, NRelMotion, NRelKeyframe } from '../../core/formats/nrel';
 import { parseXvm } from '../../core/formats/xvm';
 import type { XvmTexture } from '../../core/formats/xvm';
 import { parseTam } from '../../core/formats/tam';
@@ -75,6 +75,70 @@ interface AnimTarget {
   slideOffY: number;
 }
 
+// ─── Geometry animation track sampler ────────────────────────────────────────
+
+/** Linear interpolation along a position/scale track at the given frame. */
+function sampleGeomTrack(
+  keys:  NRelKeyframe[],
+  def:   [number, number, number],
+  frame: number,
+): [number, number, number] {
+  if (keys.length === 0) return def;
+  if (frame <= keys[0].frame) return keys[0].value;
+  const last = keys[keys.length - 1];
+  if (frame >= last.frame) return last.value;
+  for (let i = 1; i < keys.length; i++) {
+    if (keys[i].frame > frame) {
+      const a = keys[i - 1], b = keys[i];
+      const t = (frame - a.frame) / (b.frame - a.frame);
+      return [
+        a.value[0] + (b.value[0] - a.value[0]) * t,
+        a.value[1] + (b.value[1] - a.value[1]) * t,
+        a.value[2] + (b.value[2] - a.value[2]) * t,
+      ];
+    }
+  }
+  return last.value;
+}
+
+/**
+ * Short-path BAM interpolation along a rotation track.
+ * Matches Delphi's getmaprotation: angles are 16-bit BAM (0..65535).
+ * When the unsigned delta > 0x8000 the rotation takes the shorter path in the
+ * opposite direction, preventing a near-full-circle detour on wrap-around.
+ * Returns raw BAM values (multiply by BAM_TO_RAD to get radians).
+ */
+function sampleGeomAnglTrack(
+  keys:  NRelKeyframe[],
+  def:   [number, number, number],
+  frame: number,
+): [number, number, number] {
+  const bamInterp = (a: number, b: number, t: number): number => {
+    const aw = a & 0xFFFF;
+    const bw = b & 0xFFFF;
+    let delta = (bw - aw) & 0xFFFF;          // 16-bit unsigned difference
+    if (delta > 0x8000) delta -= 0x10000;    // short path (delta may be negative)
+    return ((aw + delta * t) & 0xFFFF);      // result wrapped back to 16-bit BAM
+  };
+
+  if (keys.length === 0) return def;
+  if (frame <= keys[0].frame) return keys[0].value;
+  const last = keys[keys.length - 1];
+  if (frame >= last.frame) return last.value;
+  for (let i = 1; i < keys.length; i++) {
+    if (keys[i].frame > frame) {
+      const a = keys[i - 1], b = keys[i];
+      const t = (frame - a.frame) / (b.frame - a.frame);
+      return [
+        bamInterp(a.value[0], b.value[0], t),
+        bamInterp(a.value[1], b.value[1], t),
+        bamInterp(a.value[2], b.value[2], t),
+      ];
+    }
+  }
+  return last.value;
+}
+
 // ─── Visual mesh builder (n.rel + textures) ───────────────────────────────────
 
 function d3dWrapToThree(mode: TexAddrMode): THREE.Wrapping {
@@ -104,21 +168,56 @@ function buildVisualMeshes(
   nMeshes:    NRelMesh[],
   textures:   (THREE.CompressedTexture | null)[],
   xvmSrc:     (XvmTexture | null)[],
-): { group: THREE.Group; animTargets: AnimTarget[] } {
+): { group: THREE.Group; animTargets: AnimTarget[]; motionGroups: Array<{ group: THREE.Group; motion: NRelMotion }> } {
   const group = new THREE.Group();
   const animTargets: AnimTarget[] = [];
   // Cache texture clones keyed by "texId:wrapU:wrapV" to avoid per-strip GPU uploads.
   // Animated meshes (slideId/swapId ≠ -1) bypass this cache so each material gets a
   // unique clone whose offset/map can be mutated independently each frame.
   const texCache = new Map<string, THREE.CompressedTexture>();
+  // Geometry-animation groups: one per unique NRelMotion reference (= one animated block).
+  const motionGroupMap = new Map<NRelMotion, THREE.Group>();
+  const motionGroups: Array<{ group: THREE.Group; motion: NRelMotion }> = [];
 
   for (const m of nMeshes) {
     const isAnimated = m.slideId !== -1 || m.swapId !== -1;
-    const secGroup = new THREE.Group();
-    secGroup.rotation.order = 'YXZ';
-    secGroup.rotation.y = m.section.rotY;
-    secGroup.position.set(m.section.x, m.section.y, m.section.z);
-    group.add(secGroup);
+
+    // Determine the parent group for meshes from this NRelMesh.
+    // Non-animated: a plain section group (position + rotY baked in).
+    // Geometry-animated: section group → motion group whose transform is updated each frame.
+    let contentParent: THREE.Group;
+    if (m.motion) {
+      if (!motionGroupMap.has(m.motion)) {
+        const sg = new THREE.Group();
+        sg.rotation.order = 'YXZ';
+        sg.rotation.y = m.section.rotY;
+        sg.position.set(m.section.x, m.section.y, m.section.z);
+        group.add(sg);
+        // Motion group applies the animated root-node transform at runtime.
+        // D3D uses row vectors: v' = v * Rx * Ry * Rz → column vector form: Rz*Ry*Rx = Three.js 'ZYX'.
+        const mg = new THREE.Group();
+        mg.rotation.order = 'ZYX';
+        const dr = m.motion.defaultRot;
+        mg.rotation.x = (dr[0] & 0xFFFF) * BAM_TO_RAD;
+        mg.rotation.y = (dr[1] & 0xFFFF) * BAM_TO_RAD;
+        mg.rotation.z = (dr[2] & 0xFFFF) * BAM_TO_RAD;
+        const dp = m.motion.defaultPos;
+        mg.position.set(dp[0], dp[1], dp[2]);
+        const ds = m.motion.defaultScale;
+        mg.scale.set(ds[0], ds[1], ds[2]);
+        sg.add(mg);
+        motionGroupMap.set(m.motion, mg);
+        motionGroups.push({ group: mg, motion: m.motion });
+      }
+      contentParent = motionGroupMap.get(m.motion)!;
+    } else {
+      const secGroup = new THREE.Group();
+      secGroup.rotation.order = 'YXZ';
+      secGroup.rotation.y = m.section.rotY;
+      secGroup.position.set(m.section.x, m.section.y, m.section.z);
+      group.add(secGroup);
+      contentParent = secGroup;
+    }
 
     const vCount = m.vertices.length / m.stride;
 
@@ -220,6 +319,7 @@ function buildVisualMeshes(
       const groupeBOpacity  = isAdditive || texHasPerTexelAlpha ? 1.0 : 0.5;
 
       const mat = new THREE.MeshLambertMaterial({
+        ...(useCustomBlend && { blendSrc: d3dBlendToThree(strip.blendSrc), blendDst: d3dBlendToThree(strip.blendDst) }),
         map:         tex,
         color:       tex ? 0xffffff : (strip.alpha ? 0x88aacc : 0x9aacbb),
         side:        THREE.DoubleSide,
@@ -229,49 +329,146 @@ function buildVisualMeshes(
         depthWrite:  !strip.alpha,
         blending:    isAdditive    ? THREE.AdditiveBlending :
                      useCustomBlend ? THREE.CustomBlending   : THREE.NormalBlending,
-        blendSrc:    useCustomBlend ? d3dBlendToThree(strip.blendSrc) : undefined,
-        blendDst:    useCustomBlend ? d3dBlendToThree(strip.blendDst) : undefined,
       });
 
       if (isAnimated) {
         animTargets.push({ slideId: m.slideId, swapId: m.swapId, material: mat, wrapU: strip.wrapU, wrapV: strip.wrapV, slideOffX: 0, slideOffY: 0 });
       }
 
-      secGroup.add(new THREE.Mesh(geo, mat));
+      contentParent.add(new THREE.Mesh(geo, mat));
     }
   }
 
-  return { group, animTargets };
+  return { group, animTargets, motionGroups };
 }
 
 // ─── Monster / object marker builder ─────────────────────────────────────────
 
-const MONSTER_GEO  = new THREE.SphereGeometry(1.5, 8, 6);
-const OBJECT_GEO   = new THREE.BoxGeometry(2, 2, 2);
-const MONSTER_MAT  = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-const OBJECT_MAT   = new THREE.MeshBasicMaterial({ color: 0x3399ff });
+// PSO stores directions as BAM (Binary Angle Measure): 0x10000 = 2π
+const BAM_TO_RAD = (Math.PI * 2) / 0x10000;
 
-function buildMarkers(
-  floor: { monsters: Array<{posX:number;posY:number;posZ:number;mapSection:number}>;
-           objects:  Array<{posX:number;posY:number;posZ:number;mapSection:number}> } | null,
+// Shared geometry templates (created once, never mutated)
+const _bodyCylGeo   = new THREE.CylinderGeometry(2.5, 2.5, 4, 10);
+const _noseConeGeo  = new THREE.ConeGeometry(1.2, 4, 8);
+const _baseBoxGeo   = new THREE.BoxGeometry(4, 1.5, 4);
+const _poleGeo      = new THREE.CylinderGeometry(0.3, 0.3, 4.5, 6);
+const _diamondGeo   = new THREE.OctahedronGeometry(1.4);
+
+const MONSTER_COLOR  = 0xff3333;
+const MONSTER_SEL    = 0xffcc00;
+const OBJECT_COLOR   = 0x3388ff;
+const OBJECT_SEL     = 0x00ffcc;
+
+export interface MarkerPickable {
+  meshes:       THREE.Mesh[];
+  type:         'monster' | 'object';
+  index:        number;
+  mats:         THREE.MeshBasicMaterial[];
+  defaultColor: number;
+  selectedColor: number;
+  label:        THREE.Sprite;        // for disposal
+}
+
+/** Billboard sprite with an index label drawn on a canvas. */
+function makeLabel(text: string): THREE.Sprite {
+  const canvas  = document.createElement('canvas');
+  canvas.width  = 96;
+  canvas.height = 48;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(4, 4, 88, 40);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 48, 24);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(6, 3, 1);
+  return sprite;
+}
+
+function buildEntityMarkers(
+  floor: { monsters: Array<{posX:number;posY:number;posZ:number;mapSection:number;direction:number;skin:number}>;
+           objects:  Array<{posX:number;posY:number;posZ:number;mapSection:number;objId:number}> } | null,
   sections: ReturnType<typeof parseNRel>,
-): THREE.Group {
-  const group = new THREE.Group();
-  if (!floor) return group;
+): { group: THREE.Group; pickables: MarkerPickable[] } {
+  const group     = new THREE.Group();
+  const pickables: MarkerPickable[] = [];
+  if (!floor) return { group, pickables };
 
-  for (const m of floor.monsters) {
+  for (let i = 0; i < floor.monsters.length; i++) {
+    const m = floor.monsters[i];
     const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
-    const mesh = new THREE.Mesh(MONSTER_GEO, MONSTER_MAT);
-    mesh.position.set(wx, m.posZ, wz);
-    group.add(mesh);
+
+    const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
+    const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+
+    const body = new THREE.Mesh(_bodyCylGeo, bodyMat);
+    body.position.set(0, 2, 0);
+
+    // Nose cone: tip points in local +Y of the cone, so we rotate -90° on X to point along -Z
+    const nose = new THREE.Mesh(_noseConeGeo, noseMat);
+    nose.rotation.x = -Math.PI / 2;
+    nose.position.set(0, 2, -4.5);
+
+    const label = makeLabel(`M${i}`);
+    label.position.set(0, 8, 0);
+
+    const markerGroup = new THREE.Group();
+    markerGroup.add(body, nose, label);
+    // BAM direction → Y rotation. PSO monsters face -Z by default (same as Three.js camera).
+    markerGroup.rotation.y = m.direction * BAM_TO_RAD;
+    markerGroup.position.set(wx, m.posZ, wz);
+    group.add(markerGroup);
+
+    pickables.push({
+      meshes: [body, nose],
+      type: 'monster',
+      index: i,
+      mats: [bodyMat, noseMat],
+      defaultColor: MONSTER_COLOR,
+      selectedColor: MONSTER_SEL,
+      label,
+    });
   }
-  for (const o of floor.objects) {
+
+  for (let i = 0; i < floor.objects.length; i++) {
+    const o = floor.objects[i];
     const [wx, wz] = toWorldPos(o.posX, o.posY, o.mapSection, sections);
-    const mesh = new THREE.Mesh(OBJECT_GEO, OBJECT_MAT);
-    mesh.position.set(wx, o.posZ, wz);
-    group.add(mesh);
+
+    const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+    const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+    const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
+
+    const base    = new THREE.Mesh(_baseBoxGeo,  baseMat);
+    base.position.set(0, 0.75, 0);
+    const pole    = new THREE.Mesh(_poleGeo, poleMat);
+    pole.position.set(0, 4, 0);
+    const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
+    diamond.position.set(0, 7.5, 0);
+
+    const label = makeLabel(`O${i}`);
+    label.position.set(0, 10.5, 0);
+
+    const markerGroup = new THREE.Group();
+    markerGroup.add(base, pole, diamond, label);
+    markerGroup.position.set(wx, o.posZ, wz);
+    group.add(markerGroup);
+
+    pickables.push({
+      meshes: [base, pole, diamond],
+      type: 'object',
+      index: i,
+      mats: [baseMat, poleMat, diamondMat],
+      defaultColor: OBJECT_COLOR,
+      selectedColor: OBJECT_SEL,
+      label,
+    });
   }
-  return group;
+
+  return { group, pickables };
 }
 
 // ─── Collision wireframe builder (c.rel) ─────────────────────────────────────
@@ -306,11 +503,24 @@ export function Viewer3D() {
   const animTargetsRef  = useRef<AnimTarget[]>([]);
   const swapTexCacheRef = useRef<Map<string, THREE.CompressedTexture>>(new Map());
   const startTimeRef    = useRef<number>(0);
-  const lockedRef       = useRef(false);
+  const lockedRef           = useRef(false);
+  const cameraRef           = useRef<THREE.PerspectiveCamera | null>(null);
+  const mouseNDCRef         = useRef(new THREE.Vector2(0, 0));
+  const markerPickablesRef  = useRef<MarkerPickable[]>([]);
+  const selectedEntityRef   = useRef<{ type: 'monster' | 'object'; index: number } | null>(null);
+  const animPausedRef       = useRef(false);
+  const pauseAccRef         = useRef(0);   // total ms spent paused
+  const pauseStartRef       = useRef(0);   // when the current pause started
+  const motionGroupsRef     = useRef<Array<{ group: THREE.Group; motion: NRelMotion }>>([]);
+  const worldAxesRef        = useRef<THREE.AxesHelper | null>(null);
+  const motionAxesRef       = useRef<THREE.AxesHelper[]>([]);
 
   const [locked,        setLocked]        = useState(false);
   const [status,        setStatus]        = useState<string | null>(null);
   const [showCollision, setShowCollision] = useState(false);
+  const [showAxes,      setShowAxes]      = useState(false);
+  const [animPaused,    setAnimPaused]    = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<{ type: 'monster' | 'object'; index: number } | null>(null);
 
   const { mapDir, previewVariantByArea } = useUiStore();
   const { quest, selectedFloorId } = useQuestStore();
@@ -327,6 +537,7 @@ export function Viewer3D() {
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(75, el.clientWidth / el.clientHeight, 0.5, 15000);
+    cameraRef.current = camera;
     camera.position.set(0, 15, 80);
     let yaw = 0, pitch = 0;
 
@@ -336,6 +547,13 @@ export function Viewer3D() {
     el.appendChild(renderer.domElement);
 
     scene.add(new THREE.GridHelper(2000, 100, 0x222233, 0x1a1a28));
+
+    // World-space reference frame (X=red Y=green Z=blue, 200 units long).
+    const worldAxes = new THREE.AxesHelper(200);
+    worldAxes.visible = false;
+    scene.add(worldAxes);
+    worldAxesRef.current = worldAxes;
+
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const sun = new THREE.DirectionalLight(0xffffff, 0.8);
     sun.position.set(100, 200, 100);
@@ -346,6 +564,49 @@ export function Viewer3D() {
     // Mouse-look: pointer lock when available (Windows), right-click drag as fallback (macOS/WKWebView).
     let dragging = false;
     let lastX = 0, lastY = 0;
+    let clickStartX = 0, clickStartY = 0;
+
+    /** Select/deselect an entity marker, updating color and state. */
+    const selectEntity = (type: 'monster' | 'object', index: number) => {
+      // Deselect previous
+      const prev = selectedEntityRef.current;
+      if (prev) {
+        const p = markerPickablesRef.current.find(x => x.type === prev.type && x.index === prev.index);
+        if (p) for (const mat of p.mats) mat.color.setHex(p.defaultColor);
+      }
+      if (prev?.type === type && prev?.index === index) {
+        // Same entity — toggle off
+        selectedEntityRef.current = null;
+        setSelectedEntity(null);
+        return;
+      }
+      const next = markerPickablesRef.current.find(x => x.type === type && x.index === index);
+      if (next) {
+        for (const mat of next.mats) mat.color.setHex(next.selectedColor);
+        selectedEntityRef.current = { type, index };
+        setSelectedEntity({ type, index });
+      }
+    };
+
+    const tryPickEntity = () => {
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouseNDCRef.current, camera);
+      const allMeshes = markerPickablesRef.current.flatMap(p => p.meshes);
+      const hits = raycaster.intersectObjects(allMeshes, false);
+      if (hits.length > 0) {
+        const hit = hits[0].object as THREE.Mesh;
+        const pickable = markerPickablesRef.current.find(p => p.meshes.includes(hit));
+        if (pickable) { selectEntity(pickable.type, pickable.index); return; }
+      }
+      // Clicked empty space — deselect
+      const prev = selectedEntityRef.current;
+      if (prev) {
+        const p = markerPickablesRef.current.find(x => x.type === prev.type && x.index === prev.index);
+        if (p) for (const mat of p.mats) mat.color.setHex(p.defaultColor);
+        selectedEntityRef.current = null;
+        setSelectedEntity(null);
+      }
+    };
 
     // Pointer lock state
     const onLockChange = () => {
@@ -365,6 +626,7 @@ export function Viewer3D() {
     };
 
     const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) { clickStartX = e.clientX; clickStartY = e.clientY; }
       if (e.button === 2) {
         dragging = true;
         lastX = e.clientX;
@@ -375,8 +637,15 @@ export function Viewer3D() {
     };
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === 2) dragging = false;
+      if (e.button === 0 && !lockedRef.current) {
+        const dx = e.clientX - clickStartX, dy = e.clientY - clickStartY;
+        if (Math.hypot(dx, dy) < 5) tryPickEntity();
+      }
     };
     const onMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      mouseNDCRef.current.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+      mouseNDCRef.current.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
       let dx: number, dy: number;
       if (lockedRef.current) {
         // Pointer lock active — use raw movement (no cursor position drift)
@@ -454,7 +723,10 @@ export function Viewer3D() {
       if (skyRef.current) skyRef.current.position.copy(camera.position);
 
       // Texture animations: slide (UV scroll) and swap (cycling texture)
-      const elapsed = now - startTimeRef.current;
+      // Subtract accumulated pause time so the animation stays frozen while paused.
+      const elapsed = animPausedRef.current
+        ? pauseStartRef.current - startTimeRef.current - pauseAccRef.current
+        : now - startTimeRef.current - pauseAccRef.current;
       const tamData = tamRef.current;
       if (tamData) {
         // Build O(1) lookup maps once per frame (avoids .find() per target)
@@ -507,6 +779,20 @@ export function Viewer3D() {
         }
       }
 
+      // Geometry animation: apply animated root-node transform each frame
+      for (const { group: mg, motion } of motionGroupsRef.current) {
+        if (motion.durationMs <= 0) continue;
+        const f   = Math.floor((elapsed % motion.durationMs) / 33);
+        const pos = sampleGeomTrack(    motion.posKeys, motion.defaultPos,   f);
+        const rot = sampleGeomAnglTrack(motion.angKeys, motion.defaultRot,   f);
+        const sca = sampleGeomTrack(    motion.scaKeys, motion.defaultScale, f);
+        mg.position.set(pos[0], pos[1], pos[2]);
+        mg.rotation.x = (rot[0] & 0xFFFF) * BAM_TO_RAD;
+        mg.rotation.y = (rot[1] & 0xFFFF) * BAM_TO_RAD;
+        mg.rotation.z = (rot[2] & 0xFFFF) * BAM_TO_RAD;
+        mg.scale.set(sca[0], sca[1], sca[2]);
+      }
+
       renderer.render(scene, camera);
     };
     animate(performance.now());
@@ -535,6 +821,16 @@ export function Viewer3D() {
     if (collisionRef.current) collisionRef.current.visible = showCollision;
   }, [showCollision]);
 
+  // ── Sync axes helpers visibility ───────────────────────────────────────────
+  useEffect(() => {
+    if (worldAxesRef.current) worldAxesRef.current.visible = showAxes;
+    for (const ax of motionAxesRef.current) {
+      ax.visible = showAxes;
+      const sp = ax.userData.sprite as THREE.Sprite | undefined;
+      if (sp) sp.visible = showAxes;
+    }
+  }, [showAxes]);
+
   // ── Mesh + texture + marker loading ──────────────────────────────────────
   useEffect(() => {
     const scene = sceneRef.current;
@@ -542,7 +838,17 @@ export function Viewer3D() {
     // Dispose previous objects
     if (visualRef.current)    { scene?.remove(visualRef.current);    visualRef.current.traverse(o => { if ((o as THREE.Mesh).isMesh) { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); } }); visualRef.current = null; }
     if (collisionRef.current) { scene?.remove(collisionRef.current); collisionRef.current.geometry.dispose(); (collisionRef.current.material as THREE.Material).dispose(); collisionRef.current = null; }
-    if (markersRef.current)   { scene?.remove(markersRef.current);   markersRef.current = null; }
+    if (markersRef.current) {
+      scene?.remove(markersRef.current);
+      markersRef.current.traverse(o => {
+        if ((o as THREE.Mesh).isMesh)   { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); }
+        if ((o as THREE.Sprite).isSprite) { ((o as THREE.Sprite).material as THREE.SpriteMaterial).map?.dispose(); (o as THREE.Sprite).material.dispose(); }
+      });
+      markersRef.current = null;
+    }
+    markerPickablesRef.current = [];
+    selectedEntityRef.current  = null;
+    setSelectedEntity(null);
     if (skyRef.current)       { scene?.remove(skyRef.current);       skyRef.current.geometry.dispose(); (skyRef.current.material as THREE.Material).dispose(); skyRef.current = null; }
     for (const t of texturesRef.current) t?.dispose();
     texturesRef.current = [];
@@ -550,6 +856,8 @@ export function Viewer3D() {
     swapTexCacheRef.current.clear();
     tamRef.current = null;
     animTargetsRef.current = [];
+    motionGroupsRef.current = [];
+    motionAxesRef.current = [];
 
     if (selectedFloorId === null || !mapDir || !scene) return;
 
@@ -614,7 +922,7 @@ export function Viewer3D() {
 
         // Build meshes
         const nMeshes  = parseNRelMeshes(new Uint8Array(nBuf));
-        const { group, animTargets } = buildVisualMeshes(nMeshes, threeTextures, xvmTextures);
+        const { group, animTargets, motionGroups } = buildVisualMeshes(nMeshes, threeTextures, xvmTextures);
         const cLines   = buildCollisionMesh(new Uint8Array(cBuf));
         cLines.visible = showCollision;
 
@@ -623,7 +931,7 @@ export function Viewer3D() {
 
         // Build markers from n.rel sections + floor data
         const sections = parseNRel(new Uint8Array(nBuf));
-        const markers  = buildMarkers(floor, sections);
+        const { group: markers, pickables } = buildEntityMarkers(floor, sections);
 
         if (cancelled) {
           group.traverse(o => { if ((o as THREE.Mesh).isMesh) { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); } });
@@ -639,10 +947,48 @@ export function Viewer3D() {
         s.add(markers);
         visualRef.current    = group;
         collisionRef.current = cLines;
-        markersRef.current   = markers;
+        markersRef.current       = markers;
+        markerPickablesRef.current = pickables;
         texturesRef.current  = threeTextures;
         tamRef.current         = tamData;
-        animTargetsRef.current = animTargets;
+        animTargetsRef.current  = animTargets;
+        motionGroupsRef.current = motionGroups;
+
+        // Attach per-object axes helpers + numbered labels (shown/hidden with showAxes).
+        const mAxes: THREE.AxesHelper[] = [];
+        motionGroups.forEach(({ group: mg, motion }, idx) => {
+          const ax = new THREE.AxesHelper(50);
+          ax.visible = showAxes;
+          mg.add(ax);
+          mAxes.push(ax);
+
+          // Floating label sprite so the user can cross-reference visual ↔ console log.
+          const cvs = document.createElement('canvas');
+          cvs.width = 128; cvs.height = 64;
+          const ctx = cvs.getContext('2d')!;
+          ctx.fillStyle = 'rgba(0,0,0,0.65)';
+          ctx.fillRect(0, 0, 128, 64);
+          ctx.fillStyle = '#ffff00';
+          ctx.font = 'bold 20px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`#${idx}`, 64, 26);
+          ctx.font = '11px monospace';
+          ctx.fillStyle = '#aaffaa';
+          ctx.fillText(`f=${motion.totalFrames}`, 64, 48);
+          const tex = new THREE.CanvasTexture(cvs);
+          const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+          const sprite = new THREE.Sprite(mat);
+          sprite.scale.set(40, 20, 1);
+          sprite.position.set(0, 60, 0);   // float above the object
+          sprite.visible = showAxes;
+          mg.add(sprite);
+          ax.userData.sprite = sprite;
+
+          // Also log the index → anioff mapping once.
+          console.log(`[motionGroup #${idx}] angKeys=${motion.angKeys.length} posKeys=${motion.posKeys.length} totalFrames=${motion.totalFrames}`);
+        });
+        motionAxesRef.current = mAxes;
+
         swapTexCacheRef.current.clear();
         startTimeRef.current   = performance.now();
         setStatus(nMeshes.length === 0 ? 'No visual mesh — showing collision only' : null);
@@ -662,13 +1008,50 @@ export function Viewer3D() {
         Right-click drag to look · WASD move · Space/Shift up/down
       </div>
       {status && <div className={css.overlay}><span>{status}</span></div>}
+      {selectedEntity && (
+        <div className={css.selectionInfo}>
+          {selectedEntity.type === 'monster' ? '▲' : '■'}
+          {' '}
+          {selectedEntity.type === 'monster' ? 'Monster' : 'Object'} #{selectedEntity.index}
+          {selectedEntity.type === 'monster' && floor && (
+            <> · skin {floor.monsters[selectedEntity.index]?.skin}</>
+          )}
+          {selectedEntity.type === 'object' && floor && (
+            <> · id {floor.objects[selectedEntity.index]?.objId}</>
+          )}
+        </div>
+      )}
       <div className={css.toolbar}>
+        <button
+          className={`${css.toolBtn} ${showAxes ? css.toolBtnActive : ''}`}
+          title="Toggle axes helpers (world + per animated object)"
+          onClick={() => setShowAxes(v => !v)}
+        >
+          ✛
+        </button>
         <button
           className={`${css.toolBtn} ${showCollision ? css.toolBtnActive : ''}`}
           title="Toggle collision wireframe"
           onClick={() => setShowCollision(v => !v)}
         >
           ⬡
+        </button>
+        <button
+          className={`${css.toolBtn} ${animPaused ? css.toolBtnActive : ''}`}
+          title={animPaused ? 'Resume texture animations' : 'Pause texture animations'}
+          onClick={() => {
+            const now = performance.now();
+            if (!animPausedRef.current) {
+              animPausedRef.current  = true;
+              pauseStartRef.current  = now;
+            } else {
+              pauseAccRef.current   += now - pauseStartRef.current;
+              animPausedRef.current  = false;
+            }
+            setAnimPaused(v => !v);
+          }}
+        >
+          {animPaused ? '▶' : '⏸'}
         </button>
       </div>
     </div>

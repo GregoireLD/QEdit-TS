@@ -41,6 +41,38 @@ export interface NRelStrip {
   blendDst:  number;
 }
 
+/** A single keyframe in a geometry motion track. */
+export interface NRelKeyframe {
+  /** Animation frame index (already doubled per Delphi loading convention). */
+  frame: number;
+  /** X/Y/Z value. For rotation tracks, values are raw BAM u32 (cast to number). */
+  value: [number, number, number];
+}
+
+/**
+ * Geometry motion data for an animated ExtendedBlockVertex.
+ * The root scene-graph node's transform is stored here rather than baked into
+ * vertex positions — the viewer applies it as a Three.js group transform each frame.
+ */
+export interface NRelMotion {
+  /** ani.Frame * 2 — frame space used for interpolation. */
+  totalFrames: number;
+  /** ani.Frame * 66 ms — total loop duration. */
+  durationMs:  number;
+  /** Root node's static position (section-local, floats). Used when posKeys is empty. */
+  defaultPos:   [number, number, number];
+  /** Root node's static rotation (BAM u32 per axis). Used when angKeys is empty. */
+  defaultRot:   [number, number, number];
+  /** Root node's static scale (floats). Used when scaKeys is empty. */
+  defaultScale: [number, number, number];
+  /** Position keyframes (empty = use defaultPos). */
+  posKeys: NRelKeyframe[];
+  /** Rotation keyframes — values are BAM u32 stored as number (divide by 10430.378350 for radians). */
+  angKeys: NRelKeyframe[];
+  /** Scale keyframes (empty = use defaultScale). */
+  scaKeys: NRelKeyframe[];
+}
+
 export interface NRelMesh {
   /** Interleaved vertex buffer — stride bytes per vertex */
   vertices:  Float32Array;
@@ -57,6 +89,8 @@ export interface NRelMesh {
   slideId: number;
   /** TAM texture-swap id (-1 = none). Matches TamSwap.id from the .tam file. */
   swapId:  number;
+  /** Geometry animation data. Present only for animated ExtendedBlockVertex entries. */
+  motion?: NRelMotion;
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -177,6 +211,8 @@ export function parseNRelMeshes(buf: Uint8Array): NRelMesh[] {
 
       let slideId = -1;
       let swapId  = -1;
+      let anioff  = 0;
+      let motion: NRelMotion | undefined;
 
       if (b < vaCount) {
         // TBlockVertex (16 bytes): +0 offset, +4 unknow1, +8 unknow2, +12 flag
@@ -208,9 +244,89 @@ export function parseNRelMeshes(buf: Uint8Array): NRelMesh[] {
         if (flag & 0x20) { const ptr = u32(v, eb + 20); if (ptr + 4 <= size) slideId = u32(v, ptr); }
         // flag & 0x40 → swap id pointer at unknow6 (+24)
         if (flag & 0x40) { const ptr = u32(v, eb + 24); if (ptr + 4 <= size) swapId  = u32(v, ptr); }
+        anioff = u32(v, eb + 4);
       }
 
       if (entryOff === 0 || entryOff + NODE_SIZE > size) continue;
+
+      // ── Parse geometry animation (TExtendedBlockVertex with anioff != 0)
+      // Tani header (12 bytes LE):
+      //   +0  offset  u32  file pointer to TAniInfo data (NOT immediately after Tani)
+      //   +4  Frame   u32  total frames (before doubling)
+      //   +8  count   u16  number of active tracks (&0xF)
+      //   +10 flag    u16  track presence: 1=pos 2=rot 4=sca
+      // TAniInfo at aniDataOff: [off0..offN-1, cnt0..cntN-1] (each u32, N=count)
+      // Keyframe (Tpikapos / Tpikaang, 16 bytes): id(u32) + x + y + z
+      if (anioff !== 0 && anioff + 12 <= size) {
+        const aniDataOff = u32(v, anioff);
+        const rawFrames  = u32(v, anioff + 4);
+        // PSO BB PC path uses the second Tani struct (no BatchConvert):
+        //   flag:word at +8, count:word at +10
+        // (GCN path BatchConverts the 4-byte word, effectively swapping them)
+        const trackFlags = v.getUint16(anioff + 8,  true);        // Tani.flag  (1=pos 2=rot 4=sca)
+        const trackCount = v.getUint16(anioff + 10, true) & 0xF; // Tani.count (number of TAniInfo slots)
+        if (rawFrames > 0) {
+          // Root node defaults (entryOff already bounds-checked above; NODE_SIZE=52 covers +0x28)
+          const defaultPos:   [number, number, number] = [
+            f32(v, entryOff + 0x08), f32(v, entryOff + 0x0C), f32(v, entryOff + 0x10),
+          ];
+          const defaultRot:   [number, number, number] = [
+            u32(v, entryOff + 0x14), u32(v, entryOff + 0x18), u32(v, entryOff + 0x1C),
+          ];
+          const defaultScale: [number, number, number] = [
+            f32(v, entryOff + 0x20), f32(v, entryOff + 0x24), f32(v, entryOff + 0x28),
+          ];
+
+          const posKeys: NRelKeyframe[] = [];
+          const angKeys: NRelKeyframe[] = [];
+          const scaKeys: NRelKeyframe[] = [];
+
+          if (aniDataOff !== 0 && trackCount > 0 && aniDataOff + trackCount * 8 <= size) {
+            const readTrack = (dst: NRelKeyframe[], tIdx: number, isRot: boolean) => {
+              const kOff = u32(v, aniDataOff + tIdx * 4);
+              const kCnt = u32(v, aniDataOff + trackCount * 4 + tIdx * 4);
+              if (kOff === 0 || kCnt === 0 || kCnt > 10000) return;
+              if (kOff + kCnt * 16 > size) return;
+              for (let k = 0; k < kCnt; k++) {
+                const base  = kOff + k * 16;
+                const frame = u32(v, base) * 2; // id doubled after load (Delphi convention)
+                const x = isRot ? u32(v, base + 4)  : f32(v, base + 4);
+                const y = isRot ? u32(v, base + 8)  : f32(v, base + 8);
+                const z = isRot ? u32(v, base + 12) : f32(v, base + 12);
+                dst.push({ frame, value: [x, y, z] });
+              }
+            };
+
+            let tIdx = 0;
+            if (trackFlags & 1) readTrack(posKeys, tIdx++, false);
+            if (trackFlags & 2) readTrack(angKeys, tIdx++, true);
+            if (trackFlags & 4) readTrack(scaKeys, tIdx++, false);
+          }
+
+          // DEBUG: dump rotation keyframes — which axis (X=0,Y=1,Z=2) is non-zero?
+          console.log(`[rot] anioff=0x${anioff.toString(16)} defRot=[${(defaultRot[0]&0xFFFF).toString(16)},${(defaultRot[1]&0xFFFF).toString(16)},${(defaultRot[2]&0xFFFF).toString(16)}] angKeys=${angKeys.length} posKeys=${posKeys.length}`
+            + (angKeys.length > 0 ? ' ' + angKeys.map(k =>
+                `f${k.frame}:[${(k.value[0]&0xFFFF).toString(16)},${(k.value[1]&0xFFFF).toString(16)},${(k.value[2]&0xFFFF).toString(16)}]`
+              ).join(' ') : ' (no rot keys)')
+          );
+
+          motion = {
+            totalFrames: rawFrames * 2,
+            durationMs:  rawFrames * 66,
+            defaultPos,
+            defaultRot,
+            defaultScale,
+            posKeys,
+            angKeys,
+            scaKeys,
+          };
+        }
+      }
+
+      // For animated blocks the root node's transform is NOT baked into vertices —
+      // it will be applied at runtime by Three.js each frame via NRelMotion.
+      const isAnimated  = motion !== undefined;
+      const animRootOff = entryOff;
 
       // ── 3. Walk scene-graph tree rooted at entryOff
       type StackEntry = {
@@ -246,7 +362,10 @@ export function parseNRelMeshes(buf: Uint8Array): NRelMesh[] {
         const sibling = u32(v, off + 0x30);
 
         const myXform = { flag0, sx, sy, sz, rx, ry, rz, tx, ty, tz };
-        const childXforms = [...xforms, myXform];
+        // Skip the animated root's transform: it is applied at runtime, not baked.
+        const childXforms = isAnimated && off === animRootOff
+          ? [...xforms]
+          : [...xforms, myXform];
 
         // Push sibling first (processed after children)
         if (sibling !== 0) stack.push({ off: sibling, xforms });
@@ -415,7 +534,7 @@ export function parseNRelMeshes(buf: Uint8Array): NRelMesh[] {
         readStripList(icBOff, icBCount, true);
 
         if (strips.length > 0) {
-          meshes.push({ vertices: outVerts, stride: outFloats, hasNormal, hasUV, strips, section, slideId, swapId });
+          meshes.push({ vertices: outVerts, stride: outFloats, hasNormal, hasUV, strips, section, slideId, swapId, motion });
         }
       }
     }
