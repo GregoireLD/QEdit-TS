@@ -172,8 +172,8 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
   // In web mode, probe for a server-served data folder once on mount.
   useEffect(() => {
     if (mapDir || isTauri()) return;
-    fetch('/data/map/xvm/forest1.png', { method: 'HEAD' })
-      .then(r => { if (r.ok) setMapDir('/data/map'); })
+    fetch('./data/map/xvm/forest1.png', { method: 'HEAD' })
+      .then(r => { if (r.ok) setMapDir('./data/map'); })
       .catch(() => { /* not available — user must pick folder manually */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
