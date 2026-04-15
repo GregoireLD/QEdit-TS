@@ -66,8 +66,8 @@ let _table: AsmEntry[] | null = null;
 export async function loadAsmTable(): Promise<AsmEntry[]> {
   if (_table) return _table;
 
-  // Fetch the bundled Asm.txt from public assets
-  const res = await fetch('/Asm.txt');
+  // Fetch the bundled Asm.txt from public assets (relative path works from any subfolder)
+  const res = await fetch('./Asm.txt');
   const text = await res.text();
   const entries: AsmEntry[] = [];
   const seen = new Set<string>();

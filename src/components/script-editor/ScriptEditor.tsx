@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import Editor, { useMonaco } from '@monaco-editor/react';
+import { useEffect, useState } from 'react';
+import Editor from '@monaco-editor/react';
 import { useQuestStore } from '../../stores/questStore';
 import { registerPsoAsm, definePsoTheme, LANGUAGE_ID } from './psoAsmLanguage';
 import { disassemble } from '../../core/formats/disasm';
@@ -7,19 +7,9 @@ import styles from './ScriptEditor.module.css';
 
 export function ScriptEditor() {
   const quest = useQuestStore(s => s.quest);
-  const monaco = useMonaco();
   const [source, setSource] = useState<string>('');
   const [isDisasming, setIsDisasming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const ready = useRef(false);
-
-  // Register language + theme once Monaco is loaded
-  useEffect(() => {
-    if (!monaco || ready.current) return;
-    ready.current = true;
-    registerPsoAsm(monaco);
-    definePsoTheme(monaco);
-  }, [monaco]);
 
   // Disassemble whenever quest changes
   useEffect(() => {
@@ -54,6 +44,7 @@ export function ScriptEditor() {
 
       <div className={styles.editor}>
         <Editor
+          beforeMount={m => { registerPsoAsm(m); definePsoTheme(m); }}
           language={LANGUAGE_ID}
           theme="pso-dark"
           value={source}
