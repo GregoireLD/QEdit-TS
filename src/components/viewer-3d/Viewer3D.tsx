@@ -515,6 +515,7 @@ export function Viewer3D() {
   const worldAxesRef        = useRef<THREE.AxesHelper | null>(null);
   const motionAxesRef       = useRef<THREE.AxesHelper[]>([]);
   const rendererRef         = useRef<THREE.WebGLRenderer | null>(null);
+  const xrRigRef            = useRef<THREE.Group | null>(null);
 
   const [locked,        setLocked]        = useState(false);
   const [status,        setStatus]        = useState<string | null>(null);
@@ -543,6 +544,13 @@ export function Viewer3D() {
     cameraRef.current = camera;
     camera.position.set(0, 15, 80);
     let yaw = 0, pitch = 0;
+
+    // XR rig: camera is a child so moving the rig teleports/walks the player in VR.
+    // In non-XR mode the rig stays at origin and keyboard moves the camera directly.
+    const xrRig = new THREE.Group();
+    xrRig.add(camera);
+    scene.add(xrRig);
+    xrRigRef.current = xrRig;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -721,8 +729,44 @@ export function Viewer3D() {
       if (keys['Space'])                             camera.position.y += dist;
       if (keys['ShiftLeft'] || keys['ShiftRight'])   camera.position.y -= dist;
 
-      // Sky dome tracks camera so it always surrounds the viewer
-      if (skyRef.current) skyRef.current.position.copy(camera.position);
+      // VR locomotion: left thumbstick moves, right thumbstick turns.
+      // We move the xrRig (the camera's parent) so headset tracking is preserved.
+      if (renderer.xr.isPresenting) {
+        const session = renderer.xr.getSession();
+        if (session) {
+          const xrCam = renderer.xr.getCamera();
+          const vrFwd = new THREE.Vector3();
+          xrCam.getWorldDirection(vrFwd);
+          vrFwd.y = 0;
+          vrFwd.normalize();
+          const vrRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), vrFwd).normalize();
+          for (const src of session.inputSources) {
+            const gp = src.gamepad;
+            if (!gp) continue;
+            const ax = gp.axes;
+            if (src.handedness === 'left') {
+              // axes[2]=thumbstick X (strafe), axes[3]=thumbstick Y (fwd: negative=push forward)
+              const sx = ax[2] ?? 0, sy = ax[3] ?? 0;
+              if (Math.abs(sx) > 0.12) xrRig.position.addScaledVector(vrRight, -sx * dist);
+              if (Math.abs(sy) > 0.12) xrRig.position.addScaledVector(vrFwd,   -sy * dist);
+              // Up/down: grip button (button[1]) held = fly up, menu button (button[2]) = fly down
+              if (gp.buttons[1]?.pressed) xrRig.position.y += dist;
+            }
+            if (src.handedness === 'right') {
+              // Right thumbstick X: smooth yaw rotation of the rig
+              const rx = ax[2] ?? 0;
+              if (Math.abs(rx) > 0.12) xrRig.rotateY(-rx * dt * 1.5);
+            }
+          }
+        }
+      }
+
+      // Sky dome tracks the camera world position so it always surrounds the viewer
+      if (skyRef.current) {
+        const camWorld = new THREE.Vector3();
+        camera.getWorldPosition(camWorld);
+        skyRef.current.position.copy(camWorld);
+      }
 
       // Texture animations: slide (UV scroll) and swap (cycling texture)
       // Subtract accumulated pause time so the animation stays frozen while paused.
@@ -767,7 +811,7 @@ export function Viewer3D() {
             }
           }
           // SLIDE after swap — always writes to whatever map is active now.
-          if (target.slideId !== -1) {
+          if (target.slideId !== -1 && !animPausedRef.current) {
             const slide = slideMap.get(target.slideId);
             if (slide && target.material.map) {
               const stepX = slide.tu * dt / 6;
@@ -802,6 +846,7 @@ export function Viewer3D() {
     return () => {
       renderer.setAnimationLoop(null);
       rendererRef.current = null;
+      xrRigRef.current    = null;
       obs.disconnect();
       document.removeEventListener('pointerlockchange', onLockChange);
       el.removeEventListener('mousedown',   onMouseDown);

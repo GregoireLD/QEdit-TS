@@ -88,7 +88,8 @@ Compiled binaries are placed in `src-tauri/target/release/bundle/`.
 ## Releases
 
 Pre-built binaries for Windows, macOS (Universal Binary), and Linux (AppImage) are available on the [Releases](../../releases) page.
-A Web-version can also be found on the [Releases](../../releases) page. Running it requires a web browser supporting folder targets when oppening files (Chrome suports it, Safari doesn't)
+A Web-version can also be found on the [Releases](../../releases) page. Running it requires either a web browser supporting folder targets when oppening files (Chrome suports it, Safari doesn't), or having a "data" folder at the same location as the html file, with map, charmodel... folder in it
+The Web-version now also support WebXR rendering for VR headsets.
 
 ---
 
