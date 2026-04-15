@@ -26,6 +26,12 @@ export async function readFile(path: string): Promise<Uint8Array> {
     const { readFile: tauriRead } = await import('@tauri-apps/plugin-fs');
     return new Uint8Array(await tauriRead(path));
   }
+  // Server-served web mode: paths starting with / or http are fetched directly.
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    const resp = await fetch(path);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${path}`);
+    return new Uint8Array(await resp.arrayBuffer());
+  }
   return browserReadFile(path);
 }
 

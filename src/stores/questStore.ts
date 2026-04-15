@@ -18,6 +18,7 @@ interface QuestStore {
   error: string | null;
 
   openQuest: () => Promise<void>;
+  openQuestFromUrl: () => Promise<void>;
   saveQuest: () => Promise<void>;
   saveQuestAs: () => Promise<void>;
   selectFloor: (id: number) => void;
@@ -70,6 +71,26 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
 
       set({ quest, filePath: opened.path, selectedFloorId: firstAbsId, isLoading: false });
+    } catch (e) {
+      set({ isLoading: false, error: String(e) });
+    }
+  },
+
+  openQuestFromUrl: async () => {
+    const url = window.prompt('Quest URL:');
+    if (!url) return;
+    set({ isLoading: true, error: null });
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const bytes  = new Uint8Array(await resp.arrayBuffer());
+      const parsed = parseQst(bytes);
+      const analysis = await analyseQuestBin(parsed.bin);
+      const quest: Quest = { ...parsed, episode: analysis.episode, variantByArea: analysis.variantByArea };
+      useUiStore.getState().resetPreviews(analysis.variantByArea);
+      const offset     = EP_OFFSET[quest.episode];
+      const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
+      set({ quest, filePath: url, selectedFloorId: firstAbsId, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }

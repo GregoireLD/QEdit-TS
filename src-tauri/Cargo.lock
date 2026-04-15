@@ -2778,7 +2778,7 @@ dependencies = [
 
 [[package]]
 name = "qedit"
-version = "3.0.9"
+version = "3.0.10"
 dependencies = [
  "serde",
  "serde_json",

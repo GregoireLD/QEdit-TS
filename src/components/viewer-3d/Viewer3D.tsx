@@ -514,6 +514,7 @@ export function Viewer3D() {
   const motionGroupsRef     = useRef<Array<{ group: THREE.Group; motion: NRelMotion }>>([]);
   const worldAxesRef        = useRef<THREE.AxesHelper | null>(null);
   const motionAxesRef       = useRef<THREE.AxesHelper[]>([]);
+  const rendererRef         = useRef<THREE.WebGLRenderer | null>(null);
 
   const [locked,        setLocked]        = useState(false);
   const [status,        setStatus]        = useState<string | null>(null);
@@ -521,6 +522,8 @@ export function Viewer3D() {
   const [showAxes,      setShowAxes]      = useState(false);
   const [animPaused,    setAnimPaused]    = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<{ type: 'monster' | 'object'; index: number } | null>(null);
+  const [vrSupported,   setVrSupported]   = useState(false);
+  const [inVR,          setInVR]          = useState(false);
 
   const { mapDir, previewVariantByArea } = useUiStore();
   const { quest, selectedFloorId } = useQuestStore();
@@ -544,7 +547,12 @@ export function Viewer3D() {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(el.clientWidth, el.clientHeight);
+    renderer.xr.enabled = true;
+    rendererRef.current = renderer;
     el.appendChild(renderer.domElement);
+
+    // Detect WebXR VR support (async, result updates state after mount)
+    navigator.xr?.isSessionSupported('immersive-vr').then(ok => setVrSupported(ok)).catch(() => {});
 
     scene.add(new THREE.GridHelper(2000, 100, 0x222233, 0x1a1a28));
 
@@ -694,16 +702,10 @@ export function Viewer3D() {
     const obs = new ResizeObserver(onResize);
     obs.observe(el);
 
-    let animId = 0;
     let prev = performance.now();
     const fwd = new THREE.Vector3(), right = new THREE.Vector3();
 
-    // Use the rAF-provided timestamp (not performance.now()) for animation timing.
-    // The rAF timestamp is the intended frame-start time, stable at exactly 16.667ms
-    // intervals at 60 Hz. performance.now() is measured after JS execution begins,
-    // causing small drift that accumulates into a periodic 1-frame misalignment.
     const animate = (now: number) => {
-      animId = requestAnimationFrame(animate);
       const dt  = Math.min((now - prev) / 1000, 0.1);
       prev = now;
 
@@ -795,10 +797,11 @@ export function Viewer3D() {
 
       renderer.render(scene, camera);
     };
-    animate(performance.now());
+    renderer.setAnimationLoop(animate);
 
     return () => {
-      cancelAnimationFrame(animId);
+      renderer.setAnimationLoop(null);
+      rendererRef.current = null;
       obs.disconnect();
       document.removeEventListener('pointerlockchange', onLockChange);
       el.removeEventListener('mousedown',   onMouseDown);
@@ -1053,6 +1056,28 @@ export function Viewer3D() {
         >
           {animPaused ? '▶' : '⏸'}
         </button>
+        {vrSupported && (
+          <button
+            className={`${css.toolBtn} ${inVR ? css.toolBtnActive : ''}`}
+            title={inVR ? 'Exit VR' : 'Enter VR'}
+            onClick={async () => {
+              const renderer = rendererRef.current;
+              if (!renderer || !navigator.xr) return;
+              if (inVR) {
+                await renderer.xr.getSession()?.end();
+              } else {
+                const session = await navigator.xr.requestSession('immersive-vr', {
+                  optionalFeatures: ['local-floor', 'bounded-floor'],
+                });
+                session.addEventListener('end', () => setInVR(false));
+                await renderer.xr.setSession(session as XRSession);
+                setInVR(true);
+              }
+            }}
+          >
+            VR
+          </button>
+        )}
       </div>
     </div>
   );

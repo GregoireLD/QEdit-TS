@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
 import { readFile, openDirectoryDialog } from '../../platform/fs';
+import { isTauri } from '../../platform/index';
 import type { Floor } from '../../core/model/types';
 import { parseNRel, parseCRel, toWorldPos } from '../../core/formats/rel';
 import type { RelSection, RelTriangle } from '../../core/formats/rel';
@@ -167,6 +168,15 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     setLoadState({ status: 'idle' });
     fitted.current = false;
   }, [areaId]);
+
+  // In web mode, probe for a server-served data folder once on mount.
+  useEffect(() => {
+    if (mapDir || isTauri()) return;
+    fetch('/data/map/xvm/forest1.png', { method: 'HEAD' })
+      .then(r => { if (r.ok) setMapDir('/data/map'); })
+      .catch(() => { /* not available — user must pick folder manually */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load geometry when selectedFile or mapDir changes
   useEffect(() => {

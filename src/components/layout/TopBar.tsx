@@ -1,8 +1,9 @@
 import { useQuestStore } from '../../stores/questStore';
+import { isTauri } from '../../platform/index';
 import styles from './TopBar.module.css';
 
 export function TopBar() {
-  const { quest, filePath, isLoading, openQuest, saveQuest } = useQuestStore();
+  const { quest, filePath, isLoading, openQuest, openQuestFromUrl, saveQuest } = useQuestStore();
 
   const title = quest?.bin.title ?? '';
   const fileName = filePath ? filePath.split('/').pop() ?? filePath : null;
@@ -13,6 +14,9 @@ export function TopBar() {
 
       <div className={styles.actions}>
         <button onClick={openQuest} disabled={isLoading}>Open…</button>
+        {!isTauri() && (
+          <button onClick={openQuestFromUrl} disabled={isLoading}>Open URL…</button>
+        )}
         <button onClick={saveQuest} disabled={!quest || isLoading}>Save</button>
       </div>
 
