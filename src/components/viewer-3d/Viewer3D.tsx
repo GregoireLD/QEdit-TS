@@ -754,9 +754,10 @@ export function Viewer3D() {
       if (renderer.xr.isPresenting) {
         const session = renderer.xr.getSession();
         if (session) {
-          const xrCam = renderer.xr.getCamera();
+          // Use `camera` (parented to xrRig, local transform updated by XR head tracking)
+          // so that horizontal movement follows the actual head orientation, not just the rig's.
           const vrFwd = new THREE.Vector3();
-          xrCam.getWorldDirection(vrFwd);
+          camera.getWorldDirection(vrFwd);
           vrFwd.y = 0;
           vrFwd.normalize();
           const vrRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), vrFwd).normalize();
@@ -769,13 +770,15 @@ export function Viewer3D() {
               const sx = ax[2] ?? 0, sy = ax[3] ?? 0;
               if (Math.abs(sx) > 0.12) xrRig.position.addScaledVector(vrRight, -sx * dist);
               if (Math.abs(sy) > 0.12) xrRig.position.addScaledVector(vrFwd,   -sy * dist);
-              // Up/down: grip button (button[1]) held = fly up, menu button (button[2]) = fly down
+              // Left grip (button[1]) = fly up
               if (gp.buttons[1]?.pressed) xrRig.position.y += dist;
             }
             if (src.handedness === 'right') {
               // Right thumbstick X: smooth yaw rotation of the rig
               const rx = ax[2] ?? 0;
               if (Math.abs(rx) > 0.12) xrRig.rotateY(-rx * dt * 1.5);
+              // Right grip (button[1]) = fly down
+              if (gp.buttons[1]?.pressed) xrRig.position.y -= dist;
             }
           }
         }
