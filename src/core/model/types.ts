@@ -115,12 +115,12 @@ export interface QuestObject {
   posX: number;           // 0x10  f32
   posZ: number;           // 0x14  f32
   posY: number;           // 0x18  f32
-  unknown5: number;       // 0x1C  u32
-  unknown6: number;       // 0x20  u32
-  unknown7: number;       // 0x24  u32
-  unknown8: number;       // 0x28  f32
-  unknown9: number;       // 0x2C  f32
-  unknown10: number;      // 0x30  f32
+  rotX: number;           // 0x1C  u32  BAM rotation around X
+  rotY: number;           // 0x20  u32  BAM rotation around Y (facing direction)
+  rotZ: number;           // 0x24  u32  BAM rotation around Z
+  scaleX: number;         // 0x28  f32
+  scaleY: number;         // 0x2C  f32
+  scaleZ: number;         // 0x30  f32
   objId: number;          // 0x34  u32
   action: number;         // 0x38  u32
   unknown13: number;      // 0x3C  u32

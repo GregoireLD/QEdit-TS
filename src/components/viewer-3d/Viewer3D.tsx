@@ -28,6 +28,9 @@ import type { XvmTexture } from '../../core/formats/xvm';
 import { parseTam } from '../../core/formats/tam';
 import type { TamData } from '../../core/formats/tam';
 import { toNRelName } from '../../core/map/mapFileNames';
+import { parseNj, parseXj } from '../../core/formats/nj';
+import type { NjResult } from '../../core/formats/nj';
+import { checkMonsterType, monsterFilename } from '../../core/map/monsterSkins';
 import css from './Viewer3D.module.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -299,12 +302,13 @@ function buildVisualMeshes(
       // Only DXT1+hasAlpha uses actual 1-bit alpha blocks — safe for alphaTest.
       // DXT3 GroupeA textures: Delphi never enables alphaTest for GroupeA, so
       // their alpha blocks must be treated as opaque regardless of pixFmt.
-      const srcXvr        = strip.textureId >= 0 ? (xvmSrc[strip.textureId] ?? null) : null;
-      const punchThrough  = !strip.alpha && (srcXvr?.isDXT1 === true) && (srcXvr?.hasAlpha === true);
+      const srcXvr       = strip.textureId >= 0 ? (xvmSrc[strip.textureId] ?? null) : null;
+      const punchThrough = !strip.alpha && (srcXvr?.isDXT1 === true) && (srcXvr?.hasAlpha === true);
+      const isBlend      = strip.alpha;
 
       // GroupeB: detect additive blend (stored dst=1 → D3DBLEND_ONE).
       // Delphi: (src=2,dst=1) → D3D (SRCCOLOR, ONE) for glows/halos.
-      const isAdditive = strip.alpha && strip.blendDst === 1;
+      const isAdditive = isBlend && strip.blendDst === 1;
 
       // Does the texture carry its own per-texel alpha data?
       // DXT3 always has a 4-bit alpha block. DXT1+hasAlpha has a 1-bit alpha block.
@@ -315,18 +319,18 @@ function buildVisualMeshes(
       //   - Additive: opacity irrelevant (no dest factor), keep 1.0
       //   - Has per-texel alpha (DXT3/DXT1+alpha): CustomBlending, opacity=1.0 — texture drives alpha
       //   - No per-texel alpha (DXT1 opaque, no tex): NormalBlending, opacity=0.5 — water/glass fallback
-      const useCustomBlend = strip.alpha && !isAdditive && texHasPerTexelAlpha;
+      const useCustomBlend = isBlend && !isAdditive && texHasPerTexelAlpha;
       const groupeBOpacity  = isAdditive || texHasPerTexelAlpha ? 1.0 : 0.5;
 
       const mat = new THREE.MeshLambertMaterial({
         ...(useCustomBlend && { blendSrc: d3dBlendToThree(strip.blendSrc), blendDst: d3dBlendToThree(strip.blendDst) }),
         map:         tex,
-        color:       tex ? 0xffffff : (strip.alpha ? 0x88aacc : 0x9aacbb),
+        color:       tex ? 0xffffff : (isBlend ? 0x88aacc : 0x9aacbb),
         side:        THREE.DoubleSide,
-        transparent: strip.alpha,
+        transparent: isBlend,
         alphaTest:   punchThrough ? 0.5 : 0,
-        opacity:     strip.alpha ? groupeBOpacity : 1.0,
-        depthWrite:  !strip.alpha,
+        opacity:     isBlend ? groupeBOpacity : 1.0,
+        depthWrite:  !isBlend,
         blending:    isAdditive    ? THREE.AdditiveBlending :
                      useCustomBlend ? THREE.CustomBlending   : THREE.NormalBlending,
       });
@@ -363,7 +367,7 @@ export interface MarkerPickable {
   meshes:       THREE.Mesh[];
   type:         'monster' | 'object';
   index:        number;
-  mats:         THREE.MeshBasicMaterial[];
+  mats:         Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
   defaultColor: number;
   selectedColor: number;
   label:        THREE.Sprite;        // for disposal
@@ -389,86 +393,97 @@ function makeLabel(text: string): THREE.Sprite {
   return sprite;
 }
 
-function buildEntityMarkers(
-  floor: { monsters: Array<{posX:number;posY:number;posZ:number;mapSection:number;direction:number;skin:number}>;
-           objects:  Array<{posX:number;posY:number;posZ:number;mapSection:number;objId:number}> } | null,
-  sections: ReturnType<typeof parseNRel>,
-): { group: THREE.Group; pickables: MarkerPickable[] } {
-  const group     = new THREE.Group();
-  const pickables: MarkerPickable[] = [];
-  if (!floor) return { group, pickables };
 
-  for (let i = 0; i < floor.monsters.length; i++) {
-    const m = floor.monsters[i];
-    const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
+// ─── Entity model helpers ─────────────────────────────────────────────────────
 
-    const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
-    const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+/** Derives the data root directory from the map directory path.
+ *  e.g. "/path/to/data/map" → "/path/to/data/" */
+function getDataDir(mapDir: string, sep: string): string {
+  const clean = mapDir.endsWith(sep) ? mapDir.slice(0, -1) : mapDir;
+  const idx = clean.lastIndexOf(sep);
+  return idx >= 0 ? clean.slice(0, idx + 1) : clean + sep;
+}
 
-    const body = new THREE.Mesh(_bodyCylGeo, bodyMat);
-    body.position.set(0, 2, 0);
+/** Builds a Three.js Group from a parsed NjResult. */
+function buildNjGroup(
+  result:   NjResult,
+  textures: (THREE.CompressedTexture | null)[],
+): { group: THREE.Group; lambertMats: THREE.MeshLambertMaterial[] } {
+  const group = new THREE.Group();
+  const lambertMats: THREE.MeshLambertMaterial[] = [];
+  for (const sm of result.subMeshes) {
+    if (sm.positions.length === 0) continue;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(sm.positions, 3));
+    if (sm.normals && sm.normals.length > 0) {
+      geo.setAttribute('normal', new THREE.BufferAttribute(sm.normals, 3));
+    } else {
+      geo.computeVertexNormals();
+    }
+    if (sm.uvs && sm.uvs.length > 0) {
+      geo.setAttribute('uv', new THREE.BufferAttribute(sm.uvs, 2));
+    }
+    const tex = (sm.textureId >= 0 && sm.textureId < textures.length)
+      ? textures[sm.textureId]
+      : null;
 
-    // Nose cone: tip points in local +Y of the cone, so we rotate -90° on X to point along -Z
-    const nose = new THREE.Mesh(_noseConeGeo, noseMat);
-    nose.rotation.x = -Math.PI / 2;
-    nose.position.set(0, 2, -4.5);
+    // PSO entity models (NJ/XJ) are drawn after area geometry, inheriting D3D's
+    // MIRROR address mode that area rendering leaves active.  NJ has no bits to
+    // encode Wrap or Clamp — only the mirror flag (which is redundant with the
+    // inherited state).  Always use MirroredRepeatWrapping for entity textures.
+    // Entity texture arrays are per-model (not shared with area meshes), so we
+    // can safely mutate the wrap mode in-place.
+    if (tex && tex.wrapS !== THREE.MirroredRepeatWrapping) {
+      tex.wrapS      = THREE.MirroredRepeatWrapping;
+      tex.wrapT      = THREE.MirroredRepeatWrapping;
+      tex.needsUpdate = true;
+    }
+    const texForMat = tex ?? undefined;
 
-    const label = makeLabel(`M${i}`);
-    label.position.set(0, 8, 0);
+    // blendDst=0 → ZERO destination → opaque; any other value → alpha blend
+    const alpha      = sm.blendDst !== 0;
+    const isAdditive = sm.blendSrc === 1 && sm.blendDst === 1; // ONE + ONE
 
-    const markerGroup = new THREE.Group();
-    markerGroup.add(body, nose, label);
-    // BAM direction → Y rotation. PSO monsters face -Z by default (same as Three.js camera).
-    markerGroup.rotation.y = m.direction * BAM_TO_RAD;
-    markerGroup.position.set(wx, m.posZ, wz);
-    group.add(markerGroup);
-
-    pickables.push({
-      meshes: [body, nose],
-      type: 'monster',
-      index: i,
-      mats: [bodyMat, noseMat],
-      defaultColor: MONSTER_COLOR,
-      selectedColor: MONSTER_SEL,
-      label,
+    const mat = new THREE.MeshLambertMaterial({
+      map:         texForMat,
+      color:       0xffffff,
+      // DoubleSide + depthWrite:true: the depth buffer selects the closest
+      // face regardless of vertex-buffer order, so neither the far back-face
+      // nor an inner face bleeds through.  The near face still blends with
+      // whatever is behind it (background, area geometry) so transparency
+      // is visible; the far-side interior is simply not visible through the
+      // glass, which is acceptable for editor use.
+      side:        THREE.DoubleSide,
+      transparent: alpha,
+      // Additive-dst effects (blendDst=1 = ONE) only add light and must never
+      // occlude anything — depthWrite:false.  Alpha-blend surfaces (blendDst=5
+      // = OneMinusSrcAlpha) need depthWrite:true so the depth buffer orders the
+      // near face in front of the far face of the same mesh.
+      depthWrite:  alpha ? sm.blendDst !== 1 : true,
+      // Alpha-blend decals sit on or very near the opaque surface below them.
+      // polygonOffset pushes their depth slightly toward the camera so they
+      // consistently win the depth test at glancing angles (no z-fighting).
+      // Not needed for additive halos since those have depthWrite:false.
+      polygonOffset:       alpha && sm.blendDst !== 1,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits:  -16,
+      blending: isAdditive ? THREE.AdditiveBlending :
+                alpha       ? THREE.CustomBlending   : THREE.NormalBlending,
+      ...(alpha && !isAdditive && {
+        blendSrc: d3dBlendToThree(sm.blendSrc),
+        blendDst: d3dBlendToThree(sm.blendDst),
+      }),
     });
+    lambertMats.push(mat);
+    const mesh = new THREE.Mesh(geo, mat);
+    // Entity transparent submeshes get renderOrder=1 so they sort after area
+    // transparent geometry (water, glass — renderOrder=0 by default).  This
+    // avoids the bounding-sphere sort placing a large water plane on top of a
+    // nearby entity object.  Opaque depth writes still gate both correctly.
+    if (alpha) mesh.renderOrder = 1;
+    group.add(mesh);
   }
-
-  for (let i = 0; i < floor.objects.length; i++) {
-    const o = floor.objects[i];
-    const [wx, wz] = toWorldPos(o.posX, o.posY, o.mapSection, sections);
-
-    const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
-    const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
-    const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
-
-    const base    = new THREE.Mesh(_baseBoxGeo,  baseMat);
-    base.position.set(0, 0.75, 0);
-    const pole    = new THREE.Mesh(_poleGeo, poleMat);
-    pole.position.set(0, 4, 0);
-    const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
-    diamond.position.set(0, 7.5, 0);
-
-    const label = makeLabel(`O${i}`);
-    label.position.set(0, 10.5, 0);
-
-    const markerGroup = new THREE.Group();
-    markerGroup.add(base, pole, diamond, label);
-    markerGroup.position.set(wx, o.posZ, wz);
-    group.add(markerGroup);
-
-    pickables.push({
-      meshes: [base, pole, diamond],
-      type: 'object',
-      index: i,
-      mats: [baseMat, poleMat, diamondMat],
-      defaultColor: OBJECT_COLOR,
-      selectedColor: OBJECT_SEL,
-      label,
-    });
-  }
-
-  return { group, pickables };
+  return { group, lambertMats };
 }
 
 // ─── Collision wireframe builder (c.rel) ─────────────────────────────────────
@@ -499,6 +514,7 @@ export function Viewer3D() {
   const markersRef    = useRef<THREE.Group | null>(null);
   const skyRef        = useRef<THREE.Mesh | null>(null);
   const texturesRef     = useRef<(THREE.CompressedTexture | null)[]>([]);
+  const entityTexRef    = useRef<THREE.CompressedTexture[]>([]);
   const tamRef          = useRef<TamData | null>(null);
   const animTargetsRef  = useRef<AnimTarget[]>([]);
   const swapTexCacheRef = useRef<Map<string, THREE.CompressedTexture>>(new Map());
@@ -513,6 +529,7 @@ export function Viewer3D() {
   const pauseStartRef       = useRef(0);   // when the current pause started
   const motionGroupsRef     = useRef<Array<{ group: THREE.Group; motion: NRelMotion }>>([]);
   const worldAxesRef        = useRef<THREE.AxesHelper | null>(null);
+  const gridRef             = useRef<THREE.GridHelper | null>(null);
   const motionAxesRef       = useRef<THREE.AxesHelper[]>([]);
   const rendererRef         = useRef<THREE.WebGLRenderer | null>(null);
   const xrRigRef            = useRef<THREE.Group | null>(null);
@@ -562,7 +579,10 @@ export function Viewer3D() {
     // Detect WebXR VR support (async, result updates state after mount)
     navigator.xr?.isSessionSupported('immersive-vr').then(ok => setVrSupported(ok)).catch(() => {});
 
-    scene.add(new THREE.GridHelper(2000, 100, 0x222233, 0x1a1a28));
+    const grid = new THREE.GridHelper(2000, 100, 0x222233, 0x1a1a28);
+    grid.visible = false;
+    scene.add(grid);
+    gridRef.current = grid;
 
     // World-space reference frame (X=red Y=green Z=blue, 200 units long).
     const worldAxes = new THREE.AxesHelper(200);
@@ -872,6 +892,7 @@ export function Viewer3D() {
   // ── Sync axes helpers visibility ───────────────────────────────────────────
   useEffect(() => {
     if (worldAxesRef.current) worldAxesRef.current.visible = showAxes;
+    if (gridRef.current)      gridRef.current.visible      = showAxes;
     for (const ax of motionAxesRef.current) {
       ax.visible = showAxes;
       const sp = ax.userData.sprite as THREE.Sprite | undefined;
@@ -900,6 +921,8 @@ export function Viewer3D() {
     if (skyRef.current)       { scene?.remove(skyRef.current);       skyRef.current.geometry.dispose(); (skyRef.current.material as THREE.Material).dispose(); skyRef.current = null; }
     for (const t of texturesRef.current) t?.dispose();
     texturesRef.current = [];
+    for (const t of entityTexRef.current) t.dispose();
+    entityTexRef.current = [];
     for (const t of swapTexCacheRef.current.values()) t.dispose();
     swapTexCacheRef.current.clear();
     tamRef.current = null;
@@ -960,47 +983,244 @@ export function Viewer3D() {
     const tamPath    = nPath.replace(/n\.rel$/i, '.tam');
     const tamPromise = readFile(tamPath).catch(() => null);
 
-    Promise.all([readFile(nPath), readFile(cPath), xvmPromise, tamPromise])
-      .then(([nBuf, cBuf, xBuf, tamBuf]) => {
-        if (cancelled) return;
+    // ── Entity model loading (parallel with map files) ──────────────────────
+    // Derive the data root from mapDir (e.g. "…/data/map" → "…/data/")
+    const dataDir = getDataDir(mapDir, sep);
+    const episode = (quest?.episode ?? 1) as 1 | 2 | 4;
 
-        // Build textures
-        const xvmTextures = xBuf ? parseXvm(new Uint8Array(xBuf)) : [];
+    type ModelData = { nj: NjResult | null; textures: (THREE.CompressedTexture | null)[] };
+
+    // Returns the buffer and whether it was loaded as XJ (vs NJ).
+    // XJ and NJ share the outer NJCM/NMDL chunk envelope but use different
+    // internal geometry formats — dispatch is by file extension.
+    const loadNjBuf = async (basePath: string): Promise<{ buf: Uint8Array; isXj: boolean } | null> => {
+      try { return { buf: new Uint8Array(await readFile(basePath + '.nj')), isXj: false }; } catch { /* try .xj */ }
+      try { return { buf: new Uint8Array(await readFile(basePath + '.xj')), isXj: true  }; } catch { return null; }
+    };
+
+    const parseNjOrXj = (buf: Uint8Array, isXj: boolean): NjResult =>
+      isXj ? parseXj(buf) : parseNj(buf);
+
+    const loadModelData = async (basePath: string): Promise<ModelData> => {
+      const loaded = await loadNjBuf(basePath);
+      if (!loaded) return { nj: null, textures: [] };
+
+      let nj: NjResult;
+      try { nj = parseNjOrXj(loaded.buf, loaded.isXj); }
+      catch { return { nj: null, textures: [] }; }
+
+      // NMDL redirect: the file references another model in the SAME directory.
+      // Delphi opens the referenced file from the same directory as the source NJ/XJ.
+      if (nj.nmdlRef) {
+        const lastSep = Math.max(basePath.lastIndexOf('/'), basePath.lastIndexOf('\\'));
+        const dir     = lastSep >= 0 ? basePath.slice(0, lastSep + 1) : '';
+        const refBase = dir + nj.nmdlRef;
+        const refLoaded = await loadNjBuf(refBase);
+        if (refLoaded) {
+          try { nj = parseNjOrXj(refLoaded.buf, refLoaded.isXj); }
+          catch { return { nj: null, textures: [] }; }
+        } else {
+          return { nj: null, textures: [] };
+        }
+        let textures: (THREE.CompressedTexture | null)[] = [];
+        try {
+          textures = parseXvm(new Uint8Array(await readFile(refBase + '.xvm')))
+            .map(x => x ? buildThreeTexture(x) : null);
+        } catch { /* XVM optional */ }
+        return { nj, textures };
+      }
+
+      let textures: (THREE.CompressedTexture | null)[] = [];
+      try {
+        textures = parseXvm(new Uint8Array(await readFile(basePath + '.xvm')))
+          .map(x => x ? buildThreeTexture(x) : null);
+      } catch { /* XVM is optional */ }
+      return { nj, textures };
+    };
+
+    // Collect the unique NJ model base paths required by this floor
+    const monsterBases = new Map<string, string>(); // key → base path (no ext)
+    const objectBases  = new Map<string, string>(); // skin string   → base path (no ext)
+    // NPCs load from monster/npc/<hexSkin>. Matches Delphi IsNPC:
+    //   skin < 64 → always NPC
+    //   skin >= 0xD0 && skin < 257 && no known monster type → NPC
+    const monsterKey = (m: { skin: number; movementFlag: number; unknown10: number; unknown3: number }) => {
+      const typeIdx = checkMonsterType(m.skin, m.movementFlag, m.unknown10, m.unknown3, episode);
+      const fname = monsterFilename(typeIdx);
+      if (fname) return fname;
+      if (m.skin < 64 || (m.skin >= 0xD0 && m.skin < 257))
+        return `npc:${m.skin.toString(16).padStart(2, '0')}`;
+      return null;
+    };
+    const monsterBase = (key: string) => {
+      if (key.startsWith('npc:')) {
+        const hex = key.slice(4); // e.g. "01", "0a", "3f"
+        return `${dataDir}monster${sep}npc${sep}${hex}`;
+      }
+      return `${dataDir}monster${sep}${key}`;
+    };
+    if (floor) {
+      for (const m of floor.monsters) {
+        const key = monsterKey(m);
+        if (key && !monsterBases.has(key))
+          monsterBases.set(key, monsterBase(key));
+      }
+      for (const o of floor.objects) {
+        if (o.skin === 0) continue; // skin 0 = no model
+        const key = String(o.skin);
+        if (!objectBases.has(key))
+          objectBases.set(key, `${dataDir}obj${sep}${key}`);
+      }
+    }
+
+    const monsterEntries = [...monsterBases.entries()];
+    const objectEntries  = [...objectBases.entries()];
+
+    const mapLoads    = Promise.all([readFile(nPath), readFile(cPath), xvmPromise, tamPromise]);
+    const entityLoads = Promise.all([
+      Promise.all(monsterEntries.map(([, base]) => loadModelData(base))),
+      Promise.all(objectEntries.map( ([, base]) => loadModelData(base))),
+    ]);
+
+    Promise.all([mapLoads, entityLoads])
+      .then(([[nBuf, cBuf, xBuf, tamBuf], [monsterData, objectData]]) => {
+        if (cancelled) {
+          [...monsterData, ...objectData].forEach(d => d.textures.forEach(t => t?.dispose()));
+          return;
+        }
+
+        // Build map textures
+        const xvmTextures   = xBuf ? parseXvm(new Uint8Array(xBuf)) : [];
         const threeTextures = xvmTextures.map(x => x ? buildThreeTexture(x) : null);
 
-        // Build meshes
+        // Build map meshes + collision
         const nMeshes  = parseNRelMeshes(new Uint8Array(nBuf));
         const { group, animTargets, motionGroups } = buildVisualMeshes(nMeshes, threeTextures, xvmTextures);
         const cLines   = buildCollisionMesh(new Uint8Array(cBuf));
         cLines.visible = showCollision;
 
-        // Parse TAM animation data (optional)
-        const tamData = tamBuf ? parseTam(new Uint8Array(tamBuf)) : null;
-
-        // Build markers from n.rel sections + floor data
+        const tamData  = tamBuf ? parseTam(new Uint8Array(tamBuf)) : null;
         const sections = parseNRel(new Uint8Array(nBuf));
-        const { group: markers, pickables } = buildEntityMarkers(floor, sections);
 
-        if (cancelled) {
-          group.traverse(o => { if ((o as THREE.Mesh).isMesh) { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); } });
-          cLines.geometry.dispose();
-          for (const t of threeTextures) t?.dispose();
-          return;
+        // Resolve entity model data by key
+        const monsterModelMap = new Map<string, ModelData>();
+        monsterEntries.forEach(([stem], i) => monsterModelMap.set(stem, monsterData[i]));
+        const objectModelMap = new Map<string, ModelData>();
+        objectEntries.forEach(([key], i)  => objectModelMap.set(key,  objectData[i]));
+
+        // ── Build entity group (NJ model where available, placeholder otherwise) ──
+        const markerGroup   = new THREE.Group();
+        const pickables: MarkerPickable[] = [];
+        const entityTextures: THREE.CompressedTexture[] = [];
+
+        if (floor) {
+          for (let i = 0; i < floor.monsters.length; i++) {
+            const m = floor.monsters[i];
+            const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
+
+            const label = makeLabel(`M${i}`);
+            const mg    = new THREE.Group();
+            mg.rotation.y = m.direction * BAM_TO_RAD;
+            mg.position.set(wx, m.posZ, wz);
+
+            const key   = monsterKey(m);
+            const model = key ? monsterModelMap.get(key) : undefined;
+            let meshes: THREE.Mesh[];
+            let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+
+            if (model?.nj && model.nj.subMeshes.length > 0) {
+              const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures);
+              for (const t of model.textures) { if (t) entityTextures.push(t); }
+              label.position.set(0, 25, 0);
+              mg.add(njg, label);
+              meshes = [];
+              njg.traverse(o => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+              mats = lambertMats;
+            } else {
+              const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
+              const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+              const body = new THREE.Mesh(_bodyCylGeo, bodyMat);
+              body.position.set(0, 2, 0);
+              const nose = new THREE.Mesh(_noseConeGeo, noseMat);
+              nose.rotation.x = Math.PI / 2;
+              nose.position.set(0, 2, 4.5);
+              label.position.set(0, 8, 0);
+              mg.add(body, nose, label);
+              meshes = [body, nose];
+              mats   = [bodyMat, noseMat];
+            }
+
+            markerGroup.add(mg);
+            pickables.push({ meshes, type: 'monster', index: i, mats, defaultColor: model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : MONSTER_COLOR, selectedColor: MONSTER_SEL, label });
+          }
+
+          for (let i = 0; i < floor.objects.length; i++) {
+            const o = floor.objects[i];
+            const [wx, wz] = toWorldPos(o.posX, o.posY, o.mapSection, sections);
+
+            const label  = makeLabel(`O${i}`);
+            const og     = new THREE.Group();
+            const secRot = sections.find(s => s.id === o.mapSection)?.rotation ?? 0;
+            og.rotation.x = o.rotX * BAM_TO_RAD;
+            og.rotation.y = (o.rotY + secRot) * BAM_TO_RAD + Math.PI;
+            og.rotation.z = -o.rotZ * BAM_TO_RAD;
+            og.position.set(wx, o.posZ, wz);
+
+            const key   = String(o.skin);
+            const model = objectModelMap.get(key);
+            let meshes: THREE.Mesh[];
+            let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+
+            if (model?.nj && model.nj.subMeshes.length > 0) {
+              const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures);
+              for (const t of model.textures) { if (t) entityTextures.push(t); }
+              label.position.set(0, 25, 0);
+              og.add(njg, label);
+              meshes = [];
+              njg.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+              mats = lambertMats;
+            } else {
+              const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+              const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+              const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
+              const base    = new THREE.Mesh(_baseBoxGeo,  baseMat);
+              base.position.set(0, 0.75, 0);
+              const pole    = new THREE.Mesh(_poleGeo, poleMat);
+              pole.position.set(0, 4, 0);
+              const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
+              diamond.position.set(0, 7.5, 0);
+              label.position.set(0, 10.5, 0);
+              og.add(base, pole, diamond, label);
+              meshes = [base, pole, diamond];
+              mats   = [baseMat, poleMat, diamondMat];
+            }
+
+            markerGroup.add(og);
+            pickables.push({ meshes, type: 'object', index: i, mats, defaultColor: model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : OBJECT_COLOR, selectedColor: OBJECT_SEL, label });
+          }
         }
 
         const s = sceneRef.current;
-        if (!s) return;
+        if (!s) {
+          group.traverse(o => { if ((o as THREE.Mesh).isMesh) { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); } });
+          cLines.geometry.dispose();
+          for (const t of threeTextures) t?.dispose();
+          for (const t of entityTextures) t.dispose();
+          return;
+        }
+
         s.add(group);
         s.add(cLines);
-        s.add(markers);
-        visualRef.current    = group;
-        collisionRef.current = cLines;
-        markersRef.current       = markers;
+        s.add(markerGroup);
+        visualRef.current          = group;
+        collisionRef.current       = cLines;
+        markersRef.current         = markerGroup;
         markerPickablesRef.current = pickables;
-        texturesRef.current  = threeTextures;
-        tamRef.current         = tamData;
-        animTargetsRef.current  = animTargets;
-        motionGroupsRef.current = motionGroups;
+        texturesRef.current        = threeTextures;
+        entityTexRef.current       = entityTextures;
+        tamRef.current             = tamData;
+        animTargetsRef.current     = animTargets;
+        motionGroupsRef.current    = motionGroups;
 
         // Attach per-object axes helpers + numbered labels (shown/hidden with showAxes).
         const mAxes: THREE.AxesHelper[] = [];
@@ -1010,7 +1230,6 @@ export function Viewer3D() {
           mg.add(ax);
           mAxes.push(ax);
 
-          // Floating label sprite so the user can cross-reference visual ↔ console log.
           const cvs = document.createElement('canvas');
           cvs.width = 128; cvs.height = 64;
           const ctx = cvs.getContext('2d')!;
@@ -1027,13 +1246,10 @@ export function Viewer3D() {
           const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
           const sprite = new THREE.Sprite(mat);
           sprite.scale.set(40, 20, 1);
-          sprite.position.set(0, 60, 0);   // float above the object
+          sprite.position.set(0, 60, 0);
           sprite.visible = showAxes;
           mg.add(sprite);
           ax.userData.sprite = sprite;
-
-          // Also log the index → anioff mapping once.
-          console.log(`[motionGroup #${idx}] angKeys=${motion.angKeys.length} posKeys=${motion.posKeys.length} totalFrames=${motion.totalFrames}`);
         });
         motionAxesRef.current = mAxes;
 

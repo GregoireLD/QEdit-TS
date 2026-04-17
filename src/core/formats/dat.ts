@@ -63,15 +63,15 @@ function readObject(view: DataView, off: number): QuestObject {
     group:      view.getUint16(off + 0x0A, true),
     mapSection: view.getUint16(off + 0x0C, true),
     unknown4:   view.getUint16(off + 0x0E, true),
-    posX:       view.getFloat32(off + 0x10, true),
-    posZ:       view.getFloat32(off + 0x14, true),
-    posY:       view.getFloat32(off + 0x18, true),
-    unknown5:   view.getUint32(off + 0x1C, true),
-    unknown6:   view.getUint32(off + 0x20, true),
-    unknown7:   view.getUint32(off + 0x24, true),
-    unknown8:   view.getFloat32(off + 0x28, true),
-    unknown9:   view.getFloat32(off + 0x2C, true),
-    unknown10:  view.getFloat32(off + 0x30, true),
+    posX:   view.getFloat32(off + 0x10, true),
+    posZ:   view.getFloat32(off + 0x14, true),
+    posY:   view.getFloat32(off + 0x18, true),
+    rotX:   view.getUint32(off + 0x1C, true),
+    rotY:   view.getUint32(off + 0x20, true),
+    rotZ:   view.getUint32(off + 0x24, true),
+    scaleX: view.getFloat32(off + 0x28, true),
+    scaleY: view.getFloat32(off + 0x2C, true),
+    scaleZ: view.getFloat32(off + 0x30, true),
     objId:      view.getUint32(off + 0x34, true),
     action:     view.getUint32(off + 0x38, true),
     unknown13:  view.getUint32(off + 0x3C, true),
@@ -192,12 +192,12 @@ function writeObject(view: DataView, off: number, o: QuestObject): void {
   view.setFloat32(off + 0x10, o.posX,      true);
   view.setFloat32(off + 0x14, o.posZ,      true);
   view.setFloat32(off + 0x18, o.posY,      true);
-  view.setUint32(off + 0x1C, o.unknown5,   true);
-  view.setUint32(off + 0x20, o.unknown6,   true);
-  view.setUint32(off + 0x24, o.unknown7,   true);
-  view.setFloat32(off + 0x28, o.unknown8,  true);
-  view.setFloat32(off + 0x2C, o.unknown9,  true);
-  view.setFloat32(off + 0x30, o.unknown10, true);
+  view.setUint32(off + 0x1C, o.rotX,   true);
+  view.setUint32(off + 0x20, o.rotY,   true);
+  view.setUint32(off + 0x24, o.rotZ,   true);
+  view.setFloat32(off + 0x28, o.scaleX, true);
+  view.setFloat32(off + 0x2C, o.scaleY, true);
+  view.setFloat32(off + 0x30, o.scaleZ, true);
   view.setUint32(off + 0x34, o.objId,      true);
   view.setUint32(off + 0x38, o.action,     true);
   view.setUint32(off + 0x3C, o.unknown13,  true);
