@@ -48,3 +48,23 @@
   flex: 1;
   overflow: hidden;
 }
+
+.ok {
+  color: #80e080;
+}
+
+.compileBtn {
+  padding: 2px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  background: var(--accent, #4080c0);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.compileBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

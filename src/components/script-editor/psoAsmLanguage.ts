@@ -203,8 +203,8 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
         // Comments
         [/\/\/.*$/, 'comment'],
 
-        // Label: one or more digits followed by colon at start of token
-        [/\b\d+:/, 'label'],
+        // Label: digits followed by colon, only at the very start of a line
+        [/^\d+:/, 'label'],
 
         // Directives: HEX: or STR: (must come before general identifier rule)
         [/\b(HEX|STR):/, 'directive'],
@@ -222,8 +222,8 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
         // Floats
         [/\b\d+\.\d+\b/, 'number.float'],
 
-        // String literals in single quotes
-        [/'[^']*'/, 'string'],
+        // String literals in single quotes — enter string state for escape highlighting
+        [/'/, { token: 'string.delim', next: '@string' }],
 
         // Identifiers / opcodes
         [/[a-zA-Z_][a-zA-Z0-9_=!<>]*/, {
@@ -235,6 +235,19 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
 
         // Comma separator (uncoloured)
         [/,/, 'delimiter'],
+      ],
+
+      string: [
+        // PSO control-code escapes: \xNN
+        [/\\x[0-9a-fA-F]{2}/, 'string.escape'],
+        // Newline marker
+        [/<cr>/, 'string.escape'],
+        // End of string
+        [/'/, { token: 'string.delim', next: '@pop' }],
+        // Everything else in the string
+        [/[^'\\<]+/, 'string'],
+        // Stray '<' that isn't part of <cr>
+        [/</, 'string'],
       ],
     },
   } as Monaco.languages.IMonarchLanguage);
@@ -371,7 +384,9 @@ export function definePsoTheme(monaco: typeof Monaco): void {
       { token: 'number',       foreground: 'ff80ff' },
       { token: 'number.hex',   foreground: 'ff80ff' },
       { token: 'number.float', foreground: 'ff80ff' },
-      { token: 'string',       foreground: '40ffff' },
+      { token: 'string',        foreground: '40ffff' },
+      { token: 'string.delim', foreground: '40ffff' },
+      { token: 'string.escape',foreground: 'ff8040' },
       { token: 'directive',    foreground: 'a0a0a0', fontStyle: 'bold' },
       { token: 'identifier',   foreground: 'cccccc' },
       { token: 'delimiter',    foreground: '666666' },

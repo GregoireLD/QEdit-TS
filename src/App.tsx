@@ -10,7 +10,7 @@ import './App.css';
 
 export default function App() {
   const { error, clearError } = useQuestStore();
-  const { mainTab, setMainTab } = useUiStore();
+  const { mainTab, setMainTab, scriptHasError } = useUiStore();
 
   return (
     <div className="app">
@@ -29,7 +29,7 @@ export default function App() {
               className={`main-tab ${mainTab === 'script' ? 'active' : ''}`}
               onClick={() => setMainTab('script')}
             >
-              Script
+              Script{scriptHasError && <span className="tab-error-dot" />}
             </button>
             <button
               className={`main-tab ${mainTab === 'metadata' ? 'active' : ''}`}
@@ -46,7 +46,10 @@ export default function App() {
           </div>
           <div className="main-content">
             {mainTab === 'map'      && <FloorView />}
-            {mainTab === 'script'   && <ScriptEditor />}
+            {/* ScriptEditor stays mounted so its auto-compile effect can fire on tab change */}
+            <div style={{ display: mainTab === 'script' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+              <ScriptEditor />
+            </div>
             {mainTab === 'metadata' && <MetadataEditor />}
             {mainTab === '3d'       && <Viewer3D />}
           </div>

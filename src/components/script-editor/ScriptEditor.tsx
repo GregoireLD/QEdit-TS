@@ -1,25 +1,133 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
+import type * as MonacoNS from 'monaco-editor';
 import { useQuestStore } from '../../stores/questStore';
+import { useUiStore } from '../../stores/uiStore';
 import { registerPsoAsm, definePsoTheme, LANGUAGE_ID } from './psoAsmLanguage';
-import { disassemble } from '../../core/formats/disasm';
+import { disassemble, loadAsmTable } from '../../core/formats/disasm';
+import { assemble } from '../../core/formats/assemble';
 import styles from './ScriptEditor.module.css';
 
 export function ScriptEditor() {
-  const quest = useQuestStore(s => s.quest);
-  const [source, setSource] = useState<string>('');
-  const [isDisasming, setIsDisasming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const quest             = useQuestStore(s => s.quest);
+  const updateBin         = useQuestStore(s => s.updateBin);
+  const mainTab           = useUiStore(s => s.mainTab);
+  const setScriptHasError = useUiStore(s => s.setScriptHasError);
 
-  // Disassemble whenever quest changes
+  const [source, setSource]           = useState<string>('');
+  const [isDisasming, setIsDisasming] = useState(false);
+  const [isCompiling, setIsCompiling] = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [compileOk, setCompileOk]     = useState(false);
+  const [validMnemonics, setValidMnemonics] = useState<Set<string>>(new Set());
+
+  const compileOkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef      = useRef<MonacoNS.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef      = useRef<typeof MonacoNS | null>(null);
+  // Stable refs so effects that depend only on mainTab can read the latest values
+  const errorRef          = useRef<string | null>(null);
+  const hasMarkersRef     = useRef(false);
+  const prevMainTabRef    = useRef(mainTab);
+  const handleCompileRef  = useRef<() => void>(() => {});
+
+  // Disassemble whenever quest changes; also reset error state (fresh content)
   useEffect(() => {
     if (!quest) { setSource('// No quest loaded'); return; }
     setIsDisasming(true);
     setError(null);
+    errorRef.current = null;
+    setScriptHasError(false);
     disassemble(quest.bin)
       .then(text => { setSource(text); setIsDisasming(false); })
       .catch(e  => { setError(String(e)); setIsDisasming(false); });
   }, [quest]);
+
+  // Load valid mnemonic set once (cached after first call)
+  useEffect(() => {
+    loadAsmTable().then(table => {
+      setValidMnemonics(new Set(table.map(e => e.name)));
+    });
+  }, []);
+
+  // Mark unknown mnemonics with red error markers in Monaco
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco || validMnemonics.size === 0) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const markers: MonacoNS.editor.IMarkerData[] = [];
+    const lines = source.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i];
+      if (!raw.startsWith('\t') && !raw.startsWith(' ')) continue;
+      // Strip comment
+      let line = raw;
+      let inStr = false;
+      for (let j = 0; j < line.length; j++) {
+        if (line[j] === "'") inStr = !inStr;
+        if (!inStr && line[j] === '/' && line[j + 1] === '/') { line = line.slice(0, j); break; }
+      }
+      const trimmed = line.trim();
+      if (!trimmed || /^STR:|^HEX:/.test(trimmed)) continue;
+      const m = /^\s+(\S+)/.exec(line);
+      if (!m || m[1].startsWith('//')) continue;
+      const mnemonic = m[1];
+      if (!validMnemonics.has(mnemonic)) {
+        const col = raw.search(/\S/) + 1;
+        markers.push({
+          severity: monaco.MarkerSeverity.Error,
+          message:  `Unknown mnemonic: "${mnemonic}"`,
+          startLineNumber: i + 1, startColumn: col,
+          endLineNumber:   i + 1, endColumn:   col + mnemonic.length,
+        });
+      }
+    }
+    hasMarkersRef.current = markers.length > 0;
+    monaco.editor.setModelMarkers(model, 'pso-asm', markers);
+  }, [source, validMnemonics]);
+
+  // Auto-compile when switching away from the Script tab
+  useEffect(() => {
+    if (prevMainTabRef.current === 'script' && mainTab !== 'script') {
+      if (hasMarkersRef.current) {
+        // Known invalid mnemonics — no point compiling, flag immediately
+        useUiStore.getState().setScriptHasError(true);
+      } else if (!errorRef.current) {
+        // Clean source, no stale error — try to compile
+        handleCompileRef.current();
+      }
+      // If errorRef.current is set: previous error still outstanding, skip
+    }
+    prevMainTabRef.current = mainTab;
+  }, [mainTab]);
+
+  function handleCompile() {
+    if (!quest || isCompiling) return;
+    setIsCompiling(true);
+    setError(null);
+    errorRef.current = null;
+    setCompileOk(false);
+    assemble(source, quest.bin)
+      .then(newBin => {
+        updateBin(newBin);
+        setIsCompiling(false);
+        setCompileOk(true);
+        setScriptHasError(false);
+        if (compileOkTimer.current) clearTimeout(compileOkTimer.current);
+        compileOkTimer.current = setTimeout(() => setCompileOk(false), 3000);
+      })
+      .catch(e => {
+        const msg = String(e);
+        setIsCompiling(false);
+        setError(msg);
+        errorRef.current = msg;
+        setScriptHasError(true);
+      });
+  }
+  // Keep ref up-to-date so auto-compile effect always calls the latest closure
+  handleCompileRef.current = handleCompile;
 
   if (!quest) {
     return (
@@ -40,15 +148,34 @@ export function ScriptEditor() {
         </span>
         {isDisasming && <span className={styles.loading}>Disassembling…</span>}
         {error && <span className={styles.err}>{error}</span>}
+        <span style={{ flex: 1 }} />
+        {compileOk && <span className={styles.ok}>Compiled</span>}
+        {isCompiling && <span className={styles.loading}>Compiling…</span>}
+        <button
+          className={styles.compileBtn}
+          onClick={handleCompile}
+          disabled={isCompiling || isDisasming}
+        >
+          Compile
+        </button>
       </div>
 
       <div className={styles.editor}>
         <Editor
           beforeMount={m => { registerPsoAsm(m); definePsoTheme(m); }}
+          onMount={(editor, monaco) => {
+            editorRef.current  = editor;
+            monacoRef.current  = monaco as unknown as typeof MonacoNS;
+          }}
           language={LANGUAGE_ID}
           theme="pso-dark"
           value={source}
-          onChange={v => setSource(v ?? '')}
+          onChange={v => {
+            setSource(v ?? '');
+            // Re-enable auto-compile on next tab switch, but keep the error message
+            // visible so the user sees what failed (it clears when compile starts)
+            errorRef.current = null;
+          }}
           options={{
             fontSize: 13,
             fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace",

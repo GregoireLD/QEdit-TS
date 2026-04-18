@@ -28,6 +28,7 @@ interface QuestStore {
   selectFloor: (id: number) => void;
   setActiveTab: (tab: 'monsters' | 'objects' | 'canvas') => void;
   updateBinMeta: (patch: BinMetaPatch) => void;
+  updateBin: (bin: QuestBin) => void;
   updateMonster: (floorId: number, index: number, patch: Partial<Monster>) => void;
   updateObject: (floorId: number, index: number, patch: Partial<QuestObject>) => void;
   /**
@@ -200,6 +201,12 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     const { quest } = get();
     if (!quest) return;
     set({ quest: { ...quest, bin: { ...quest.bin, ...patch } } });
+  },
+
+  updateBin: (bin) => {
+    const { quest } = get();
+    if (!quest) return;
+    set({ quest: { ...quest, bin } });
   },
 
   updateMonster: (floorId, index, patch) => {

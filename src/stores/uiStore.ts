@@ -9,6 +9,10 @@ interface UiStore {
   mainTab:  MainTab;
   setMainTab: (tab: MainTab) => void;
 
+  /** True when the last script compile attempt failed — drives the red dot on the Script tab. */
+  scriptHasError: boolean;
+  setScriptHasError: (v: boolean) => void;
+
   /** Absolute path to the folder containing *c.rel and *n.rel files */
   mapDir:   string | null;
   setMapDir: (dir: string) => void;
@@ -27,6 +31,9 @@ interface UiStore {
 export const useUiStore = create<UiStore>(set => ({
   mainTab:    'map',
   setMainTab: tab => set({ mainTab: tab }),
+
+  scriptHasError:    false,
+  setScriptHasError: v => set({ scriptHasError: v }),
 
   // In browser mode, directory handles don't survive page reloads — always start without one.
   mapDir: isTauri() ? localStorage.getItem(MAP_DIR_KEY) : null,

@@ -47,6 +47,18 @@
   border-bottom-color: var(--accent);
 }
 
+.tab-error-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
 .main-content {
   flex: 1;
   overflow: hidden;

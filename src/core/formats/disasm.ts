@@ -20,7 +20,8 @@ import { BinVersion } from '../model/types';
 // ─── Argument type constants (must match m.Add() order in main.pas) ────────
 
 const T_NONE     = 0;
-// T_IMED=1, T_ARGS=2, T_PUSH=3 used only in entry.order (not in arg switch)
+const T_ARGS     = 2;   // opcode reads its args from the push-stack
+const T_PUSH     = 3;   // opcode pushes one arg onto the push-stack
 const T_DC       = 6;
 const T_REG      = 7;
 const T_BYTE     = 8;
@@ -41,7 +42,7 @@ const T_DREG     = 22;
 
 // ─── Opcode descriptor ─────────────────────────────────────────────────────
 
-interface AsmEntry {
+export interface AsmEntry {
   fnc:   number;      // opcode ID (u16)
   name:  string;      // mnemonic
   order: number;      // argument order type (T_IMED / T_ARGS / T_NONE / …)
@@ -155,19 +156,46 @@ function readString(code: Uint8Array, x: number, isDC: boolean): { text: string;
     // UTF-16LE: 2 bytes per char, terminated by 00 00
     while (x + 1 < code.length && (code[x] !== 0 || code[x + 1] !== 0)) {
       const cp = code[x] | (code[x + 1] << 8);
-      text += cp === 0x000A ? '<cr>' : String.fromCharCode(cp);
+      text += cp === 0x000A ? '<cr>'
+            : cp <  0x0020  ? `\\x${cp.toString(16).padStart(2, '0')}`
+            : String.fromCharCode(cp);
       x += 2;
     }
     x += 2; // null terminator
   } else {
     // ASCII: 1 byte per char, terminated by 00
     while (x < code.length && code[x] !== 0) {
-      text += code[x] === 0x0A ? '<cr>' : String.fromCharCode(code[x]);
+      const b = code[x];
+      text += b === 0x0A ? '<cr>'
+            : b <  0x20  ? `\\x${b.toString(16).padStart(2, '0')}`
+            : String.fromCharCode(b);
       x++;
     }
     x++; // null terminator
   }
   return { text, advance: x - start };
+}
+
+// ─── Push-stack support ────────────────────────────────────────────────────
+
+interface StackEntry {
+  argType: number;   // T_REG / T_DWORD / T_WORD / T_BREG / T_FUNC / T_STR …
+  value:   number;   // numeric payload (uint32 / register index / label)
+  str:     string;   // string payload (only for T_STR)
+}
+
+function formatStackArg(se: StackEntry, expectedType: number): string {
+  if (se.argType === T_STR) return `'${se.str}'`;
+  if (expectedType === T_FLOAT) {
+    const buf = new ArrayBuffer(4);
+    new DataView(buf).setUint32(0, se.value >>> 0, true);
+    return new DataView(buf).getFloat32(0, true).toFixed(6);
+  }
+  if (expectedType === T_FUNC || expectedType === T_FUNC2) return `${se.value}`;
+  if (se.argType === T_REG || se.argType === T_BREG || se.argType === T_DREG || se.argType === 13) {
+    return `R${se.value}`;
+  }
+  return hex8(se.value >>> 0);
 }
 
 // ─── Main disassembly ──────────────────────────────────────────────────────
@@ -192,6 +220,8 @@ export async function disassemble(bin: QuestBin): Promise<string> {
   for (const b of blocks) blockMap.set(b.offset, b);
 
   const lines: string[] = [];
+  const stack: StackEntry[] = [];   // push-stack for T_ARGS collapsing
+  let isV3 = !isDC;                 // mirrors Delphi's AsmMode: flips true on first T_PUSH
   let x = 0;
 
   while (x < code.length) {
@@ -230,14 +260,51 @@ export async function disassemble(bin: QuestBin): Promise<string> {
       opcode = (opcode << 8) | readU8(code, x++);
     }
 
-    const entry = findEntry(table, opcode, isDC);
+    // isDC && !isV3: still in DC mode; isDC && isV3: DC header but V3 bytecode detected
+    const entry = findEntry(table, opcode, isDC && !isV3);
     if (!entry) {
       // Unknown opcode — emit as HEX comment so nothing is lost
       lines.push(`\t// unknown opcode 0x${opcode.toString(16).toUpperCase()}`);
       break; // can't reliably continue without knowing arg sizes
     }
 
-    // Build argument string
+    // ── T_PUSH: read the one inline arg, buffer on stack, emit nothing ──────
+    if (entry.order === T_PUSH) {
+      isV3 = true;  // mirrors Delphi's AsmMode := 2 on first arg_push seen
+      const se: StackEntry = { argType: entry.args[0] ?? T_NONE, value: 0, str: '' };
+      switch (se.argType) {
+        case T_REG: case 13: case T_BREG: case T_DREG:
+          se.value = readU8(code, x); x++; break;
+        case T_DWORD: case T_PFLAG: case T_DATA: case T_STRDATA:
+          se.value = readU32(code, x); x += 4; break;
+        case T_WORD:
+          se.value = readU16(code, x); x += 2; break;
+        case T_BYTE:
+          se.value = readU8(code, x); x++; break;
+        case T_FUNC: case T_FUNC2:
+          se.value = readU16(code, x); x += 2; break;
+        case T_STR: {
+          const { text, advance } = readString(code, x, isDC);
+          se.str = text; x += advance; break;
+        }
+      }
+      stack.push(se);
+      continue; // no line emitted for push opcodes
+    }
+
+    // ── T_ARGS: consume stack entries, emit one combined line ───────────────
+    if (entry.order === T_ARGS && stack.length > 0) {
+      const n       = entry.args.length;
+      const start   = Math.max(0, stack.length - n);
+      const pulled  = stack.splice(start);           // removes and returns last n items
+      const argParts = pulled.map((se, i) => formatStackArg(se, entry.args[i] ?? T_NONE));
+      const argStr  = argParts.length > 0 ? ' ' + argParts.join(', ') : '';
+      lines.push(`\t${entry.name}${argStr}`);
+      continue;
+    }
+
+    // ── All other orders (T_IMED, T_NONE, T_DC, T_VASTART/END):
+    //    read args inline as before ──────────────────────────────────────────
     const argParts: string[] = [];
     for (const argType of entry.args) {
       switch (argType) {
@@ -248,10 +315,8 @@ export async function disassemble(bin: QuestBin): Promise<string> {
         case T_BREG:
           argParts.push(`R${readU8(code, x)}`); x++; break;
 
-        case T_DREG: {
-          // DREG = double register: one byte index
-          argParts.push(`R${readU8(code, x)}`); x++; break;
-        }
+        case T_DREG:
+          argParts.push(`R${readU32(code, x)}`); x += 4; break;
 
         case T_BYTE:
           argParts.push(hex8(readU8(code, x))); x++; break;
@@ -283,7 +348,6 @@ export async function disassemble(bin: QuestBin): Promise<string> {
         }
 
         case T_SWITCH: {
-          // count byte + count × 2-byte labels
           const count = readU8(code, x++);
           const labels: string[] = [];
           for (let i = 0; i < count; i++) {
@@ -294,7 +358,6 @@ export async function disassemble(bin: QuestBin): Promise<string> {
         }
 
         case T_SWITCH2B: {
-          // count byte + count × 1-byte values
           const count = readU8(code, x++);
           const vals: string[] = [];
           for (let i = 0; i < count; i++) {
