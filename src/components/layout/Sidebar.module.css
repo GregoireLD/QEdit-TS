@@ -45,12 +45,26 @@
   border-left-color: var(--accent);
 }
 
-.check {
-  font-size: 10px;
-  color: var(--accent);
+.toggle {
   width: 12px;
+  height: 12px;
+  border: 1px solid var(--text-dim);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
   flex-shrink: 0;
-  text-align: center;
+  cursor: pointer;
+  color: transparent;
+}
+.toggle:hover {
+  border-color: var(--accent);
+}
+.toggleOn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
 }
 
 .floorName {
@@ -70,10 +84,11 @@
 }
 
 .disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.4;
 }
-.disabled:hover { background: transparent; }
+.disabled .toggle {
+  opacity: 1;  /* toggle is always full-opacity so it's clickable */
+}
 
 /* Episode selector */
 .epRow {

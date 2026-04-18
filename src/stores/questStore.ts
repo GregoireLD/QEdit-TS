@@ -4,7 +4,9 @@ import { parseQst, serialiseQst } from '../core/formats/qst';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
 import { EP_OFFSET } from '../core/map/areaData';
 import { useUiStore } from './uiStore';
-import type { Quest, Floor, QuestBin, Language, Monster, QuestObject } from '../core/model/types';
+import { BinVersion, QstFormat, Language } from '../core/model/types';
+import { rebuildBytecodeMapSetup } from '../core/formats/bytecodeMap';
+import type { Quest, Floor, QuestBin, Monster, QuestObject } from '../core/model/types';
 
 type BinMetaPatch = Partial<Pick<QuestBin, 'title' | 'info' | 'description' | 'questNumber'> & { language: Language }>;
 
@@ -17,6 +19,8 @@ interface QuestStore {
   isLoading: boolean;
   error: string | null;
 
+  newQuest: (episode: 1 | 2 | 4) => void;
+  toggleArea: (absAreaId: number) => void;
   openQuest: () => Promise<void>;
   openQuestFromUrl: () => Promise<void>;
   saveQuest: () => Promise<void>;
@@ -41,6 +45,72 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   activeTab: 'monsters',
   isLoading: false,
   error: null,
+
+  newQuest: (episode) => {
+    const epIdx   = episode === 1 ? 0 : episode === 2 ? 1 : 2;
+    const bytecode = episode === 1
+      ? new Uint8Array([0x01])
+      : new Uint8Array([0xF8, 0xBC, epIdx, 0x00, 0x00, 0x00, 0x01]);
+
+    const floors: Floor[] = [];
+
+    const bin: QuestBin = {
+      version:     BinVersion.PC,
+      bbContainer: false,
+      language:    Language.EN,
+      questNumber: 0,
+      title:       'New Quest',
+      info:        '',
+      description: '',
+      bytecode,
+      functionRefs: [0],
+      dataBlocks:   [],
+    };
+
+    const quest: Quest = {
+      format:        QstFormat.GC,
+      bin,
+      floors,
+      embeddedFiles: [
+        { name: 'quest.bin', data: new Uint8Array(0) },
+        { name: 'quest.dat', data: new Uint8Array(0) },
+      ],
+      episode,
+      variantByArea: {},
+    };
+
+    useUiStore.getState().resetPreviews({});
+    set({ quest, filePath: null, selectedFloorId: null, isLoading: false, error: null });
+  },
+
+  toggleArea: (absAreaId) => {
+    const { quest } = get();
+    if (!quest) return;
+
+    const offset    = EP_OFFSET[quest.episode];
+    const relId     = absAreaId - offset;
+    const isEnabled = quest.floors.some(f => f.id === relId);
+
+    let floors: Floor[];
+    let variantByArea: Record<number, number>;
+
+    if (isEnabled) {
+      floors = quest.floors.filter(f => f.id !== relId);
+      variantByArea = { ...quest.variantByArea };
+      delete variantByArea[absAreaId];
+    } else {
+      const newFloor: Floor = {
+        id: relId, monsters: [], objects: [],
+        events: new Uint8Array(0), d04: new Uint8Array(0), d05: new Uint8Array(0),
+      };
+      floors = [...quest.floors, newFloor].sort((a, b) => a.id - b.id);
+      variantByArea = { ...quest.variantByArea, [absAreaId]: 0 };
+      useUiStore.getState().setPreviewVariant(absAreaId, 0);
+    }
+
+    const bytecode = rebuildBytecodeMapSetup(quest.bin.bytecode, quest.episode, variantByArea, quest.bin.version);
+    set({ quest: { ...quest, floors, variantByArea, bin: { ...quest.bin, bytecode } } });
+  },
 
   openQuest: async () => {
     const opened = await openFileDialog({
@@ -158,7 +228,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     const { quest } = get();
     if (!quest) return;
     const variantByArea = { ...quest.variantByArea, [areaId]: variantIdx };
-    set({ quest: { ...quest, variantByArea } });
+    const bytecode = rebuildBytecodeMapSetup(quest.bin.bytecode, quest.episode, variantByArea, quest.bin.version);
+    set({ quest: { ...quest, variantByArea, bin: { ...quest.bin, bytecode } } });
     useUiStore.getState().setPreviewVariant(areaId, variantIdx);
   },
 

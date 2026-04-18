@@ -5,7 +5,7 @@ import { AREA_BY_ID, AREAS_BY_EPISODE, EP_OFFSET } from '../../core/map/areaData
 import styles from './Sidebar.module.css';
 
 export function Sidebar() {
-  const { quest, selectedFloorId, selectFloor, commitVariant } = useQuestStore();
+  const { quest, selectedFloorId, selectFloor, toggleArea, commitVariant } = useQuestStore();
   const { previewVariantByArea, setPreviewVariant } = useUiStore();
 
   // Which area rows are expanded to show variants
@@ -87,7 +87,13 @@ export function Sidebar() {
                   ) : (
                     <span className={styles.triPlaceholder} />
                   )}
-                  <span className={styles.check}>{enabled ? '✓' : ''}</span>
+                  <span
+                    className={`${styles.toggle} ${enabled ? styles.toggleOn : ''}`}
+                    title={enabled ? 'Remove area from quest' : 'Add area to quest'}
+                    onClick={e => { e.stopPropagation(); toggleArea(absId); }}
+                  >
+                    {enabled ? '✓' : ''}
+                  </span>
                   <span className={styles.floorName}>{area?.name ?? `Area ${absId}`}</span>
                   {floor && (
                     <span className={styles.floorCount}>

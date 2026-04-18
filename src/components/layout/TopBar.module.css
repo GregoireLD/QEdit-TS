@@ -58,3 +58,36 @@
   color: var(--accent);
   font-style: italic;
 }
+
+.newMenu {
+  position: relative;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dropdown button {
+  text-align: left;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+}
+
+.dropdown button:hover {
+  background: #3d3d3d;
+}
