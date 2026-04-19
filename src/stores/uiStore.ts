@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { isTauri } from '../platform/index';
 
-type MainTab = 'map' | 'script' | 'metadata' | '3d';
+type MainTab = 'map' | 'script' | 'metadata';
 
 const MAP_DIR_KEY = 'qedit_mapDir';
 

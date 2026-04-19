@@ -26,7 +26,6 @@ export function ScriptEditor() {
   const monacoRef      = useRef<typeof MonacoNS | null>(null);
   // Stable refs so effects that depend only on mainTab can read the latest values
   const errorRef          = useRef<string | null>(null);
-  const hasMarkersRef     = useRef(false);
   const prevMainTabRef    = useRef(mainTab);
   const handleCompileRef  = useRef<() => void>(() => {});
 
@@ -84,21 +83,18 @@ export function ScriptEditor() {
         });
       }
     }
-    hasMarkersRef.current = markers.length > 0;
     monaco.editor.setModelMarkers(model, 'pso-asm', markers);
   }, [source, validMnemonics]);
 
-  // Auto-compile when switching away from the Script tab
+  // Auto-compile when switching away from the Script tab.
+  // Always attempt the compile so the assembler's line-numbered error message
+  // ends up in the toolbar when the user switches back.
+  // Only skip if a previous error is still unresolved (user hasn't edited yet).
   useEffect(() => {
     if (prevMainTabRef.current === 'script' && mainTab !== 'script') {
-      if (hasMarkersRef.current) {
-        // Known invalid mnemonics — no point compiling, flag immediately
-        useUiStore.getState().setScriptHasError(true);
-      } else if (!errorRef.current) {
-        // Clean source, no stale error — try to compile
+      if (!errorRef.current) {
         handleCompileRef.current();
       }
-      // If errorRef.current is set: previous error still outstanding, skip
     }
     prevMainTabRef.current = mainTab;
   }, [mainTab]);
@@ -164,8 +160,8 @@ export function ScriptEditor() {
         <Editor
           beforeMount={m => { registerPsoAsm(m); definePsoTheme(m); }}
           onMount={(editor, monaco) => {
-            editorRef.current  = editor;
-            monacoRef.current  = monaco as unknown as typeof MonacoNS;
+            editorRef.current = editor;
+            monacoRef.current = monaco as unknown as typeof MonacoNS;
           }}
           language={LANGUAGE_ID}
           theme="pso-dark"
@@ -196,6 +192,9 @@ export function ScriptEditor() {
             },
             padding: { top: 8, bottom: 8 },
             automaticLayout: true,
+            fixedOverflowWidgets: true,
+            suggestFontSize: 13,
+            suggestLineHeight: 22,
           }}
         />
       </div>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
 import type { Monster, QuestObject } from '../../core/model/types';
 import { MapCanvas } from '../map-canvas/MapCanvas';
+import { Viewer3D } from '../viewer-3d/Viewer3D';
 import styles from './FloorView.module.css';
 
 // ─── Monster names ──────────────────────────────────────────────────────────
@@ -287,14 +288,6 @@ export function FloorView() {
   const { activeTab, setActiveTab, selectedFloorId } = useQuestStore();
   const floor = useSelectedFloor();
 
-  if (selectedFloorId === null) {
-    return (
-      <div className={styles.placeholder}>
-        Select an area from the sidebar
-      </div>
-    );
-  }
-
   const areaId = selectedFloorId;
 
   return (
@@ -318,19 +311,33 @@ export function FloorView() {
         >
           Map Canvas
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === '3d' ? styles.active : ''}`}
+          onClick={() => setActiveTab('3d')}
+        >
+          3D
+        </button>
       </div>
 
-      {activeTab === 'monsters' && (
+      {activeTab === '3d' && <Viewer3D />}
+
+      {activeTab !== '3d' && selectedFloorId === null && (
+        <div className={styles.placeholder}>Select an area from the sidebar</div>
+      )}
+
+      {activeTab === 'monsters' && selectedFloorId !== null && (
         floor
           ? <MonsterTable monsters={floor.monsters} floorId={floor.id} />
           : <div className={styles.empty}>Area not enabled in this quest.</div>
       )}
-      {activeTab === 'objects' && (
+      {activeTab === 'objects' && selectedFloorId !== null && (
         floor
           ? <ObjectTable objects={floor.objects} floorId={floor.id} />
           : <div className={styles.empty}>Area not enabled in this quest.</div>
       )}
-      {activeTab === 'canvas' && <MapCanvas floor={floor} areaId={areaId} />}
+      {activeTab === 'canvas' && selectedFloorId !== null && (
+        <MapCanvas floor={floor} areaId={areaId!} />
+      )}
     </div>
   );
 }

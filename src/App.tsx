@@ -5,7 +5,6 @@ import { Sidebar } from './components/layout/Sidebar';
 import { FloorView } from './components/map-editor/FloorView';
 import { ScriptEditor } from './components/script-editor/ScriptEditor';
 import { MetadataEditor } from './components/metadata-editor/MetadataEditor';
-import { Viewer3D } from './components/viewer-3d/Viewer3D';
 import './App.css';
 
 export default function App() {
@@ -37,12 +36,6 @@ export default function App() {
             >
               Metadata
             </button>
-            <button
-              className={`main-tab ${mainTab === '3d' ? 'active' : ''}`}
-              onClick={() => setMainTab('3d')}
-            >
-              3D
-            </button>
           </div>
           <div className="main-content">
             {mainTab === 'map'      && <FloorView />}
@@ -51,7 +44,6 @@ export default function App() {
               <ScriptEditor />
             </div>
             {mainTab === 'metadata' && <MetadataEditor />}
-            {mainTab === '3d'       && <Viewer3D />}
           </div>
         </main>
       </div>

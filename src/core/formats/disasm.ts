@@ -225,12 +225,14 @@ export async function disassemble(bin: QuestBin): Promise<string> {
   let x = 0;
 
   while (x < code.length) {
-    // Emit label if this offset is a function entry point
+    // Emit label(s) if this offset is a function entry point.
+    // Iterate the full refs array so that multiple indices pointing to the
+    // same offset are all emitted (refs.indexOf would only find the first).
     if (labelSet.has(x)) {
-      const labelNum = refs.indexOf(x);
-      // Blank line before label for readability
       if (lines.length > 0) lines.push('');
-      lines.push(`${labelNum}:`);
+      for (let li = 0; li < refs.length; li++) {
+        if (refs[li] === x) lines.push(`${li}:`);
+      }
     }
 
     // Check for a data block annotation at this position

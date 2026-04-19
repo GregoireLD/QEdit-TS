@@ -57,6 +57,22 @@ select:focus, input[type="text"]:focus {
   border-color: var(--accent);
 }
 
+/* ─── Monaco suggest widget: WebKit flex-basis:0 collapse fix ─────────── */
+/* flex: 1 shorthand sets flex-basis: 0, which collapses flex children with */
+/* overflow:hidden to zero in WebKit/WKWebView.                             */
+/* .contents (flex:1, overflow:hidden) is the main culprit — it swallows    */
+/* the entire label area. .monaco-icon-label-container also has flex:1.     */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row > .contents,
+.monaco-editor .suggest-widget .monaco-icon-label-container {
+  flex-basis: auto !important;
+}
+/* WKWebView collapses flex-direction to column on these containers */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row > .contents > .main,
+.monaco-editor .suggest-widget .monaco-icon-label {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+}
+
 /* ─── Scrollbars ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -398,6 +398,14 @@ export function definePsoTheme(monaco: typeof Monaco): void {
       'editorLineNumber.foreground':'#505080',
       'editorCursor.foreground':    '#ffffff',
       'editor.selectionBackground': '#2040a0',
+      // Suggestion / autocomplete widget
+      'editorSuggestWidget.background':              '#1a1a40',
+      'editorSuggestWidget.border':                  '#303070',
+      'editorSuggestWidget.foreground':              '#cccccc',
+      'editorSuggestWidget.selectedBackground':      '#2040a0',
+      'editorSuggestWidget.selectedForeground':      '#ffffff',
+      'editorSuggestWidget.highlightForeground':     '#60a0ff',
+      'editorSuggestWidget.focusHighlightForeground':'#60a0ff',
     },
   });
 }

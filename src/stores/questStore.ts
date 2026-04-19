@@ -15,7 +15,7 @@ interface QuestStore {
   filePath: string | null;
   /** Absolute area ID (0-45) of the selected area, or null. */
   selectedFloorId: number | null;
-  activeTab: 'monsters' | 'objects' | 'canvas';
+  activeTab: 'monsters' | 'objects' | 'canvas' | '3d';
   isLoading: boolean;
   error: string | null;
 
@@ -26,7 +26,7 @@ interface QuestStore {
   saveQuest: () => Promise<void>;
   saveQuestAs: () => Promise<void>;
   selectFloor: (id: number) => void;
-  setActiveTab: (tab: 'monsters' | 'objects' | 'canvas') => void;
+  setActiveTab: (tab: 'monsters' | 'objects' | 'canvas' | '3d') => void;
   updateBinMeta: (patch: BinMetaPatch) => void;
   updateBin: (bin: QuestBin) => void;
   updateMonster: (floorId: number, index: number, patch: Partial<Monster>) => void;

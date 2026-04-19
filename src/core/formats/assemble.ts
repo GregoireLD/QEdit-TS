@@ -339,11 +339,14 @@ export async function assemble(source: string, template: QuestBin): Promise<Ques
     }
   }
 
-  // Build functionRefs: sparse labelOffsets map → dense array indexed by label number
-  const maxLabel = labelOffsets.size > 0 ? Math.max(...labelOffsets.keys()) : -1;
-  const functionRefs: number[] = [];
-  for (let i = 0; i <= maxLabel; i++) {
-    functionRefs.push(labelOffsets.get(i) ?? 0);
+  // Build functionRefs: start from the original table so that any label not
+  // present in the source (e.g. duplicate-offset labels only emitted once by
+  // the disassembler, or labels past an unknown-opcode break) keeps its
+  // original bytecode offset instead of being silently clamped to 0.
+  const functionRefs = [...template.functionRefs];
+  for (const [labelIdx, offset] of labelOffsets) {
+    while (functionRefs.length <= labelIdx) functionRefs.push(0);
+    functionRefs[labelIdx] = offset;
   }
 
   return {
