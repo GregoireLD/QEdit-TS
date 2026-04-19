@@ -4,17 +4,25 @@ import type * as MonacoNS from 'monaco-editor';
 import { useQuestStore } from '../../stores/questStore';
 import { useUiStore } from '../../stores/uiStore';
 import { registerPsoAsm, definePsoTheme, LANGUAGE_ID } from './psoAsmLanguage';
-import { disassemble, loadAsmTable } from '../../core/formats/disasm';
+import { disassemble, loadAsmTable, type DisasmResult } from '../../core/formats/disasm';
 import { assemble } from '../../core/formats/assemble';
+import { loadSidecar, saveSidecar, weaveSidecar, extractSidecar, type Sidecar } from '../../core/formats/sidecar';
 import styles from './ScriptEditor.module.css';
+
+function emptySidecarRef(): Sidecar {
+  return { version: 1, comments: [], regions: [], inlineComments: [] };
+}
 
 export function ScriptEditor() {
   const quest             = useQuestStore(s => s.quest);
   const updateBin         = useQuestStore(s => s.updateBin);
+  const saveVersion       = useQuestStore(s => s.saveVersion);
   const mainTab           = useUiStore(s => s.mainTab);
   const setScriptHasError = useUiStore(s => s.setScriptHasError);
 
   const [source, setSource]           = useState<string>('');
+  const lineOffsetsRef                = useRef<number[]>([]);  // raw disasm offsets; sidecar extraction reads this
+  const rawTextRef                    = useRef<string>('');    // raw disasm text; sidecar extraction reads this
   const [isDisasming, setIsDisasming] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [error, setError]             = useState<string | null>(null);
@@ -28,17 +36,40 @@ export function ScriptEditor() {
   const errorRef          = useRef<string | null>(null);
   const prevMainTabRef    = useRef(mainTab);
   const handleCompileRef  = useRef<() => void>(() => {});
+  // In-memory sidecar: updated on compile, flushed to disk only on quest save
+  const currentSidecarRef = useRef<Sidecar>(emptySidecarRef());
+  // Set to true by handleCompile so the post-compile re-disassembly reuses the
+  // in-memory sidecar rather than reloading from disk.
+  const postCompileRef    = useRef(false);
 
-  // Disassemble whenever quest changes; also reset error state (fresh content)
+  // Disassemble whenever quest changes, then weave sidecar comments in.
+  // After a compile (postCompileRef) the in-memory sidecar is reused so edits
+  // are not lost; on any other quest change it is reloaded from disk.
   useEffect(() => {
     if (!quest) { setSource('// No quest loaded'); return; }
     setIsDisasming(true);
     setError(null);
     errorRef.current = null;
     setScriptHasError(false);
+    const filePath = useQuestStore.getState().filePath;
+    const isPostCompile = postCompileRef.current;
+    postCompileRef.current = false;
     disassemble(quest.bin)
-      .then(text => { setSource(text); setIsDisasming(false); })
-      .catch(e  => { setError(String(e)); setIsDisasming(false); });
+      .then(async ({ text, lineOffsets }: DisasmResult) => {
+        rawTextRef.current     = text;
+        lineOffsetsRef.current = lineOffsets;
+        let sidecar: Sidecar;
+        if (isPostCompile) {
+          sidecar = currentSidecarRef.current;
+        } else {
+          sidecar = await loadSidecar(filePath);
+          currentSidecarRef.current = sidecar;
+        }
+        const { text: wovenText } = weaveSidecar(text, lineOffsets, sidecar);
+        setSource(wovenText);
+        setIsDisasming(false);
+      })
+      .catch(e => { setError(String(e)); setIsDisasming(false); });
   }, [quest]);
 
   // Load valid mnemonic set once (cached after first call)
@@ -86,6 +117,13 @@ export function ScriptEditor() {
     monaco.editor.setModelMarkers(model, 'pso-asm', markers);
   }, [source, validMnemonics]);
 
+  // Flush sidecar to disk whenever the quest is saved (saveVersion increments).
+  useEffect(() => {
+    if (saveVersion === 0) return;
+    const filePath = useQuestStore.getState().filePath;
+    saveSidecar(filePath, currentSidecarRef.current).catch(() => {});
+  }, [saveVersion]);
+
   // Auto-compile when switching away from the Script tab.
   // Always attempt the compile so the assembler's line-numbered error message
   // ends up in the toolbar when the user switches back.
@@ -99,12 +137,19 @@ export function ScriptEditor() {
     prevMainTabRef.current = mainTab;
   }, [mainTab]);
 
-  function handleCompile() {
+  async function handleCompile() {
     if (!quest || isCompiling) return;
     setIsCompiling(true);
     setError(null);
     errorRef.current = null;
     setCompileOk(false);
+
+    // Extract and cache the sidecar in memory; it will be flushed to disk on
+    // quest save.  Set postCompileRef so the re-disassembly triggered by
+    // updateBin picks up this in-memory version instead of reading the disk.
+    currentSidecarRef.current = extractSidecar(source, rawTextRef.current, lineOffsetsRef.current);
+    postCompileRef.current = true;
+
     assemble(source, quest.bin)
       .then(newBin => {
         updateBin(newBin);
@@ -115,6 +160,7 @@ export function ScriptEditor() {
         compileOkTimer.current = setTimeout(() => setCompileOk(false), 3000);
       })
       .catch(e => {
+        postCompileRef.current = false;
         const msg = String(e);
         setIsCompiling(false);
         setError(msg);
@@ -182,7 +228,7 @@ export function ScriptEditor() {
             wordWrap: 'off',
             renderWhitespace: 'none',
             bracketPairColorization: { enabled: false },
-            folding: false,
+            folding: true,
             glyphMargin: false,
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,

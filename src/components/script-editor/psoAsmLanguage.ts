@@ -186,6 +186,16 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
 
   monaco.languages.register({ id: LANGUAGE_ID, extensions: ['.bin.asm', '.pso'] });
 
+  monaco.languages.setLanguageConfiguration(LANGUAGE_ID, {
+    comments: { lineComment: '//' },
+    folding: {
+      markers: {
+        start: /^\s*\/\/ #region\b/,
+        end:   /^\s*\/\/ #endregion\b/,
+      },
+    },
+  });
+
   // ─── Tokeniser ────────────────────────────────────────────────────────
 
   monaco.languages.setMonarchTokensProvider(LANGUAGE_ID, {

@@ -205,7 +205,13 @@ export interface DisasmLine {
   text: string;
 }
 
-export async function disassemble(bin: QuestBin): Promise<string> {
+export interface DisasmResult {
+  text: string;
+  /** Parallel to `text.split('\n')`: bytecode offset for instruction/data lines, -1 for labels/blanks. */
+  lineOffsets: number[];
+}
+
+export async function disassemble(bin: QuestBin): Promise<DisasmResult> {
   const table  = await loadAsmTable();
   const code   = bin.bytecode;
   const isDC   = bin.version === BinVersion.DC;
@@ -220,6 +226,7 @@ export async function disassemble(bin: QuestBin): Promise<string> {
   for (const b of blocks) blockMap.set(b.offset, b);
 
   const lines: string[] = [];
+  const offsets: number[] = [];     // parallel to lines: bytecode offset, or -1
   const stack: StackEntry[] = [];   // push-stack for T_ARGS collapsing
   let isV3 = !isDC;                 // mirrors Delphi's AsmMode: flips true on first T_PUSH
   let x = 0;
@@ -229,15 +236,16 @@ export async function disassemble(bin: QuestBin): Promise<string> {
     // Iterate the full refs array so that multiple indices pointing to the
     // same offset are all emitted (refs.indexOf would only find the first).
     if (labelSet.has(x)) {
-      if (lines.length > 0) lines.push('');
+      if (lines.length > 0) { lines.push(''); offsets.push(-1); }
       for (let li = 0; li < refs.length; li++) {
-        if (refs[li] === x) lines.push(`${li}:`);
+        if (refs[li] === x) { lines.push(`${li}:`); offsets.push(x); }
       }
     }
 
     // Check for a data block annotation at this position
     const block = blockMap.get(x);
     if (block) {
+      const blockStart = x;
       // Find the length of this block (next block start or code end)
       const nextOffsets = [...blockMap.keys(), code.length].filter(o => o > x).sort((a, b) => a - b);
       const blockLen = nextOffsets[0] - x;
@@ -245,18 +253,19 @@ export async function disassemble(bin: QuestBin): Promise<string> {
       if (block.type === 1) {
         // T_STRDATA: null-terminated UTF-16LE or ASCII string
         const { text } = readString(code, x, isDC);
-        lines.push(`\tSTR: '${text}'`);
+        lines.push(`\tSTR: '${text}'`); offsets.push(blockStart);
       } else {
         // T_DATA: raw hex bytes
         const bytes = Array.from(code.slice(x, x + blockLen))
           .map(b => hex2(b)).join(' ');
-        lines.push(`\tHEX: ${bytes}`);
+        lines.push(`\tHEX: ${bytes}`); offsets.push(blockStart);
       }
       x += blockLen;
       continue;
     }
 
     // Read opcode
+    const opcodeStart = x;
     let opcode = readU8(code, x++);
     if (opcode === 0xF8 || opcode === 0xF9) {
       opcode = (opcode << 8) | readU8(code, x++);
@@ -266,7 +275,7 @@ export async function disassemble(bin: QuestBin): Promise<string> {
     const entry = findEntry(table, opcode, isDC && !isV3);
     if (!entry) {
       // Unknown opcode — emit as HEX comment so nothing is lost
-      lines.push(`\t// unknown opcode 0x${opcode.toString(16).toUpperCase()}`);
+      lines.push(`\t// unknown opcode 0x${opcode.toString(16).toUpperCase()}`); offsets.push(opcodeStart);
       break; // can't reliably continue without knowing arg sizes
     }
 
@@ -301,7 +310,7 @@ export async function disassemble(bin: QuestBin): Promise<string> {
       const pulled  = stack.splice(start);           // removes and returns last n items
       const argParts = pulled.map((se, i) => formatStackArg(se, entry.args[i] ?? T_NONE));
       const argStr  = argParts.length > 0 ? ' ' + argParts.join(', ') : '';
-      lines.push(`\t${entry.name}${argStr}`);
+      lines.push(`\t${entry.name}${argStr}`); offsets.push(opcodeStart);
       continue;
     }
 
@@ -375,8 +384,8 @@ export async function disassemble(bin: QuestBin): Promise<string> {
     }
 
     const argStr = argParts.length > 0 ? ' ' + argParts.join(', ') : '';
-    lines.push(`\t${entry.name}${argStr}`);
+    lines.push(`\t${entry.name}${argStr}`); offsets.push(opcodeStart);
   }
 
-  return lines.join('\n');
+  return { text: lines.join('\n'), lineOffsets: offsets };
 }

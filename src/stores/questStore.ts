@@ -18,6 +18,8 @@ interface QuestStore {
   activeTab: 'monsters' | 'objects' | 'canvas' | '3d';
   isLoading: boolean;
   error: string | null;
+  /** Incremented each time the quest is written to disk; ScriptEditor watches this to flush its sidecar. */
+  saveVersion: number;
 
   newQuest: (episode: 1 | 2 | 4) => void;
   toggleArea: (absAreaId: number) => void;
@@ -46,6 +48,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   activeTab: 'monsters',
   isLoading: false,
   error: null,
+  saveVersion: 0,
 
   newQuest: (episode) => {
     const epIdx   = episode === 1 ? 0 : episode === 2 ? 1 : 2;
@@ -174,7 +177,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     try {
       const bytes = serialiseQst(quest);
       await saveFile(filePath, bytes);
-      set({ isLoading: false });
+      set({ isLoading: false, saveVersion: get().saveVersion + 1 });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -191,7 +194,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       data:        bytes,
     });
     if (!dest) return;
-    set({ filePath: dest });
+    set({ filePath: dest, saveVersion: get().saveVersion + 1 });
   },
 
   selectFloor:  id  => set({ selectedFloorId: id }),
