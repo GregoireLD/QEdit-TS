@@ -2,11 +2,24 @@ import { create } from 'zustand';
 import { openFileDialog, saveFile, saveFileDialog } from '../platform/fs';
 import { parseQst, serialiseQst } from '../core/formats/qst';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
+import { saveSidecar, type Sidecar } from '../core/formats/sidecar';
 import { EP_OFFSET } from '../core/map/areaData';
 import { useUiStore } from './uiStore';
 import { BinVersion, QstFormat, Language } from '../core/model/types';
 import { rebuildBytecodeMapSetup } from '../core/formats/bytecodeMap';
 import type { Quest, Floor, QuestBin, Monster, QuestObject } from '../core/model/types';
+
+// ScriptEditor registers these on mount so saveQuest/saveQuestAs can compile
+// and flush the sidecar without depending on ScriptEditor's reactive state.
+let _preCompiler:     (() => Promise<void>) | null = null;
+let _sidecarExtractor: (() => Sidecar)      | null = null;
+
+export function registerPreSaveCompiler(fn: (() => Promise<void>) | null): void {
+  _preCompiler = fn;
+}
+export function registerSidecarExtractor(fn: (() => Sidecar) | null): void {
+  _sidecarExtractor = fn;
+}
 
 type BinMetaPatch = Partial<Pick<QuestBin, 'title' | 'info' | 'description' | 'questNumber'> & { language: Language }>;
 
@@ -18,7 +31,7 @@ interface QuestStore {
   activeTab: 'monsters' | 'objects' | 'canvas' | '3d';
   isLoading: boolean;
   error: string | null;
-  /** Incremented each time the quest is written to disk; ScriptEditor watches this to flush its sidecar. */
+  /** Incremented each time the quest is written to disk. */
   saveVersion: number;
 
   newQuest: (episode: 1 | 2 | 4) => void;
@@ -171,12 +184,18 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   },
 
   saveQuest: async () => {
-    const { quest, filePath } = get();
-    if (!quest || !filePath) return;
+    const { filePath } = get();
+    if (!get().quest || !filePath) return;
     set({ isLoading: true, error: null });
     try {
-      const bytes = serialiseQst(quest);
+      // Compile first — throws on syntax error, updates quest.bin in store on success.
+      if (_preCompiler) await _preCompiler();
+      const { quest } = get(); // re-read: compile may have updated bin
+      if (!quest) { set({ isLoading: false }); return; }
+      const bytes   = serialiseQst(quest);
       await saveFile(filePath, bytes);
+      const sidecar = _sidecarExtractor?.();
+      if (sidecar) await saveSidecar(filePath, sidecar);
       set({ isLoading: false, saveVersion: get().saveVersion + 1 });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
@@ -184,17 +203,27 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   },
 
   saveQuestAs: async () => {
-    const { quest } = get();
-    if (!quest) return;
-    const bytes = serialiseQst(quest);
-    const dest  = await saveFileDialog({
-      title:       'Save Quest As',
-      filters:     [{ name: 'PSO Quest', extensions: ['qst'] }],
-      defaultName: 'quest.qst',
-      data:        bytes,
-    });
-    if (!dest) return;
-    set({ filePath: dest, saveVersion: get().saveVersion + 1 });
+    if (!get().quest) return;
+    set({ isLoading: true, error: null });
+    try {
+      // Compile first — throws on syntax error, updates quest.bin in store on success.
+      if (_preCompiler) await _preCompiler();
+      const { quest } = get(); // re-read: compile may have updated bin
+      if (!quest) { set({ isLoading: false }); return; }
+      const bytes = serialiseQst(quest);
+      const dest  = await saveFileDialog({
+        title:       'Save Quest As',
+        filters:     [{ name: 'PSO Quest', extensions: ['qst'] }],
+        defaultName: 'quest.qst',
+        data:        bytes,
+      });
+      if (!dest) { set({ isLoading: false }); return; }
+      const sidecar = _sidecarExtractor?.();
+      if (sidecar) await saveSidecar(dest, sidecar);
+      set({ filePath: dest, isLoading: false, saveVersion: get().saveVersion + 1 });
+    } catch (e) {
+      set({ isLoading: false, error: String(e) });
+    }
   },
 
   selectFloor:  id  => set({ selectedFloorId: id }),

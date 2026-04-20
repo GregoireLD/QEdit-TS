@@ -6,7 +6,8 @@ import { useUiStore } from '../../stores/uiStore';
 import { registerPsoAsm, definePsoTheme, LANGUAGE_ID } from './psoAsmLanguage';
 import { disassemble, loadAsmTable, type DisasmResult } from '../../core/formats/disasm';
 import { assemble } from '../../core/formats/assemble';
-import { loadSidecar, saveSidecar, weaveSidecar, extractSidecar, type Sidecar } from '../../core/formats/sidecar';
+import { loadSidecar, weaveSidecar, extractSidecar, type Sidecar } from '../../core/formats/sidecar';
+import { registerPreSaveCompiler, registerSidecarExtractor } from '../../stores/questStore';
 import styles from './ScriptEditor.module.css';
 
 function emptySidecarRef(): Sidecar {
@@ -16,7 +17,6 @@ function emptySidecarRef(): Sidecar {
 export function ScriptEditor() {
   const quest             = useQuestStore(s => s.quest);
   const updateBin         = useQuestStore(s => s.updateBin);
-  const saveVersion       = useQuestStore(s => s.saveVersion);
   const mainTab           = useUiStore(s => s.mainTab);
   const setScriptHasError = useUiStore(s => s.setScriptHasError);
 
@@ -35,7 +35,7 @@ export function ScriptEditor() {
   // Stable refs so effects that depend only on mainTab can read the latest values
   const errorRef          = useRef<string | null>(null);
   const prevMainTabRef    = useRef(mainTab);
-  const handleCompileRef  = useRef<() => void>(() => {});
+  const handleCompileRef  = useRef<() => Promise<void>>(() => Promise.resolve());
   // In-memory sidecar: updated on compile, flushed to disk only on quest save
   const currentSidecarRef = useRef<Sidecar>(emptySidecarRef());
   // Set to true by handleCompile so the post-compile re-disassembly reuses the
@@ -134,17 +134,22 @@ export function ScriptEditor() {
     monaco.editor.setModelMarkers(model, 'pso-asm', markers);
   }, [source, validMnemonics]);
 
-  // Flush sidecar to disk whenever the quest is saved (saveVersion increments).
-  // Re-extract using the current Monaco text and offsets so the saved data
-  // always reflects the latest editor state with correct bytecode offsets.
+  // Register pre-save compiler and sidecar extractor with questStore so
+  // saveQuest/saveQuestAs can compile and flush the sidecar without depending
+  // on ScriptEditor's reactive state.
   useEffect(() => {
-    if (saveVersion === 0) return;
-    const filePath = useQuestStore.getState().filePath;
-    const monacoText = editorRef.current?.getValue() ?? '';
-    const fresh = extractSidecar(monacoText, rawTextRef.current, lineOffsetsRef.current);
-    currentSidecarRef.current = fresh;
-    saveSidecar(filePath, fresh).catch(() => {});
-  }, [saveVersion]);
+    registerPreSaveCompiler(() => handleCompileRef.current());
+    registerSidecarExtractor(() => {
+      const monacoText = editorRef.current?.getValue() ?? '';
+      const fresh = extractSidecar(monacoText, rawTextRef.current, lineOffsetsRef.current);
+      currentSidecarRef.current = fresh;
+      return fresh;
+    });
+    return () => {
+      registerPreSaveCompiler(null);
+      registerSidecarExtractor(null);
+    };
+  }, []);
 
   // Auto-compile when switching away from the Script tab.
   // Always attempt the compile so the assembler's line-numbered error message
@@ -153,14 +158,15 @@ export function ScriptEditor() {
   useEffect(() => {
     if (prevMainTabRef.current === 'script' && mainTab !== 'script') {
       if (!errorRef.current) {
-        handleCompileRef.current();
+        handleCompileRef.current().catch(() => {});
       }
     }
     prevMainTabRef.current = mainTab;
   }, [mainTab]);
 
-  async function handleCompile() {
-    if (!quest || isCompiling) return;
+  async function handleCompile(): Promise<void> {
+    if (!quest) return;
+    if (isCompiling) throw new Error('A compilation is already in progress');
     setIsCompiling(true);
     setError(null);
     errorRef.current = null;
@@ -170,23 +176,23 @@ export function ScriptEditor() {
     // the sidecar using the NEW offsets rather than reloading from disk.
     postCompileRef.current = true;
 
-    assemble(source, quest.bin)
-      .then(newBin => {
-        updateBin(newBin);
-        setIsCompiling(false);
-        setCompileOk(true);
-        setScriptHasError(false);
-        if (compileOkTimer.current) clearTimeout(compileOkTimer.current);
-        compileOkTimer.current = setTimeout(() => setCompileOk(false), 3000);
-      })
-      .catch(e => {
-        postCompileRef.current = false;
-        const msg = String(e);
-        setIsCompiling(false);
-        setError(msg);
-        errorRef.current = msg;
-        setScriptHasError(true);
-      });
+    try {
+      const newBin = await assemble(source, quest.bin);
+      updateBin(newBin);
+      setIsCompiling(false);
+      setCompileOk(true);
+      setScriptHasError(false);
+      if (compileOkTimer.current) clearTimeout(compileOkTimer.current);
+      compileOkTimer.current = setTimeout(() => setCompileOk(false), 3000);
+    } catch (e) {
+      postCompileRef.current = false;
+      const msg = String(e);
+      setIsCompiling(false);
+      setError(msg);
+      errorRef.current = msg;
+      setScriptHasError(true);
+      throw e; // propagate so pre-save callers can abort the save
+    }
   }
   // Keep ref up-to-date so auto-compile effect always calls the latest closure
   handleCompileRef.current = handleCompile;
@@ -215,7 +221,7 @@ export function ScriptEditor() {
         {isCompiling && <span className={styles.loading}>Compiling…</span>}
         <button
           className={styles.compileBtn}
-          onClick={handleCompile}
+          onClick={() => handleCompile().catch(() => {})}
           disabled={isCompiling || isDisasming}
         >
           Compile
