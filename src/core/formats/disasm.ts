@@ -274,9 +274,12 @@ export async function disassemble(bin: QuestBin): Promise<DisasmResult> {
     // isDC && !isV3: still in DC mode; isDC && isV3: DC header but V3 bytecode detected
     const entry = findEntry(table, opcode, isDC && !isV3);
     if (!entry) {
-      // Unknown opcode — emit as HEX comment so nothing is lost
-      lines.push(`\t// unknown opcode 0x${opcode.toString(16).toUpperCase()}`); offsets.push(opcodeStart);
-      break; // can't reliably continue without knowing arg sizes
+      // Unknown opcode — emit remaining bytes as RAW so the round-trip is lossless.
+      // We can't resume disassembly without knowing the arg layout, so everything
+      // from this opcode to end-of-bytecode is captured verbatim.
+      const rawBytes = Array.from(code.slice(opcodeStart)).map(b => hex2(b)).join(' ');
+      lines.push(`\tRAW: ${rawBytes}`); offsets.push(opcodeStart);
+      break;
     }
 
     // ── T_PUSH: read the one inline arg, buffer on stack, emit nothing ──────

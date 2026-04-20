@@ -206,7 +206,7 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
     keywords: OPCODES,
 
     // ── Directives ────────────────────────────────────────────────────
-    directives: ['HEX', 'STR'],
+    directives: ['HEX', 'STR', 'RAW'],
 
     tokenizer: {
       root: [
@@ -218,6 +218,9 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
 
         // Directives: HEX: or STR: (must come before general identifier rule)
         [/\b(HEX|STR):/, 'directive'],
+
+        // RAW: unknown opcode tail — styled as a warning
+        [/\bRAW:/, 'directive.raw'],
 
         // Registers: R followed by 1-3 digits
         [/\bR\d{1,3}\b/, 'register'],
@@ -397,7 +400,8 @@ export function definePsoTheme(monaco: typeof Monaco): void {
       { token: 'string',        foreground: '40ffff' },
       { token: 'string.delim', foreground: '40ffff' },
       { token: 'string.escape',foreground: 'ff8040' },
-      { token: 'directive',    foreground: 'a0a0a0', fontStyle: 'bold' },
+      { token: 'directive',     foreground: 'a0a0a0', fontStyle: 'bold' },
+      { token: 'directive.raw', foreground: 'ffa040', fontStyle: 'bold' },
       { token: 'identifier',   foreground: 'cccccc' },
       { token: 'delimiter',    foreground: '666666' },
     ],

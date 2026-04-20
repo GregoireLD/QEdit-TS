@@ -11,6 +11,7 @@
  *       — all other opcodes: inline args emitted directly
  *   \tSTR: 'text'  data block, type 1 (string)
  *   \tHEX: xx xx   data block, type 0 (raw bytes)
+ *   \tRAW: xx xx   raw code bytes, no DataBlock recorded (unknown opcode tail)
  *   // comment     stripped
  */
 
@@ -298,6 +299,15 @@ export async function assemble(source: string, template: QuestBin): Promise<Ques
     if (hexMatch) {
       dataBlocks.push({ offset: out.length, type: 0 });
       for (const h of hexMatch[1].trim().split(/\s+/)) {
+        out.push(parseInt(h, 16) & 0xFF);
+      }
+      continue;
+    }
+
+    // RAW bytes: \tRAW: xx xx xx ...  (unknown opcode tail — no DataBlock recorded)
+    const rawMatch = /^\s+RAW:\s+(.+)$/.exec(line);
+    if (rawMatch) {
+      for (const h of rawMatch[1].trim().split(/\s+/)) {
         out.push(parseInt(h, 16) & 0xFF);
       }
       continue;

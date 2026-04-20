@@ -10,7 +10,7 @@ import { loadSidecar, saveSidecar, weaveSidecar, extractSidecar, type Sidecar } 
 import styles from './ScriptEditor.module.css';
 
 function emptySidecarRef(): Sidecar {
-  return { version: 1, comments: [], regions: [], inlineComments: [], trailingComments: [], labelComments: [] };
+  return { version: 1, comments: [], regions: [], trailingComments: [], labelComments: [] };
 }
 
 export function ScriptEditor() {
@@ -41,9 +41,6 @@ export function ScriptEditor() {
   // Set to true by handleCompile so the post-compile re-disassembly reuses the
   // in-memory sidecar rather than reloading from disk.
   const postCompileRef    = useRef(false);
-  // Saved Monaco view state (fold ranges, scroll, cursor) to restore after the
-  // post-compile re-disassembly replaces the editor content.
-  const pendingViewStateRef = useRef<MonacoNS.editor.ICodeEditorViewState | null>(null);
 
   // Disassemble whenever quest changes, then weave sidecar comments in.
   // After a compile (postCompileRef) the in-memory sidecar is reused so edits
@@ -62,10 +59,11 @@ export function ScriptEditor() {
         rawTextRef.current     = text;
         lineOffsetsRef.current = lineOffsets;
         let sidecar: Sidecar;
+        let savedViewState: MonacoNS.editor.ICodeEditorViewState | null = null;
         if (isPostCompile) {
-          // Capture fold ranges / scroll / cursor so we can restore them once
-          // Monaco has processed the new model content.
-          pendingViewStateRef.current = editorRef.current?.saveViewState() ?? null;
+          // Save view state now, before the model content changes, so fold ranges,
+          // scroll position, and cursor are captured at the right moment.
+          savedViewState = editorRef.current?.saveViewState() ?? null;
           // Re-extract from Monaco's current text using the NEW offsets so that
           // comments anchored by instruction text stay correct even when earlier
           // bytecode changes shift all subsequent offsets.
@@ -77,6 +75,14 @@ export function ScriptEditor() {
           currentSidecarRef.current = sidecar;
         }
         const { text: wovenText } = weaveSidecar(text, lineOffsets, sidecar);
+        if (isPostCompile && editorRef.current) {
+          // Apply new content and restore view state synchronously in the same
+          // turn. This prevents the race condition where the user types a character
+          // before React re-renders, causing onDidChangeModelContent to fire and
+          // snap the cursor back to the saved position mid-keystroke.
+          editorRef.current.getModel()?.setValue(wovenText);
+          if (savedViewState) editorRef.current.restoreViewState(savedViewState);
+        }
         setSource(wovenText);
         setIsDisasming(false);
       })
@@ -111,7 +117,7 @@ export function ScriptEditor() {
         if (!inStr && line[j] === '/' && line[j + 1] === '/') { line = line.slice(0, j); break; }
       }
       const trimmed = line.trim();
-      if (!trimmed || /^STR:|^HEX:/.test(trimmed)) continue;
+      if (!trimmed || /^STR:|^HEX:|^RAW:/.test(trimmed)) continue;
       const m = /^\s+(\S+)/.exec(line);
       if (!m || m[1].startsWith('//')) continue;
       const mnemonic = m[1];
@@ -222,16 +228,6 @@ export function ScriptEditor() {
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco as unknown as typeof MonacoNS;
-            // Restore fold/scroll state saved before a compile re-disassembly.
-            // onDidChangeModelContent fires after Monaco has applied the new value,
-            // which is the earliest safe point to call restoreViewState.
-            editor.onDidChangeModelContent(() => {
-              const vs = pendingViewStateRef.current;
-              if (vs) {
-                pendingViewStateRef.current = null;
-                editor.restoreViewState(vs);
-              }
-            });
           }}
           language={LANGUAGE_ID}
           theme="pso-dark"
