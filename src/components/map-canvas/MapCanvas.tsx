@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
 import { readFile, openDirectoryDialog } from '../../platform/fs';
 import { isTauri } from '../../platform/index';
-import type { Floor } from '../../core/model/types';
+import type { Floor, SelectedEntity } from '../../core/model/types';
 import { parseNRel, parseCRel, toWorldPos } from '../../core/formats/rel';
 import type { RelSection, RelTriangle } from '../../core/formats/rel';
 import { toNRelName } from '../../core/map/mapFileNames';
@@ -32,6 +32,7 @@ function renderMap(
   zoom: number,
   panX: number,
   panY: number,
+  selectedEntity: SelectedEntity = null,
 ) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -83,11 +84,16 @@ function renderMap(
     const [wx, wy] = toWorldPos(m.posX, m.posY, m.mapSection, data.sections);
     const [sx, sy] = toScreen(wx, wy);
     if (sx < -DOT_R || sx > PW + DOT_R || sy < -DOT_R || sy > PH + DOT_R) continue;
+    const isSel = selectedEntity?.type === 'monster' && selectedEntity.index === i;
+    if (isSel) {
+      ctx.beginPath(); ctx.arc(sx, sy, DOT_R * 2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+    }
     ctx.beginPath(); ctx.arc(sx, sy, DOT_R, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff4040'; ctx.fill();
-    ctx.strokeStyle = '#ff8080'; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
+    ctx.fillStyle = isSel ? '#ffcc00' : '#ff4040'; ctx.fill();
+    ctx.strokeStyle = isSel ? '#fff8d0' : '#ff8080'; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
     if (DOT_R > 5 * dpr) {
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = isSel ? '#000' : '#fff';
       ctx.font = `${Math.max(8, DOT_R * 1.4)}px monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(i), sx, sy);
@@ -100,9 +106,14 @@ function renderMap(
     const [wx, wy] = toWorldPos(o.posX, o.posY, o.mapSection, data.sections);
     const [sx, sy] = toScreen(wx, wy);
     if (sx < -DOT_R || sx > PW + DOT_R || sy < -DOT_R || sy > PH + DOT_R) continue;
+    const isSel = selectedEntity?.type === 'object' && selectedEntity.index === i;
+    if (isSel) {
+      ctx.beginPath(); ctx.arc(sx, sy, DOT_R * 1.8, 0, Math.PI * 2);
+      ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+    }
     ctx.beginPath(); ctx.arc(sx, sy, DOT_R * 0.75, 0, Math.PI * 2);
-    ctx.fillStyle = '#4080ff'; ctx.fill();
-    ctx.strokeStyle = '#80b0ff'; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
+    ctx.fillStyle = isSel ? '#00ffcc' : '#4080ff'; ctx.fill();
+    ctx.strokeStyle = isSel ? '#ccffee' : '#80b0ff'; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
   }
 }
 
@@ -146,6 +157,7 @@ interface MapCanvasProps {
 export function MapCanvas({ floor, areaId }: MapCanvasProps) {
   const { mapDir, setMapDir, previewVariantByArea } = useUiStore();
   const { quest } = useQuestStore();
+  const selectedEntity = useQuestStore(s => s.selectedEntity);
   const area = AREA_BY_ID[areaId];
 
   // Preview variant (set by sidebar click) → committed variant (from bytecode) → default 0
@@ -229,7 +241,7 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
       fitted.current = true;
       return;
     }
-    renderMap(canvas, data, floor, zoom, panX, panY);
+    renderMap(canvas, data, floor, zoom, panX, panY, selectedEntity);
   });
 
   // Zoom toward cursor
@@ -260,7 +272,46 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     setPanY(dragRef.current.panY + (e.clientY - dragRef.current.startY) / zoom);
   }, [zoom]);
 
-  const onMouseUp = useCallback(() => { dragRef.current = null; }, []);
+  const onDragCancel = useCallback(() => { dragRef.current = null; }, []);
+
+  const onMouseUp = useCallback((e: React.MouseEvent) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+    // Only treat as a click if the mouse barely moved
+    if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) >= 5) return;
+    if (loadState.status !== 'ok' || !floor) return;
+    const { data } = loadState;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr  = window.devicePixelRatio || 1;
+    const logW = canvas.width / dpr;
+    const logH = canvas.height / dpr;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    // CSS-pixel click → world coordinates
+    const wx = (cx - logW / 2) / zoom - panX;
+    const wy = (cy - logH / 2) / zoom - panY;
+    // Pick radius scales with dot size so it's always easy to hit
+    const dotR = Math.max(3, 5 * zoom / 100);
+    const pickR = dotR * 2.5 / zoom;
+    let bestDist = pickR;
+    let best: SelectedEntity = null;
+    for (let i = 0; i < floor.monsters.length; i++) {
+      const m = floor.monsters[i];
+      const [mwx, mwy] = toWorldPos(m.posX, m.posY, m.mapSection, data.sections);
+      const d = Math.hypot(wx - mwx, wy - mwy);
+      if (d < bestDist) { bestDist = d; best = { type: 'monster', index: i }; }
+    }
+    for (let i = 0; i < floor.objects.length; i++) {
+      const o = floor.objects[i];
+      const [owx, owy] = toWorldPos(o.posX, o.posY, o.mapSection, data.sections);
+      const d = Math.hypot(wx - owx, wy - owy);
+      if (d < bestDist) { bestDist = d; best = { type: 'object', index: i }; }
+    }
+    useQuestStore.getState().selectEntity(best);
+  }, [loadState, floor, zoom, panX, panY]);
 
   const handleSetDir = useCallback(async () => {
     const sel = await openDirectoryDialog('Select map folder (*c.rel / *n.rel)');
@@ -275,16 +326,6 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     setZoom(f.zoom); setPanX(f.panX); setPanY(f.panY); fitted.current = true;
   }, [loadState, floor]);
 
-  // ── No map folder ────────────────────────────────────────────────────────
-  if (!mapDir) {
-    return (
-      <div className={css.canvasWrap} style={{ alignItems: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--text-dim)', fontSize: 12 }}>
-        <span>Map folder not configured.</span>
-        <button className={css.setDirBtn} onClick={handleSetDir}>Set map folder</button>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={wrapRef}
@@ -293,9 +334,16 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
+      onMouseLeave={onDragCancel}
     >
       <canvas ref={canvasRef} className={css.canvas} />
+
+      {!mapDir && (
+        <div className={css.overlay} style={{ flexDirection: 'column', gap: 10 }}>
+          <span>Map folder not configured.</span>
+          <button className={css.setDirBtn} style={{ pointerEvents: 'all' }} onClick={handleSetDir}>Set map folder</button>
+        </div>
+      )}
 
       {loadState.status === 'loading' && (
         <div className={css.overlay}>Loading…</div>

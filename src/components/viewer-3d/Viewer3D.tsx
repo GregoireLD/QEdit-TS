@@ -539,12 +539,12 @@ export function Viewer3D() {
   const [showCollision, setShowCollision] = useState(false);
   const [showAxes,      setShowAxes]      = useState(false);
   const [animPaused,    setAnimPaused]    = useState(false);
-  const [selectedEntity, setSelectedEntity] = useState<{ type: 'monster' | 'object'; index: number } | null>(null);
   const [vrSupported,   setVrSupported]   = useState(false);
   const [inVR,          setInVR]          = useState(false);
 
   const { mapDir, previewVariantByArea } = useUiStore();
   const { quest, selectedFloorId } = useQuestStore();
+  const selectedEntity = useQuestStore(s => s.selectedEntity);
   const floor = useSelectedFloor();
 
   // ── Three.js scene (created once) ──────────────────────────────────────────
@@ -602,28 +602,6 @@ export function Viewer3D() {
     let lastX = 0, lastY = 0;
     let clickStartX = 0, clickStartY = 0;
 
-    /** Select/deselect an entity marker, updating color and state. */
-    const selectEntity = (type: 'monster' | 'object', index: number) => {
-      // Deselect previous
-      const prev = selectedEntityRef.current;
-      if (prev) {
-        const p = markerPickablesRef.current.find(x => x.type === prev.type && x.index === prev.index);
-        if (p) for (const mat of p.mats) mat.color.setHex(p.defaultColor);
-      }
-      if (prev?.type === type && prev?.index === index) {
-        // Same entity — toggle off
-        selectedEntityRef.current = null;
-        setSelectedEntity(null);
-        return;
-      }
-      const next = markerPickablesRef.current.find(x => x.type === type && x.index === index);
-      if (next) {
-        for (const mat of next.mats) mat.color.setHex(next.selectedColor);
-        selectedEntityRef.current = { type, index };
-        setSelectedEntity({ type, index });
-      }
-    };
-
     const tryPickEntity = () => {
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouseNDCRef.current, camera);
@@ -632,16 +610,12 @@ export function Viewer3D() {
       if (hits.length > 0) {
         const hit = hits[0].object as THREE.Mesh;
         const pickable = markerPickablesRef.current.find(p => p.meshes.includes(hit));
-        if (pickable) { selectEntity(pickable.type, pickable.index); return; }
+        if (pickable) {
+          useQuestStore.getState().selectEntity({ type: pickable.type, index: pickable.index });
+          return;
+        }
       }
-      // Clicked empty space — deselect
-      const prev = selectedEntityRef.current;
-      if (prev) {
-        const p = markerPickablesRef.current.find(x => x.type === prev.type && x.index === prev.index);
-        if (p) for (const mat of p.mats) mat.color.setHex(p.defaultColor);
-        selectedEntityRef.current = null;
-        setSelectedEntity(null);
-      }
+      useQuestStore.getState().selectEntity(null);
     };
 
     // Pointer lock state
@@ -903,6 +877,20 @@ export function Viewer3D() {
     }
   }, [showAxes]);
 
+  // ── Sync 3D marker colors with store selection ────────────────────────────
+  useEffect(() => {
+    const prev = selectedEntityRef.current;
+    if (prev) {
+      const p = markerPickablesRef.current.find(x => x.type === prev.type && x.index === prev.index);
+      if (p) for (const mat of p.mats) mat.color.setHex(p.defaultColor);
+    }
+    if (selectedEntity) {
+      const next = markerPickablesRef.current.find(x => x.type === selectedEntity.type && x.index === selectedEntity.index);
+      if (next) for (const mat of next.mats) mat.color.setHex(next.selectedColor);
+    }
+    selectedEntityRef.current = selectedEntity ? { ...selectedEntity } : null;
+  }, [selectedEntity]);
+
   // ── Mesh + texture + marker loading ──────────────────────────────────────
   useEffect(() => {
     const scene = sceneRef.current;
@@ -920,7 +908,6 @@ export function Viewer3D() {
     }
     markerPickablesRef.current = [];
     selectedEntityRef.current  = null;
-    setSelectedEntity(null);
     if (skyRef.current)       { scene?.remove(skyRef.current);       skyRef.current.geometry.dispose(); (skyRef.current.material as THREE.Material).dispose(); skyRef.current = null; }
     for (const t of texturesRef.current) t?.dispose();
     texturesRef.current = [];
@@ -1257,7 +1244,18 @@ export function Viewer3D() {
         motionAxesRef.current = mAxes;
 
         swapTexCacheRef.current.clear();
-        startTimeRef.current   = performance.now();
+        startTimeRef.current = performance.now();
+
+        // Apply any selection that was made before markers finished loading
+        const preSelected = useQuestStore.getState().selectedEntity;
+        if (preSelected) {
+          const p = pickables.find(x => x.type === preSelected.type && x.index === preSelected.index);
+          if (p) {
+            for (const mat of p.mats) mat.color.setHex(p.selectedColor);
+            selectedEntityRef.current = { ...preSelected };
+          }
+        }
+
         setStatus(nMeshes.length === 0 ? 'No visual mesh — showing collision only' : null);
         if (nMeshes.length === 0 && !showCollision) cLines.visible = true;
       })

@@ -169,3 +169,10 @@ export interface EmbeddedFile {
   /** Decompressed data */
   data: Uint8Array;
 }
+
+// ─── Selection ─────────────────────────────────────────────────────────────
+
+export type SelectedEntity =
+  | { type: 'monster'; index: number }
+  | { type: 'object';  index: number }
+  | null;

@@ -1,44 +1,178 @@
+/* ─── Quadrant grid ────────────────────────────────────────────────────────── */
+
+.view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  height: 100%;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-main);
+}
+
+/* ─── Pane header ──────────────────────────────────────────────────────────── */
+
+.paneHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 26px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.paneTitle {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.count {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-hover);
+  border-radius: 9px;
+  padding: 1px 6px;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 2px;
+}
+
+.toggleBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.toggleBtn:hover { background: var(--bg-hover); color: var(--text); }
+.toggleActive {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+/* ─── Inspector ───────────────────────────────────────────────────────────── */
+
+.inspScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 12px;
+}
+
+.inspTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-head);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.inspIndex { color: var(--text-dim); font-weight: 400; }
+.inspName  { color: var(--accent); font-size: 11px; }
+
+.inspGroup {
+  margin-bottom: 2px;
+}
+.inspGroupLabel {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 6px 12px 2px;
+}
+
+.inspRow {
+  display: flex;
+  align-items: center;
+  padding: 2px 12px;
+  gap: 8px;
+  min-height: 22px;
+}
+.inspRow:hover { background: var(--bg-hover); }
+
+.inspLabel {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inspValue {
+  flex: 1;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  color: #9cdcfe;
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inspValue:hover {
+  color: var(--text);
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.inspInput {
+  flex: 1;
+  background: #0d1b2a;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+  min-width: 0;
+}
+
+/* ─── Placeholder / empty states ──────────────────────────────────────────── */
+
 .placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1;
   color: var(--text-dim);
   font-style: italic;
-}
-
-.view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* ─── Tabs ─────────────────────────────────────────────────────────────── */
-
-.tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  background: var(--bg-panel);
-}
-
-.tab {
-  border: none;
-  border-radius: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-dim);
-  padding: 6px 16px;
   font-size: 12px;
-  cursor: pointer;
-  transition: color 0.1s;
 }
-.tab:hover  { color: var(--text); background: var(--bg-hover); }
-.tab.active { color: var(--text-head); border-bottom-color: var(--accent); }
 
-/* ─── Table ────────────────────────────────────────────────────────────── */
+.empty {
+  padding: 24px;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ─── Table ────────────────────────────────────────────────────────────────── */
 
 .tableWrap {
   flex: 1;
@@ -75,23 +209,17 @@
   white-space: nowrap;
 }
 
+.table tbody tr { cursor: pointer; }
 .table tbody tr:hover { background: var(--bg-hover); }
+.rowSelected { background: #1a3050 !important; outline: 1px solid var(--accent); outline-offset: -1px; }
 
 .idx  { color: var(--text-dim); width: 32px; text-align: right; }
 .name { color: var(--text-head); }
 .num  { color: #9cdcfe; text-align: right; }
 
-.empty {
-  padding: 24px;
-  color: var(--text-dim);
-  font-style: italic;
-}
+/* ─── Inline editing ───────────────────────────────────────────────────────── */
 
-/* ─── Inline editing ───────────────────────────────────────────────────── */
-
-.editable {
-  cursor: text;
-}
+.editable { cursor: text; }
 .editable:hover {
   background: #1e2a3a !important;
   outline: 1px solid var(--accent);

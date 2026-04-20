@@ -7,7 +7,7 @@ import { EP_OFFSET } from '../core/map/areaData';
 import { useUiStore } from './uiStore';
 import { BinVersion, QstFormat, Language } from '../core/model/types';
 import { rebuildBytecodeMapSetup } from '../core/formats/bytecodeMap';
-import type { Quest, Floor, QuestBin, Monster, QuestObject } from '../core/model/types';
+import type { Quest, Floor, QuestBin, Monster, QuestObject, SelectedEntity } from '../core/model/types';
 
 // ScriptEditor registers these on mount so saveQuest/saveQuestAs can compile
 // and flush the sidecar without depending on ScriptEditor's reactive state.
@@ -28,7 +28,7 @@ interface QuestStore {
   filePath: string | null;
   /** Absolute area ID (0-45) of the selected area, or null. */
   selectedFloorId: number | null;
-  activeTab: 'monsters' | 'objects' | 'canvas' | '3d';
+  selectedEntity: SelectedEntity;
   isLoading: boolean;
   error: string | null;
   /** Incremented each time the quest is written to disk. */
@@ -41,7 +41,7 @@ interface QuestStore {
   saveQuest: () => Promise<void>;
   saveQuestAs: () => Promise<void>;
   selectFloor: (id: number) => void;
-  setActiveTab: (tab: 'monsters' | 'objects' | 'canvas' | '3d') => void;
+  selectEntity: (entity: SelectedEntity) => void;
   updateBinMeta: (patch: BinMetaPatch) => void;
   updateBin: (bin: QuestBin) => void;
   updateMonster: (floorId: number, index: number, patch: Partial<Monster>) => void;
@@ -58,7 +58,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   quest: null,
   filePath: null,
   selectedFloorId: null,
-  activeTab: 'monsters',
+  selectedEntity: null,
   isLoading: false,
   error: null,
   saveVersion: 0,
@@ -226,8 +226,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     }
   },
 
-  selectFloor:  id  => set({ selectedFloorId: id }),
-  setActiveTab: tab => set({ activeTab: tab }),
+  selectFloor:  id     => set({ selectedFloorId: id, selectedEntity: null }),
+  selectEntity: entity => set({ selectedEntity: entity }),
 
   updateBinMeta: (patch) => {
     const { quest } = get();
