@@ -235,7 +235,19 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
         // Floats
         [/\b\d+\.\d+\b/, 'number.float'],
 
-        // String literals in single quotes — enter string state for escape highlighting
+        // String literals in single quotes.
+        //
+        // Two-rule approach to prevent line bleed:
+        //
+        // Rule 1 — unterminated fallback (stateless): fires when there is no closing
+        // quote remaining on the line.  The alternation stops at any ' and then $
+        // only matches if we truly reached end-of-line without one, so this rule
+        // never fires for properly-terminated strings.  No state is entered → no bleed.
+        [/'(?:[^'\\<]|\\x[0-9a-fA-F]{2}|<[^>]*>)*$/, 'string'],
+
+        // Rule 2 — terminated string: enters the @string sub-state for per-token
+        // colouring of escape sequences and <tag> markers.  The sub-state always
+        // pops on the closing quote, so bleed is impossible for a proper string.
         [/'/, { token: 'string.delim', next: '@string' }],
 
         // Identifiers / opcodes
@@ -251,17 +263,18 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
       ],
 
       string: [
-        // PSO control-code escapes: \xNN
+        // \xNN hex escapes
         [/\\x[0-9a-fA-F]{2}/, 'string.escape'],
-        // Newline marker
-        [/<cr>/, 'string.escape'],
-        // End of string
+        // Any <tag> — covers <cr>, <hero name>, <hero job>, etc.
+        [/<[^>]*>/, 'string.escape'],
+        // Closing quote
         [/'/, { token: 'string.delim', next: '@pop' }],
-        // Everything else in the string
+        // Normal string content
         [/[^'\\<]+/, 'string'],
-        // Stray '<' that isn't part of <cr>
+        // Stray '<' not part of a tag
         [/</, 'string'],
       ],
+
     },
   } as Monaco.languages.IMonarchLanguage);
 

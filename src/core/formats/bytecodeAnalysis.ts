@@ -80,10 +80,12 @@ export async function analyseQuestBin(bin: QuestBin): Promise<BinAnalysis> {
   /** Bytes consumed from bytecode for one arg in T_IMED mode. */
   function argSize(t: number, at: number): number {
     switch (t) {
-      case T_REG: case T_BREG: case T_DREG: case T_RREG: case T_BYTE: return 1;
-      case T_WORD:   return 2;
-      case T_DWORD: case T_FLOAT: case T_PFLAG: case T_DATA: case T_STRDATA: return 4;
-      case T_FUNC: case T_FUNC2: return 2;
+      case T_REG: case T_BREG: case T_RREG: case T_BYTE: return 1;
+      case T_DREG: return 4;
+      case T_WORD: case T_DATA: case T_STRDATA: case T_PFLAG: return 2;
+      case T_DWORD: case T_FLOAT: return 4;
+      case T_FUNC: return 2;
+      case T_FUNC2: return isDC ? 4 : 2;
       case T_SWITCH:   return 1 + (u8(at)) * 2;
       case T_SWITCH2B: return 1 + (u8(at));
       case T_STR: {

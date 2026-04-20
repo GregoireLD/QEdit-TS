@@ -122,15 +122,22 @@ function emitArg(out: number[], argType: number, token: string, isDC: boolean): 
       break;
 
     case T_DWORD:
-    case T_PFLAG:
-    case T_DATA:
-    case T_STRDATA:
       emitU32(out, parseInt(token, 16) >>> 0);
       break;
 
+    case T_DATA:
+    case T_STRDATA:
+    case T_PFLAG:
+      emitU16(out, parseInt(token, 16));
+      break;
+
     case T_FUNC:
+      emitU16(out, parseInt(token, 10));
+      break;
+
     case T_FUNC2:
       emitU16(out, parseInt(token, 10));
+      if (isDC) { out.push(0); out.push(0); }
       break;
 
     case T_FLOAT: {
@@ -179,10 +186,13 @@ function emitPushArg(out: number[], argType: number, token: string, isDC: boolea
       break;
 
     case T_DWORD:
-    case T_PFLAG:
     case T_DATA:
     case T_STRDATA:
       emitU32(out, parseInt(token, 16) >>> 0);
+      break;
+
+    case T_PFLAG:
+      emitU16(out, parseInt(token, 16));
       break;
 
     case T_WORD:

@@ -289,9 +289,9 @@ export async function disassemble(bin: QuestBin): Promise<DisasmResult> {
       switch (se.argType) {
         case T_REG: case 13: case T_BREG: case T_DREG:
           se.value = readU8(code, x); x++; break;
-        case T_DWORD: case T_PFLAG: case T_DATA: case T_STRDATA:
+        case T_DWORD: case T_DATA: case T_STRDATA:
           se.value = readU32(code, x); x += 4; break;
-        case T_WORD:
+        case T_WORD: case T_PFLAG:
           se.value = readU16(code, x); x += 2; break;
         case T_BYTE:
           se.value = readU8(code, x); x++; break;
@@ -339,14 +339,18 @@ export async function disassemble(bin: QuestBin): Promise<DisasmResult> {
           argParts.push(hex8(readU16(code, x))); x += 2; break;
 
         case T_DWORD:
-        case T_PFLAG:
-        case T_DATA:
-        case T_STRDATA:
           argParts.push(hex8(readU32(code, x))); x += 4; break;
 
+        case T_DATA:
+        case T_STRDATA:
+        case T_PFLAG:
+          argParts.push(hex8(readU16(code, x))); x += 2; break;
+
         case T_FUNC:
-        case T_FUNC2:
           argParts.push(`${readU16(code, x)}`); x += 2; break;
+
+        case T_FUNC2:
+          argParts.push(`${readU16(code, x)}`); x += isDC ? 4 : 2; break;
 
         case T_FLOAT: {
           const f = readF32(code, x); x += 4;
