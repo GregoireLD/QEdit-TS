@@ -19,6 +19,11 @@ export interface SidecarComment {
   offset: number;
   /** Raw comment text as typed in Monaco, e.g. "// initialise player". */
   text: string;
+  /**
+   * True when the comment was typed between a label line (e.g. `0:`) and its
+   * instruction.  Weaved back between those two lines rather than before the label.
+   */
+  afterLabel?: boolean;
 }
 
 export interface SidecarRegion {
@@ -36,15 +41,26 @@ export interface SidecarInlineComment {
   text: string;
 }
 
+export interface SidecarLabelComment {
+  /** Index of the label as printed by the disassembler (the N in `N:`). */
+  labelIndex: number;
+  /** Comment text including the `//` prefix. */
+  text: string;
+}
+
 export interface Sidecar {
   version: 1;
-  comments:       SidecarComment[];
-  regions:        SidecarRegion[];
-  inlineComments: SidecarInlineComment[];
+  comments:         SidecarComment[];
+  regions:          SidecarRegion[];
+  inlineComments:   SidecarInlineComment[];
+  /** Free-floating lines with no following instruction; appended after the last line. */
+  trailingComments: string[];
+  /** Inline comments appended directly to a label line, e.g. `0: // function name`. */
+  labelComments:    SidecarLabelComment[];
 }
 
 function emptySidecar(): Sidecar {
-  return { version: 1, comments: [], regions: [], inlineComments: [] };
+  return { version: 1, comments: [], regions: [], inlineComments: [], trailingComments: [], labelComments: [] };
 }
 
 // ─── I/O ──────────────────────────────────────────────────────────────────────
@@ -61,7 +77,9 @@ function parseSidecarJson(json: string): Sidecar | null {
   try {
     const obj = JSON.parse(json);
     if (obj?.version !== 1) return null;
-    obj.inlineComments ??= [];   // migrate older files that predate this field
+    obj.inlineComments    ??= [];
+    obj.trailingComments  ??= [];
+    obj.labelComments     ??= [];
     return obj as Sidecar;
   } catch {
     return null;
@@ -122,30 +140,34 @@ export function weaveSidecar(
   rawLineOffsets: number[],
   sidecar: Sidecar,
 ): { text: string; lineOffsets: number[] } {
-  if (
-    sidecar.comments.length === 0 &&
-    sidecar.regions.length  === 0 &&
-    sidecar.inlineComments.length === 0
-  ) {
-    return { text: rawText, lineOffsets: rawLineOffsets };
-  }
+  const hasContent =
+    sidecar.comments.length       > 0 ||
+    sidecar.regions.length        > 0 ||
+    sidecar.inlineComments.length > 0 ||
+    sidecar.trailingComments.length > 0 ||
+    sidecar.labelComments.length  > 0;
+  if (!hasContent) return { text: rawText, lineOffsets: rawLineOffsets };
 
   // ── Re-anchor helper ────────────────────────────────────────────────────
-  // Sorted list of unique valid offsets present in this disassembly.
-  const sortedOffsets = [...new Set(rawLineOffsets.filter(o => o >= 0))].sort((a, b) => a - b);
+  const sortedOffsets  = [...new Set(rawLineOffsets.filter(o => o >= 0))].sort((a, b) => a - b);
+  const validOffsetSet = new Set(sortedOffsets);
 
   function reanchor(offset: number): number {
     if (sortedOffsets.length === 0) return offset;
     const idx = sortedOffsets.findIndex(o => o >= offset);
-    // Nearest successor; or last instruction if offset is beyond the end.
     return idx >= 0 ? sortedOffsets[idx] : sortedOffsets[sortedOffsets.length - 1];
   }
 
   // ── Build per-offset injection queues ───────────────────────────────────
-  // Order within beforeLines: region-open markers first, then user comments.
-  const beforeLines = new Map<number, string[]>();
-  const afterLines  = new Map<number, string[]>();
-  const inlineMap   = new Map<number, string>();   // at most one per instruction
+  // beforeLines   – injected before label (or standalone instruction).
+  // afterLabelLines – injected between a label line and its instruction.
+  // afterLines    – injected after the instruction (endregion markers).
+  const beforeLines     = new Map<number, string[]>();
+  const afterLabelLines = new Map<number, string[]>();
+  const afterLines      = new Map<number, string[]>();
+  const inlineMap       = new Map<number, string>();
+  const labelCommentMap = new Map<number, string>();   // labelIndex → inline text
+  const trailingExtra:    string[] = [];   // orphaned inline + explicit trailing
 
   for (const r of sidecar.regions) {
     const start = reanchor(r.startOffset);
@@ -158,18 +180,32 @@ export function weaveSidecar(
 
   for (const c of sidecar.comments) {
     const off = reanchor(c.offset);
-    if (!beforeLines.has(off)) beforeLines.set(off, []);
-    beforeLines.get(off)!.push(c.text);
+    if (c.afterLabel) {
+      if (!afterLabelLines.has(off)) afterLabelLines.set(off, []);
+      afterLabelLines.get(off)!.push(c.text);
+    } else {
+      if (!beforeLines.has(off)) beforeLines.set(off, []);
+      beforeLines.get(off)!.push(c.text);
+    }
   }
 
   for (const ic of sidecar.inlineComments) {
-    inlineMap.set(reanchor(ic.offset), ic.text);
+    if (validOffsetSet.has(ic.offset)) {
+      inlineMap.set(ic.offset, ic.text);
+    } else {
+      // Offset no longer exists after a compile: demote to a trailing comment
+      // so the text is not silently lost.
+      trailingExtra.push(ic.text);
+    }
   }
 
+  for (const tc of (sidecar.trailingComments ?? [])) trailingExtra.push(tc);
+  for (const lc of (sidecar.labelComments   ?? [])) labelCommentMap.set(lc.labelIndex, lc.text);
+
   // ── Walk raw lines and emit ─────────────────────────────────────────────
-  const rawLines   = rawText.split('\n');
-  const outLines: string[]  = [];
-  const outOffsets: number[] = [];
+  const rawLines    = rawText.split('\n');
+  const outLines:   string[]  = [];
+  const outOffsets: number[]  = [];
   const injectedBefore = new Set<number>();
 
   for (let i = 0; i < rawLines.length; i++) {
@@ -177,17 +213,28 @@ export function weaveSidecar(
     const line = rawLines[i];
     const isInstruction = line.startsWith('\t') && !line.startsWith('\t//');
 
-    // Inject before-lines on the FIRST occurrence of each offset so that
-    // comments appear before the label line (e.g. "0:") when one is present,
-    // preventing double-injection on label+instruction pairs at the same offset.
-    if (off >= 0 && !injectedBefore.has(off)) {
-      injectedBefore.add(off);
-      for (const bl of beforeLines.get(off) ?? []) {
-        outLines.push('\t' + bl); outOffsets.push(-1);
+    if (off >= 0) {
+      if (!injectedBefore.has(off)) {
+        // First occurrence of this offset (may be a label or standalone instruction):
+        // inject region-open markers and "before label" comments.
+        injectedBefore.add(off);
+        for (const bl of beforeLines.get(off) ?? []) {
+          outLines.push('\t' + bl); outOffsets.push(-1);
+        }
+      } else if (isInstruction) {
+        // Second occurrence = instruction after a label line for the same offset:
+        // inject "after label" comments between the label and the instruction.
+        for (const al of afterLabelLines.get(off) ?? []) {
+          outLines.push('\t' + al); outOffsets.push(-1);
+        }
       }
     }
 
-    const inline = (isInstruction && off >= 0) ? inlineMap.get(off) : undefined;
+    // For label lines (e.g. "0:"), re-append any stored inline comment.
+    const labelIdxMatch = (!isInstruction && off >= 0) ? line.match(/^(\d+):$/) : null;
+    const labelInline   = labelIdxMatch ? labelCommentMap.get(parseInt(labelIdxMatch[1])) : undefined;
+    const instrInline   = (isInstruction && off >= 0) ? inlineMap.get(off) : undefined;
+    const inline        = labelInline ?? instrInline;
     outLines.push(inline ? `${line}  ${inline}` : line);
     outOffsets.push(off);
 
@@ -196,6 +243,10 @@ export function weaveSidecar(
         outLines.push('\t' + al); outOffsets.push(-1);
       }
     }
+  }
+
+  for (const tc of trailingExtra) {
+    outLines.push('\t' + tc); outOffsets.push(-1);
   }
 
   return { text: outLines.join('\n'), lineOffsets: outOffsets };
@@ -290,19 +341,24 @@ export function extractSidecar(
     return -1;
   }
 
-  const comments:       SidecarComment[]       = [];
-  const regions:        SidecarRegion[]         = [];
-  const inlineComments: SidecarInlineComment[]  = [];
+  const comments:         SidecarComment[]       = [];
+  const regions:          SidecarRegion[]         = [];
+  const inlineComments:   SidecarInlineComment[]  = [];
+  const trailingComments: string[]                = [];
+  const labelComments:    SidecarLabelComment[]   = [];
   const openRegions: Array<{ label: string; startOffset: number }> = [];
+
+  // Track the most-recently-seen non-blank, non-comment line while walking forward.
+  // Used to detect when a comment falls between a label and its instruction.
+  let lastRealLine = '';
 
   for (let i = 0; i < monacoLines.length; i++) {
     const line    = monacoLines[i];
     const trimmed = line.trimStart();
 
-    // ── Instruction lines: extract any trailing inline comment ─────────────
-    // Disassembler always uses a leading tab; user-added comment lines may
-    // have any leading whitespace but their trimmed form starts with "//".
+    // ── Instruction lines ──────────────────────────────────────────────────
     if (line.startsWith('\t') && !line.startsWith('\t//')) {
+      lastRealLine = line;
       const [, inline] = splitInlineComment(line);
       if (inline !== null) {
         const off = monacoInstrOffsets[i];
@@ -311,11 +367,21 @@ export function extractSidecar(
       continue;
     }
 
-    // ── Sidecar lines: any amount of leading whitespace, content is "//" ───
-    // Store as trimmed so comments always weave back at column 0, regardless
-    // of how Monaco auto-indented them when the user typed them.
+    // ── Label lines (e.g. "0:" or "0:  // annotation") ────────────────────
+    const labelLineMatch = line.match(/^(\d+):\s*(\/\/.*)?$/);
+    if (labelLineMatch) {
+      lastRealLine = line;
+      const inlineText = labelLineMatch[2]?.trim();
+      if (inlineText) {
+        labelComments.push({ labelIndex: parseInt(labelLineMatch[1]), text: inlineText });
+      }
+      continue;
+    }
+
+    // ── Blank or non-comment structural lines ──────────────────────────────
     if (!trimmed.startsWith('//')) continue;
 
+    // ── Sidecar comment / region lines ────────────────────────────────────
     const regionStartMatch = trimmed.match(/^\/\/ #region (.+)/);
 
     if (regionStartMatch) {
@@ -331,9 +397,17 @@ export function extractSidecar(
 
     } else {
       const off = nextInstructionOffset(i + 1);
-      if (off >= 0) comments.push({ offset: off, text: trimmed });
+      if (off < 0) {
+        trailingComments.push(trimmed);
+      } else {
+        // A comment is "after label" when the most recent real (non-comment, non-blank)
+        // line is a label.  The check uses a loose prefix match so it still works when
+        // the label has a trailing inline comment (e.g. "1: // name").
+        const afterLabel = /^\s*\d+:/.test(lastRealLine);
+        comments.push({ offset: off, text: trimmed, ...(afterLabel ? { afterLabel: true } : {}) });
+      }
     }
   }
 
-  return { version: 1, comments, regions, inlineComments };
+  return { version: 1, comments, regions, inlineComments, trailingComments, labelComments };
 }

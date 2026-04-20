@@ -10,7 +10,7 @@ import { loadSidecar, saveSidecar, weaveSidecar, extractSidecar, type Sidecar } 
 import styles from './ScriptEditor.module.css';
 
 function emptySidecarRef(): Sidecar {
-  return { version: 1, comments: [], regions: [], inlineComments: [] };
+  return { version: 1, comments: [], regions: [], inlineComments: [], trailingComments: [], labelComments: [] };
 }
 
 export function ScriptEditor() {
@@ -41,6 +41,9 @@ export function ScriptEditor() {
   // Set to true by handleCompile so the post-compile re-disassembly reuses the
   // in-memory sidecar rather than reloading from disk.
   const postCompileRef    = useRef(false);
+  // Saved Monaco view state (fold ranges, scroll, cursor) to restore after the
+  // post-compile re-disassembly replaces the editor content.
+  const pendingViewStateRef = useRef<MonacoNS.editor.ICodeEditorViewState | null>(null);
 
   // Disassemble whenever quest changes, then weave sidecar comments in.
   // After a compile (postCompileRef) the in-memory sidecar is reused so edits
@@ -60,7 +63,15 @@ export function ScriptEditor() {
         lineOffsetsRef.current = lineOffsets;
         let sidecar: Sidecar;
         if (isPostCompile) {
-          sidecar = currentSidecarRef.current;
+          // Capture fold ranges / scroll / cursor so we can restore them once
+          // Monaco has processed the new model content.
+          pendingViewStateRef.current = editorRef.current?.saveViewState() ?? null;
+          // Re-extract from Monaco's current text using the NEW offsets so that
+          // comments anchored by instruction text stay correct even when earlier
+          // bytecode changes shift all subsequent offsets.
+          const monacoText = editorRef.current?.getValue() ?? '';
+          sidecar = extractSidecar(monacoText, text, lineOffsets);
+          currentSidecarRef.current = sidecar;
         } else {
           sidecar = await loadSidecar(filePath);
           currentSidecarRef.current = sidecar;
@@ -118,10 +129,15 @@ export function ScriptEditor() {
   }, [source, validMnemonics]);
 
   // Flush sidecar to disk whenever the quest is saved (saveVersion increments).
+  // Re-extract using the current Monaco text and offsets so the saved data
+  // always reflects the latest editor state with correct bytecode offsets.
   useEffect(() => {
     if (saveVersion === 0) return;
     const filePath = useQuestStore.getState().filePath;
-    saveSidecar(filePath, currentSidecarRef.current).catch(() => {});
+    const monacoText = editorRef.current?.getValue() ?? '';
+    const fresh = extractSidecar(monacoText, rawTextRef.current, lineOffsetsRef.current);
+    currentSidecarRef.current = fresh;
+    saveSidecar(filePath, fresh).catch(() => {});
   }, [saveVersion]);
 
   // Auto-compile when switching away from the Script tab.
@@ -144,10 +160,8 @@ export function ScriptEditor() {
     errorRef.current = null;
     setCompileOk(false);
 
-    // Extract and cache the sidecar in memory; it will be flushed to disk on
-    // quest save.  Set postCompileRef so the re-disassembly triggered by
-    // updateBin picks up this in-memory version instead of reading the disk.
-    currentSidecarRef.current = extractSidecar(source, rawTextRef.current, lineOffsetsRef.current);
+    // Set postCompileRef so the re-disassembly triggered by updateBin re-extracts
+    // the sidecar using the NEW offsets rather than reloading from disk.
     postCompileRef.current = true;
 
     assemble(source, quest.bin)
@@ -208,6 +222,16 @@ export function ScriptEditor() {
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco as unknown as typeof MonacoNS;
+            // Restore fold/scroll state saved before a compile re-disassembly.
+            // onDidChangeModelContent fires after Monaco has applied the new value,
+            // which is the earliest safe point to call restoreViewState.
+            editor.onDidChangeModelContent(() => {
+              const vs = pendingViewStateRef.current;
+              if (vs) {
+                pendingViewStateRef.current = null;
+                editor.restoreViewState(vs);
+              }
+            });
           }}
           language={LANGUAGE_ID}
           theme="pso-dark"
