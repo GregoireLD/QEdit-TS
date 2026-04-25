@@ -43,13 +43,18 @@ const HALF_PI          = Math.PI / 2 - 0.01;
 
 // ─── DXT texture builder ──────────────────────────────────────────────────────
 
-function buildThreeTexture(xvr: XvmTexture): THREE.CompressedTexture {
+// forceRgba: when true, always decode DXT1 with the RGBA variant regardless of
+// the pixFmt (hasAlpha) flag.  Used for entity model textures — D3D9 always
+// decodes DXT1 punch-through alpha regardless of the XVM pixFmt field, so
+// textures like Rappy fur or Monest vines (pixFmt≤1 but actual transparent
+// DXT1 blocks) must use RGBA to expose the alpha channel to alphaTest.
+function buildThreeTexture(xvr: XvmTexture, forceRgba = false): THREE.CompressedTexture {
   // PSO uses DXT1 (dxtFmt=6) or DXT3 (all other non-VQ values).
   // Delphi's "DXT5_Header" is misnamed — its FourCC is "DXT3" (#$44#$58#$54#$33).
-  // DXT1 with alpha (pixFmt>1): use RGBA variant so the 1-bit alpha block is decoded.
-  // DXT1 without alpha: RGB variant (no alpha block in the data stream).
+  // DXT1: use RGBA variant when pixFmt>1 OR when forceRgba (entity models).
+  // DXT1 opaque (pixFmt≤1, area meshes only): RGB variant — no alpha data present.
   const fmt = xvr.isDXT1
-    ? (xvr.hasAlpha ? THREE.RGBA_S3TC_DXT1_Format : THREE.RGB_S3TC_DXT1_Format)
+    ? ((forceRgba || xvr.hasAlpha) ? THREE.RGBA_S3TC_DXT1_Format : THREE.RGB_S3TC_DXT1_Format)
     : THREE.RGBA_S3TC_DXT3_Format;  // DXT3 with explicit 4-bit alpha per texel
   const tex = new THREE.CompressedTexture(
     [{ data: xvr.data as unknown as Uint8Array, width: xvr.width, height: xvr.height }],
@@ -1022,7 +1027,7 @@ export function Viewer3D() {
         let textures: (THREE.CompressedTexture | null)[] = [];
         try {
           textures = parseXvm(new Uint8Array(await readFile(refBase + '.xvm')))
-            .map(x => x ? buildThreeTexture(x) : null);
+            .map(x => x ? buildThreeTexture(x, true) : null);
         } catch { /* XVM optional */ }
         return { nj, textures };
       }
@@ -1030,7 +1035,7 @@ export function Viewer3D() {
       let textures: (THREE.CompressedTexture | null)[] = [];
       try {
         textures = parseXvm(new Uint8Array(await readFile(basePath + '.xvm')))
-          .map(x => x ? buildThreeTexture(x) : null);
+          .map(x => x ? buildThreeTexture(x, true) : null);
       } catch { /* XVM is optional */ }
       return { nj, textures };
     };
