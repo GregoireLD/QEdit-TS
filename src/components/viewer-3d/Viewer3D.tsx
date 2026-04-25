@@ -455,6 +455,13 @@ function buildNjGroup(
       // glass, which is acceptable for editor use.
       side:        THREE.DoubleSide,
       transparent: alpha,
+      // Delphi always enables alpha test (AlphaTestValue=16) for entity rendering
+      // alongside alpha blending.  Pixels with alpha < 16/255 are discarded before
+      // they can write to the depth buffer.  This is what makes DXT1 transparent
+      // pixels (alpha=0) create true cut-outs rather than depth-occluding black
+      // patches — fixing both the "black transparent" bug and the eye punch-through
+      // (transparent eye pixels discarded → face renders through them).
+      alphaTest:   16 / 255,
       // Additive-dst effects (blendDst=1 = ONE) only add light and must never
       // occlude anything — depthWrite:false.  Alpha-blend surfaces (blendDst=5
       // = OneMinusSrcAlpha) need depthWrite:true so the depth buffer orders the
