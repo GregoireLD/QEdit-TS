@@ -3,10 +3,18 @@ import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
 import type { Monster, QuestObject } from '../../core/model/types';
 import { MapCanvas } from '../map-canvas/MapCanvas';
 import { Viewer3D } from '../viewer-3d/Viewer3D';
+import {
+  MONSTER_SCHEMAS, OBJECT_SCHEMAS,
+  MONSTER_NPC_NAMES, objectName,
+  type MonsterFieldDesc, type ObjectFieldDesc,
+} from '../../core/map/entitySchemas';
 import styles from './FloorView.module.css';
 
 // ─── Monster names ──────────────────────────────────────────────────────────
 const MONSTER_NAMES: Record<number, string> = {
+  // NPC skins from npcname.ini (skins 1–51, 69–70, 208–256, 280)
+  ...MONSTER_NPC_NAMES,
+  // Enemy skins
   0x44: 'Booma', 0x45: 'Gobooma', 0x46: 'Gigobooma',
   0x40: 'Hildebear', 0x41: 'Hildeblue',
   0x60: 'Rappies', 0x61: 'Al Rappy', 0x62: 'Pal Rappy',
@@ -363,12 +371,38 @@ function InspectorGroup({ label, children }: { label: string; children: React.Re
   );
 }
 
+// ─── Schema label / kind helpers ─────────────────────────────────────────────
+
+function msl(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: string): string {
+  return schema?.find(d => d.key === key)?.label ?? fallback;
+}
+
+function osl(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: string): string {
+  return schema?.find(d => d.key === key)?.label ?? fallback;
+}
+
+function mskind(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: CellKind): CellKind {
+  return schema?.find(d => d.key === key)?.kind ?? fallback;
+}
+
+function oskind(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: CellKind): CellKind {
+  return schema?.find(d => d.key === key)?.kind ?? fallback;
+}
+
+// ─── Inspectors ───────────────────────────────────────────────────────────────
+
 function MonsterInspector({ monster, index, floorId }: { monster: Monster; index: number; floorId: number }) {
   const updateMonster = useQuestStore(s => s.updateMonster);
   const upd = useCallback(
     (patch: Partial<Monster>) => updateMonster(floorId, index, patch),
     [updateMonster, floorId, index],
   );
+  const sc = MONSTER_SCHEMAS.get(monster.skin);
+  const sl = (key: keyof Monster, fallback: string) => msl(sc, key, fallback);
+  const has = (key: keyof Monster) => sc == null || sc.some(d => d.key === key);
+
+  const hasAnyBeh = has('action') || has('movementFlag') || has('charId') || has('movementData');
+
   return (
     <div className={styles.inspScroll}>
       <div className={styles.inspTitle}>
@@ -387,29 +421,33 @@ function MonsterInspector({ monster, index, floorId }: { monster: Monster; index
         <InspectorRow label="Z" value={monster.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
       </InspectorGroup>
 
-      <InspectorGroup label="Direction">
-        <InspectorRow label="Rotation" value={monster.direction} kind="float" onCommit={v => upd({ direction: v })} />
-      </InspectorGroup>
+      {has('direction') && (
+        <InspectorGroup label="Direction">
+          <InspectorRow label={sl('direction', 'Rotation Y')} value={monster.direction} kind="float" onCommit={v => upd({ direction: v })} />
+        </InspectorGroup>
+      )}
 
-      <InspectorGroup label="Behaviour">
-        <InspectorRow label="Action"    value={monster.action}       kind="float" onCommit={v => upd({ action: v })} />
-        <InspectorRow label="Mobile"    value={monster.movementFlag} kind="bool"  onCommit={v => upd({ movementFlag: v })} />
-        <InspectorRow label="Char ID"   value={monster.charId}       kind="float" onCommit={v => upd({ charId: v })} />
-        <InspectorRow label="Move Data" value={monster.movementData} kind="float" onCommit={v => upd({ movementData: v })} />
-      </InspectorGroup>
+      {hasAnyBeh && (
+        <InspectorGroup label="Behaviour">
+          {has('action')       && <InspectorRow label={sl('action',       'Action')}    value={monster.action}       kind="float" onCommit={v => upd({ action: v })} />}
+          {has('movementFlag') && <InspectorRow label={sl('movementFlag', 'Mobile')}    value={monster.movementFlag} kind="bool"  onCommit={v => upd({ movementFlag: v })} />}
+          {has('charId')       && <InspectorRow label={sl('charId',       'Char ID')}   value={monster.charId}       kind="float" onCommit={v => upd({ charId: v })} />}
+          {has('movementData') && <InspectorRow label={sl('movementData', 'Move Data')} value={monster.movementData} kind="float" onCommit={v => upd({ movementData: v })} />}
+        </InspectorGroup>
+      )}
 
       <InspectorGroup label="Raw">
-        <InspectorRow label="unknown1"   value={monster.unknown1}    kind="hex"   onCommit={v => upd({ unknown1: v })} />
-        <InspectorRow label="unknown2"   value={monster.unknown2}    kind="hex"   onCommit={v => upd({ unknown2: v })} />
-        <InspectorRow label="unknown3"   value={monster.unknown3}    kind="hex"   onCommit={v => upd({ unknown3: v })} />
-        <InspectorRow label="unknown4"   value={monster.unknown4}    kind="hex"   onCommit={v => upd({ unknown4: v })} />
-        <InspectorRow label="unknown5"   value={monster.unknown5}    kind="hex"   onCommit={v => upd({ unknown5: v })} />
-        <InspectorRow label="unknown6"   value={monster.unknown6}    kind="hex"   onCommit={v => upd({ unknown6: v })} />
-        <InspectorRow label="unknown7"   value={monster.unknown7}    kind="hex"   onCommit={v => upd({ unknown7: v })} />
-        <InspectorRow label="unknown8"   value={monster.unknown8}    kind="hex"   onCommit={v => upd({ unknown8: v })} />
-        <InspectorRow label="unknown10"  value={monster.unknown10}   kind="float" onCommit={v => upd({ unknown10: v })} />
-        <InspectorRow label="unknown11"  value={monster.unknown11}   kind="float" onCommit={v => upd({ unknown11: v })} />
-        <InspectorRow label="unknownFlag" value={monster.unknownFlag} kind="hex"  onCommit={v => upd({ unknownFlag: v })} />
+        <InspectorRow label={sl('unknown1',    'unknown1')}    value={monster.unknown1}    kind={mskind(sc, 'unknown1',    'hex')}   onCommit={v => upd({ unknown1: v })} />
+        <InspectorRow label={sl('unknown2',    'unknown2')}    value={monster.unknown2}    kind={mskind(sc, 'unknown2',    'hex')}   onCommit={v => upd({ unknown2: v })} />
+        <InspectorRow label={sl('unknown3',    'unknown3')}    value={monster.unknown3}    kind={mskind(sc, 'unknown3',    'hex')}   onCommit={v => upd({ unknown3: v })} />
+        <InspectorRow label={sl('unknown4',    'unknown4')}    value={monster.unknown4}    kind={mskind(sc, 'unknown4',    'hex')}   onCommit={v => upd({ unknown4: v })} />
+        <InspectorRow label={sl('unknown5',    'unknown5')}    value={monster.unknown5}    kind={mskind(sc, 'unknown5',    'hex')}   onCommit={v => upd({ unknown5: v })} />
+        <InspectorRow label={sl('unknown6',    'unknown6')}    value={monster.unknown6}    kind={mskind(sc, 'unknown6',    'hex')}   onCommit={v => upd({ unknown6: v })} />
+        <InspectorRow label={sl('unknown7',    'unknown7')}    value={monster.unknown7}    kind={mskind(sc, 'unknown7',    'hex')}   onCommit={v => upd({ unknown7: v })} />
+        <InspectorRow label={sl('unknown8',    'unknown8')}    value={monster.unknown8}    kind={mskind(sc, 'unknown8',    'hex')}   onCommit={v => upd({ unknown8: v })} />
+        <InspectorRow label={sl('unknown10',   'unknown10')}   value={monster.unknown10}   kind="float"                             onCommit={v => upd({ unknown10: v })} />
+        <InspectorRow label={sl('unknown11',   'unknown11')}   value={monster.unknown11}   kind="float"                             onCommit={v => upd({ unknown11: v })} />
+        <InspectorRow label={sl('unknownFlag', 'unknownFlag')} value={monster.unknownFlag} kind={mskind(sc, 'unknownFlag', 'hex')}   onCommit={v => upd({ unknownFlag: v })} />
       </InspectorGroup>
     </div>
   );
@@ -421,19 +459,29 @@ function ObjectInspector({ object, index, floorId }: { object: QuestObject; inde
     (patch: Partial<QuestObject>) => updateObject(floorId, index, patch),
     [updateObject, floorId, index],
   );
+  const sc = OBJECT_SCHEMAS.get(object.skin);
+  const sl = (key: keyof QuestObject, fallback: string) => osl(sc, key, fallback);
+  // When no schema exists for this skin, show everything; otherwise only show fields present in the schema.
+  // This matches Delphi FEdit.pas dynamic row rendering (only non-'-' ini labels produce rows).
+  const has = (key: keyof QuestObject) => sc == null || sc.some(d => d.key === key);
+
+  const hasAnyRot   = has('rotX') || has('rotY') || has('rotZ');
+  const hasAnyScale = has('scaleX') || has('scaleY') || has('scaleZ');
+  const hasAnyBeh   = has('action') || has('unknown13') || has('unknown14');
+
   return (
     <div className={styles.inspScroll}>
       <div className={styles.inspTitle}>
         Object <span className={styles.inspIndex}>#{index}</span>
-        <span className={styles.inspName}>0x{object.skin.toString(16).toUpperCase().padStart(4, '0')}</span>
+        <span className={styles.inspName}>{objectName(object.skin)}</span>
       </div>
 
       <InspectorGroup label="Identity">
-        <InspectorRow label="Skin"    value={object.skin}       kind="hex" onCommit={v => upd({ skin: v })} />
+        <InspectorRow label="Skin"    value={object.skin}       kind="hex" display={objectName(object.skin)} onCommit={v => upd({ skin: v })} />
         <InspectorRow label="ID"      value={object.id}         kind="int" onCommit={v => upd({ id: v })} />
         <InspectorRow label="Group"   value={object.group}      kind="int" onCommit={v => upd({ group: v })} />
         <InspectorRow label="Section" value={object.mapSection} kind="int" onCommit={v => upd({ mapSection: v })} />
-        <InspectorRow label="Obj ID"  value={object.objId}      kind="int" onCommit={v => upd({ objId: v })} />
+        {has('objId') && <InspectorRow label={sl('objId', 'Obj ID')} value={object.objId} kind="int" onCommit={v => upd({ objId: v })} />}
       </InspectorGroup>
 
       <InspectorGroup label="Position">
@@ -442,28 +490,34 @@ function ObjectInspector({ object, index, floorId }: { object: QuestObject; inde
         <InspectorRow label="Z" value={object.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
       </InspectorGroup>
 
-      <InspectorGroup label="Rotation (BAM)">
-        <InspectorRow label="X" value={object.rotX} kind="int" onCommit={v => upd({ rotX: v })} />
-        <InspectorRow label="Y" value={object.rotY} kind="int" onCommit={v => upd({ rotY: v })} />
-        <InspectorRow label="Z" value={object.rotZ} kind="int" onCommit={v => upd({ rotZ: v })} />
-      </InspectorGroup>
+      {hasAnyRot && (
+        <InspectorGroup label="Rotation (BAM)">
+          {has('rotX') && <InspectorRow label={sl('rotX', 'Rotation X')} value={object.rotX} kind="int" onCommit={v => upd({ rotX: v })} />}
+          {has('rotY') && <InspectorRow label={sl('rotY', 'Rotation Y')} value={object.rotY} kind="int" onCommit={v => upd({ rotY: v })} />}
+          {has('rotZ') && <InspectorRow label={sl('rotZ', 'Rotation Z')} value={object.rotZ} kind="int" onCommit={v => upd({ rotZ: v })} />}
+        </InspectorGroup>
+      )}
 
-      <InspectorGroup label="Scale">
-        <InspectorRow label="X" value={object.scaleX} kind="float" onCommit={v => upd({ scaleX: v })} />
-        <InspectorRow label="Y" value={object.scaleY} kind="float" onCommit={v => upd({ scaleY: v })} />
-        <InspectorRow label="Z" value={object.scaleZ} kind="float" onCommit={v => upd({ scaleZ: v })} />
-      </InspectorGroup>
+      {hasAnyScale && (
+        <InspectorGroup label="Scale">
+          {has('scaleX') && <InspectorRow label={sl('scaleX', 'Scale X')} value={object.scaleX} kind="float" onCommit={v => upd({ scaleX: v })} />}
+          {has('scaleY') && <InspectorRow label={sl('scaleY', 'Scale Y')} value={object.scaleY} kind="float" onCommit={v => upd({ scaleY: v })} />}
+          {has('scaleZ') && <InspectorRow label={sl('scaleZ', 'Scale Z')} value={object.scaleZ} kind="float" onCommit={v => upd({ scaleZ: v })} />}
+        </InspectorGroup>
+      )}
 
-      <InspectorGroup label="Behaviour">
-        <InspectorRow label="Action" value={object.action} kind="int" onCommit={v => upd({ action: v })} />
-      </InspectorGroup>
+      {hasAnyBeh && (
+        <InspectorGroup label="Behaviour">
+          {has('action')    && <InspectorRow label={sl('action',    'Action')}    value={object.action}    kind={oskind(sc, 'action',    'int')} onCommit={v => upd({ action: v })} />}
+          {has('unknown13') && <InspectorRow label={sl('unknown13', 'unknown13')} value={object.unknown13} kind={oskind(sc, 'unknown13', 'hex')} onCommit={v => upd({ unknown13: v })} />}
+          {has('unknown14') && <InspectorRow label={sl('unknown14', 'unknown14')} value={object.unknown14} kind={oskind(sc, 'unknown14', 'hex')} onCommit={v => upd({ unknown14: v })} />}
+        </InspectorGroup>
+      )}
 
       <InspectorGroup label="Raw">
-        <InspectorRow label="unknown1"  value={object.unknown1}  kind="hex" onCommit={v => upd({ unknown1: v })} />
-        <InspectorRow label="unknown2"  value={object.unknown2}  kind="hex" onCommit={v => upd({ unknown2: v })} />
-        <InspectorRow label="unknown4"  value={object.unknown4}  kind="hex" onCommit={v => upd({ unknown4: v })} />
-        <InspectorRow label="unknown13" value={object.unknown13} kind="hex" onCommit={v => upd({ unknown13: v })} />
-        <InspectorRow label="unknown14" value={object.unknown14} kind="hex" onCommit={v => upd({ unknown14: v })} />
+        <InspectorRow label="unknown1" value={object.unknown1} kind="hex" onCommit={v => upd({ unknown1: v })} />
+        <InspectorRow label="unknown2" value={object.unknown2} kind="hex" onCommit={v => upd({ unknown2: v })} />
+        <InspectorRow label="unknown4" value={object.unknown4} kind="hex" onCommit={v => upd({ unknown4: v })} />
       </InspectorGroup>
     </div>
   );
