@@ -8,11 +8,14 @@
  *
  * monsterFilename() maps the index to a filename stem (no extension).
  * The actual file to load is `data/monster/{stem}.nj` (or .xj).
+ * Stems starting with `../` are cross-folder references relative to `data/`
+ * (e.g. `../obj/145` → `data/obj/145`).
  */
 
 /**
  * MonsterFile[1..128] from Unit1.pas.
  * Index 0 is unused (0 = unknown/no match).
+ * Index 112 ('crash') = unsupported NPC slot → no model.
  */
 const MONSTER_FILE: readonly string[] = [
   '',          // 0 — unused
@@ -65,7 +68,7 @@ const MONSTER_FILE: readonly string[] = [
   'Falz',      // 47
   'Container', // 48
   'Dubwitch',  // 49
-  'Gilchic',   // 50 (also listed as 'Gilchic' via index 50 in Delphi)
+  'Gilchic',   // 50
   'Loverappy', // 51
   'Merilia',   // 52
   'Meritas',   // 53
@@ -127,6 +130,23 @@ const MONSTER_FILE: readonly string[] = [
   'VolOpt',    // 109
   'Rappy',     // 110
   'Unknown',   // 111
+  'crash',     // 112 — unsupported NPC slot marker (no model)
+  '../obj/145',        // 113 — forest box (cross-folder obj ref)
+  'chao',              // 114
+  'MiniHidle',         // 115
+  '../obj/135-1',      // 116
+  '../obj/135-0',      // 117
+  'minigrass',         // 118
+  '../obj/262',        // 119
+  '../obj/339',        // 120
+  '../obj/338',        // 121
+  '../obj/688',        // 122
+  '../obj/518',        // 123
+  '../obj/521',        // 124
+  '../obj/floor28/136',// 125
+  'Deldeph2',          // 126
+  '../obj/551',        // 127
+  'nights',            // 128
 ];
 
 /**
@@ -150,6 +170,8 @@ export function checkMonsterType(
   if (skin === 65 && movementFlag === 1) re = 6;  // Al Rappy
   if (skin === 65 && episode === 2 && movementFlag === 0) re = 5;   // Ep2 Rappy
   if (skin === 65 && episode === 2 && movementFlag === 1) re = 51;  // Love Rappy
+  if (skin === 65 && episode === 4 && movementFlag === 0) re = 104; // Sandlappy
+  if (skin === 65 && episode === 4 && movementFlag === 1) re = 105; // Delrappy
   if (skin === 66) re = 4;   // Monest
   if (skin === 67) re = 7;   // Savage Wolf
   if (skin === 67 && Math.round(unknown10) >= 1) re = 8;  // Barbarous Wolf
@@ -189,8 +211,8 @@ export function checkMonsterType(
   if (skin === 168) re = 38; // Claw
 
   // Episode 1 bosses
-  if (skin === 192 && episode !== 1) re = 44; // Dragon (Ep1)
-  if (skin === 192 && episode === 1) re = 77; // Gal Gryphon (Ep2)
+  if (skin === 192 && episode === 1) re = 44; // Dragon (Ep1)
+  if (skin === 192 && episode !== 1) re = 77; // Gal Gryphon (Ep2+)
   if (skin === 193) re = 45; // De Rol Le
   if (skin === 194) re = 109; // Vol Opt phase A
   if (skin === 197) re = 46; // Vol Opt phase B
@@ -250,11 +272,79 @@ export function checkMonsterType(
 
 /**
  * Returns the NJ/XJ filename stem for a given monster-file index (1-based).
- * Returns null for index 0 or out-of-range.
+ * Returns null for index 0, out-of-range, or the crash sentinel (112).
+ * Stems starting with `../` are cross-folder references relative to `data/`
+ * (e.g. `../obj/145` → resolve as `data/obj/145`).
  */
 export function monsterFilename(index: number): string | null {
   if (index < 1 || index >= MONSTER_FILE.length) return null;
   const f = MONSTER_FILE[index];
-  if (!f || f.startsWith('..')) return null; // skip cross-folder references
+  if (!f || f === 'crash') return null;
   return f;
+}
+
+/**
+ * NPC51File[floorid 0..45][slot 0..15] from MyConst.pas.
+ * Maps a stage NPC (skin=51) to a MONSTER_FILE index based on floor area and slot.
+ * Value 0 = no model; value 112 = unsupported ("crash") slot.
+ */
+export const NPC51_FILE: ReadonlyArray<ReadonlyArray<number>> = [
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 0
+  [113,  9, 11, 10,  5,  6,  3,  4,  8,  7,114,116,117,112,112,112], // 1 Forest 1
+  [113,  9, 11, 10,  5,  6,  3,  4,  8,  7,114,115,  1,  2,116,117], // 2 Forest 2
+  [113, 15, 21, 23, 22, 17, 18, 16, 12,118, 13,112,112,112,112,112], // 3 Cave 1
+  [113, 15, 19, 20, 17, 18, 16, 12,118, 13,112,112,112,112,112,112], // 4 Cave 2
+  [113, 15, 21, 23, 22, 19, 20, 17, 18, 16, 12,118, 13,112,112,112], // 5 Cave 3
+  [113, 28, 29, 50, 24, 25, 25, 26, 27,112,112,112,112,112,112,112], // 6 Mine 1
+  [113, 28, 29, 50, 24, 25, 25, 26, 27,119,112,112,112,112,112,112], // 7 Mine 2
+  [ 40, 39, 37, 30, 43, 42, 41, 31,120,121,112,112,112,112,112,112], // 8 Ruins 1
+  [ 36, 30, 43, 42, 41,120,121,112,112,112,112,112,112,112,112,112], // 9 Ruins 2
+  [ 37, 36, 43, 42, 41, 31,120,121,112,112,112,112,112,112,112,112], // 10 Ruins 3
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 11
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 12
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 13
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 14
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 15
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 16
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 17
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 18
+  [  5,  6,  3,  4, 37, 43, 42, 41,115,  1,  2, 12,118,121,120,112], // 19 Ep2 VR Temple α  (slots 13/14 corrected vs Delphi: Poison Lilly→obj/338, Pillar Trap→obj/339)
+  [  5,  6,  3,  4, 37, 43, 42, 41,115,  1,  2, 12,118,121,120,112], // 20 Ep2 VR Temple β  (same correction)
+  [  8,  7, 30, 50, 24, 25, 25, 21, 23, 22,120,112,112,112,112,112], // 21 Ep2 VR Spaceship α
+  [  8,  7, 30, 50, 24, 21, 23, 22, 31,120,112,112,112,112,112,112], // 22 Ep2 VR Spaceship β
+  [  5, 51, 59, 60, 54,112, 52,112, 53,122,123,124, 55, 56, 61,112], // 23 Ep2 Central Control
+  [  5, 51, 59, 60, 54,112, 52,112, 53,122,123,124, 55, 56, 61,112], // 24
+  [  5, 51, 59, 60, 54,112, 52,112, 53,122,123,124, 55, 56, 61,112], // 25
+  [  5, 51, 59, 60, 54,112, 52,112, 53,122,123,124, 55, 56, 61,112], // 26
+  [  5, 51, 59, 60, 54,112, 52,112, 53,122,123,124, 55, 56, 61,112], // 27
+  [125, 68, 67,127, 64, 72, 71,126, 69, 70, 69, 70, 66, 65,112,112], // 28 Ep2 Seabed Upper
+  [125, 68, 67,127, 64, 72, 71,126, 69, 70, 69, 70, 66, 65,112,112], // 29 Ep2 Seabed Lower
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 30
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 31
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 32
+  [112,112,112,112,112,112,112,112,112,112,112,112,112,112,112,112], // 33
+  [  5, 51, 68, 67,112, 60, 54,128,128, 52, 53,122,123,124, 64, 65], // 34
+  [ 68, 67, 83,122, 55, 56, 82, 61, 72, 84,112,112,112,112,112,112], // 35
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 36 Ep4
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 37
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 38
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 39
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 40
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 41
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 42
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 43
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 44
+  [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0], // 45
+];
+
+/**
+ * Returns the MONSTER_FILE index for a stage NPC (skin=51) based on floor area and slot.
+ * Returns 0 (no model) for out-of-range inputs or unsupported combinations.
+ * Returns 112 ('crash') for valid floor/slot pairs with no mapped model — callers
+ * should treat this as "no model" and show a placeholder.
+ */
+export function npc51FileIndex(floorId: number, slot: number): number {
+  if (floorId < 0 || floorId >= NPC51_FILE.length) return 0;
+  if (slot < 0 || slot >= 16) return 0;
+  return NPC51_FILE[floorId][slot];
 }

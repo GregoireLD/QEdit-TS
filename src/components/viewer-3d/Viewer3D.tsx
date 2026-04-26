@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { readFile } from '../../platform/fs';
 import { useUiStore } from '../../stores/uiStore';
 import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
-import { AREA_BY_ID } from '../../core/map/areaData';
+import { AREA_BY_ID, EP_OFFSET } from '../../core/map/areaData';
 import { parseCRel, parseNRel, toWorldPos } from '../../core/formats/rel';
 import { parseNRelMeshes, TexAddrMode } from '../../core/formats/nrel';
 import type { NRelMesh, NRelMotion, NRelKeyframe } from '../../core/formats/nrel';
@@ -30,7 +30,7 @@ import type { TamData } from '../../core/formats/tam';
 import { toNRelName } from '../../core/map/mapFileNames';
 import { parseNj, parseXj } from '../../core/formats/nj';
 import type { NjResult } from '../../core/formats/nj';
-import { checkMonsterType, monsterFilename } from '../../core/map/monsterSkins';
+import { checkMonsterType, monsterFilename, npc51FileIndex } from '../../core/map/monsterSkins';
 import css from './Viewer3D.module.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -38,6 +38,16 @@ import css from './Viewer3D.module.css';
 const SPEED            = 80;
 const MOUSE_SENS       = 0.002;
 const HALF_PI          = Math.PI / 2 - 0.01;
+
+// Objects that have variant model files (e.g. "135-0.nj" vs "135-1.nj").
+// Ported from main.pas: subtypeditem[], subtypeditemV[], subtypeditemMax[].
+// v=1: Math.round(scaleX), v=2: objId, v=3: unknown13, v=4: action, v=5: Math.round(scaleZ)
+const SUBTYPED_ITEMS: ReadonlyArray<{ skin: number; v: number; max: number }> = [
+  { skin: 135, v: 1, max: 1 }, { skin: 769, v: 2, max: 2 }, { skin: 770, v: 2, max: 2 },
+  { skin:  81, v: 2, max: 3 }, { skin: 527, v: 5, max: 1 }, { skin: 528, v: 5, max: 1 },
+  { skin: 547, v: 2, max: 1 }, { skin: 902, v: 2, max: 2 }, { skin: 139, v: 4, max: 1 },
+  { skin:  69, v: 3, max: 1 }, { skin: 911, v: 2, max: 1 }, { skin: 531, v: 4, max: 2 },
+];
 
 // ─── Visual mesh builder (n.rel) ─────────────────────────────────────────────
 
@@ -995,18 +1005,25 @@ export function Viewer3D() {
     // Returns the buffer and whether it was loaded as XJ (vs NJ).
     // XJ and NJ share the outer NJCM/NMDL chunk envelope but use different
     // internal geometry formats — dispatch is by file extension.
-    const loadNjBuf = async (basePath: string): Promise<{ buf: Uint8Array; isXj: boolean } | null> => {
-      try { return { buf: new Uint8Array(await readFile(basePath + '.nj')), isXj: false }; } catch { /* try .xj */ }
-      try { return { buf: new Uint8Array(await readFile(basePath + '.xj')), isXj: true  }; } catch { return null; }
+    // Accepts multiple candidate base paths; tries each in order (NJ first, then XJ).
+    const loadNjBuf = async (basePaths: string[]): Promise<{ buf: Uint8Array; isXj: boolean; base: string } | null> => {
+      for (const bp of basePaths) {
+        try { return { buf: new Uint8Array(await readFile(bp + '.nj')), isXj: false, base: bp }; } catch { /* try .xj */ }
+        try { return { buf: new Uint8Array(await readFile(bp + '.xj')), isXj: true,  base: bp }; } catch { /* try next */ }
+      }
+      return null;
     };
 
     const parseNjOrXj = (buf: Uint8Array, isXj: boolean): NjResult =>
       isXj ? parseXj(buf) : parseNj(buf);
 
-    const loadModelData = async (basePath: string): Promise<ModelData> => {
-      const loaded = await loadNjBuf(basePath);
+    // Accepts one or more candidate base paths (floor-specific first, flat fallback).
+    const loadModelData = async (basePaths: string | string[]): Promise<ModelData> => {
+      const paths  = Array.isArray(basePaths) ? basePaths : [basePaths];
+      const loaded = await loadNjBuf(paths);
       if (!loaded) return { nj: null, textures: [] };
 
+      const basePath = loaded.base;
       let nj: NjResult;
       try { nj = parseNjOrXj(loaded.buf, loaded.isXj); }
       catch { return { nj: null, textures: [] }; }
@@ -1017,7 +1034,7 @@ export function Viewer3D() {
         const lastSep = Math.max(basePath.lastIndexOf('/'), basePath.lastIndexOf('\\'));
         const dir     = lastSep >= 0 ? basePath.slice(0, lastSep + 1) : '';
         const refBase = dir + nj.nmdlRef;
-        const refLoaded = await loadNjBuf(refBase);
+        const refLoaded = await loadNjBuf([refBase]);
         if (refLoaded) {
           try { nj = parseNjOrXj(refLoaded.buf, refLoaded.isXj); }
           catch { return { nj: null, textures: [] }; }
@@ -1040,13 +1057,24 @@ export function Viewer3D() {
       return { nj, textures };
     };
 
+    // NPC51_FILE and floor-subdirectory lookups use the absolute area ID (0..45),
+    // which is floor.id (relative, 0-based within episode) + EP_OFFSET[episode].
+    const floorId = (floor?.id ?? 0) + EP_OFFSET[episode];
+
     // Collect the unique NJ model base paths required by this floor
-    const monsterBases = new Map<string, string>(); // key → base path (no ext)
-    const objectBases  = new Map<string, string>(); // skin string   → base path (no ext)
+    const monsterBases = new Map<string, string>();    // key → single base path (no ext)
+    const objectBases  = new Map<string, string[]>(); // key → [primary, fallback] paths
+
     // NPCs load from monster/npc/<hexSkin>. Matches Delphi IsNPC:
     //   skin < 64 → always NPC
     //   skin >= 0xD0 && skin < 257 && no known monster type → NPC
-    const monsterKey = (m: { skin: number; movementFlag: number; unknown10: number; unknown3: number }) => {
+    // Skin 51 = stage NPCs: dispatch via NPC51File[floorId][unknown7].
+    const monsterKey = (m: { skin: number; movementFlag: number; unknown10: number; unknown3: number; unknown7: number }) => {
+      if (m.skin === 51) {
+        const fileIdx = npc51FileIndex(floorId, m.unknown7);
+        if (fileIdx === 0 || fileIdx === 112) return null; // no model or crash sentinel
+        return monsterFilename(fileIdx);
+      }
       const typeIdx = checkMonsterType(m.skin, m.movementFlag, m.unknown10, m.unknown3, episode);
       const fname = monsterFilename(typeIdx);
       if (fname) return fname;
@@ -1059,8 +1087,47 @@ export function Viewer3D() {
         const hex = key.slice(4); // e.g. "01", "0a", "3f"
         return `${dataDir}monster${sep}npc${sep}${hex}`;
       }
+      // Cross-folder refs (e.g. "../obj/145") are relative to data/monster/, so
+      // strip the "../" prefix and resolve from dataDir directly.
+      if (key.startsWith('../')) {
+        return dataDir + key.slice(3).replace(/\//g, sep);
+      }
       return `${dataDir}monster${sep}${key}`;
     };
+
+    // Resolves an object's canonical stem (after skin aliasing + subtypeditem variant)
+    // and returns candidate base paths: floor-specific first, flat fallback second.
+    const resolveObjEntry = (o: { skin: number; unknown13: number; scaleX: number; scaleZ: number; objId: number; action: number }): { key: string; paths: string[] } | null => {
+      if (o.skin === 0) return null;
+      // Skin aliasing: 130↔150 and 131↔151 are the same object type;
+      // unknown13=0 → open/active form (150/151), unknown13≠0 → closed/base form (130/131).
+      let skin = o.skin;
+      if (skin === 130 || skin === 150) skin = o.unknown13 === 0 ? 150 : 130;
+      else if (skin === 131 || skin === 151) skin = o.unknown13 === 0 ? 151 : 131;
+      // Subtypeditem: certain skins have variant model files (e.g. "135-0.nj", "135-1.nj").
+      let suffix = '';
+      for (const { skin: s, v, max } of SUBTYPED_ITEMS) {
+        if (s === skin) {
+          let val = v === 1 ? Math.round(o.scaleX)
+                  : v === 2 ? o.objId
+                  : v === 4 ? o.action
+                  : v === 5 ? Math.round(o.scaleZ)
+                  : o.unknown13;
+          val = Math.min(Math.max(val, 0), max);
+          suffix = `-${val}`;
+          break;
+        }
+      }
+      const stem = `${skin}${suffix}`;
+      return {
+        key:   stem,
+        paths: [
+          `${dataDir}obj${sep}Floor${floorId}${sep}${stem}`, // floor-specific variant first
+          `${dataDir}obj${sep}${stem}`,                       // common fallback
+        ],
+      };
+    };
+
     if (floor) {
       for (const m of floor.monsters) {
         const key = monsterKey(m);
@@ -1068,10 +1135,9 @@ export function Viewer3D() {
           monsterBases.set(key, monsterBase(key));
       }
       for (const o of floor.objects) {
-        if (o.skin === 0) continue; // skin 0 = no model
-        const key = String(o.skin);
-        if (!objectBases.has(key))
-          objectBases.set(key, `${dataDir}obj${sep}${key}`);
+        const entry = resolveObjEntry(o);
+        if (entry && !objectBases.has(entry.key))
+          objectBases.set(entry.key, entry.paths);
       }
     }
 
@@ -1080,8 +1146,8 @@ export function Viewer3D() {
 
     const mapLoads    = Promise.all([readFile(nPath), readFile(cPath), xvmPromise, tamPromise]);
     const entityLoads = Promise.all([
-      Promise.all(monsterEntries.map(([, base]) => loadModelData(base))),
-      Promise.all(objectEntries.map( ([, base]) => loadModelData(base))),
+      Promise.all(monsterEntries.map(([, base])  => loadModelData(base))),
+      Promise.all(objectEntries.map( ([, paths]) => loadModelData(paths))),
     ]);
 
     Promise.all([mapLoads, entityLoads])
@@ -1168,7 +1234,7 @@ export function Viewer3D() {
             og.rotation.z = -o.rotZ * BAM_TO_RAD;
             og.position.set(wx, o.posZ, wz);
 
-            const key   = String(o.skin);
+            const key   = resolveObjEntry(o)?.key ?? String(o.skin);
             const model = objectModelMap.get(key);
             let meshes: THREE.Mesh[];
             let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
