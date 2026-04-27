@@ -6,7 +6,7 @@ import { Viewer3D } from '../viewer-3d/Viewer3D';
 import {
   MONSTER_SCHEMAS, OBJECT_SCHEMAS,
   MONSTER_NPC_NAMES, OBJECT_NAMES, objectName,
-  MONSTER_SUBTYPES, resolveSubtype,
+  MONSTER_SUBTYPES, OBJECT_COLOR_SUBTYPES, resolveSubtype,
   type MonsterFieldDesc, type ObjectFieldDesc, type SubtypeOption,
 } from '../../core/map/entitySchemas';
 import styles from './FloorView.module.css';
@@ -681,6 +681,8 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
   const hasAnyScale = has('scaleX') || has('scaleY') || has('scaleZ');
   const hasAnyBeh   = has('action') || has('unknown13') || has('unknown14');
 
+  const colorDef = OBJECT_COLOR_SUBTYPES.get(object.skin);
+
   return (
     <div className={styles.inspScroll}>
       <div className={styles.inspTitle}>
@@ -712,7 +714,10 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
 
       {hasAnyScale && (
         <InspectorGroup label="Scale">
-          {has('scaleX') && <InspectorRow label={sl('scaleX', 'Scale X')} value={object.scaleX} kind="float" onCommit={v => upd({ scaleX: v })} />}
+          {has('scaleX') && (colorDef?.field === 'scaleX'
+            ? <DualSelectRow label={sl('scaleX', 'Colour')} value={Math.round(object.scaleX)} kind="int" options={colorDef.options} onCommit={v => upd({ scaleX: v })} />
+            : <InspectorRow  label={sl('scaleX', 'Scale X')} value={object.scaleX} kind="float" onCommit={v => upd({ scaleX: v })} />
+          )}
           {has('scaleY') && <InspectorRow label={sl('scaleY', 'Scale Y')} value={object.scaleY} kind="float" onCommit={v => upd({ scaleY: v })} />}
           {has('scaleZ') && <InspectorRow label={sl('scaleZ', 'Scale Z')} value={object.scaleZ} kind="float" onCommit={v => upd({ scaleZ: v })} />}
         </InspectorGroup>
@@ -720,8 +725,14 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
 
       {hasAnyBeh && (
         <InspectorGroup label="Behaviour">
-          {has('action')    && <InspectorRow label={sl('action',    'Action')}    value={object.action}    kind={oskind(sc, 'action',    'int')} onCommit={v => upd({ action: v })} />}
-          {has('unknown13') && <InspectorRow label={sl('unknown13', 'unknown13')} value={object.unknown13} kind={oskind(sc, 'unknown13', 'hex')} onCommit={v => upd({ unknown13: v })} />}
+          {has('action') && (colorDef?.field === 'action'
+            ? <DualSelectRow label={sl('action', 'Colour')} value={object.action} kind="int" options={colorDef.options} onCommit={v => upd({ action: v })} />
+            : <InspectorRow  label={sl('action', 'Action')} value={object.action} kind={oskind(sc, 'action', 'int')} onCommit={v => upd({ action: v })} />
+          )}
+          {has('unknown13') && (colorDef?.field === 'unknown13'
+            ? <DualSelectRow label={sl('unknown13', 'Colour')} value={object.unknown13} kind="int" options={colorDef.options} onCommit={v => upd({ unknown13: v })} />
+            : <InspectorRow  label={sl('unknown13', 'unknown13')} value={object.unknown13} kind={oskind(sc, 'unknown13', 'hex')} onCommit={v => upd({ unknown13: v })} />
+          )}
           {has('unknown14') && <InspectorRow label={sl('unknown14', 'unknown14')} value={object.unknown14} kind={oskind(sc, 'unknown14', 'hex')} onCommit={v => upd({ unknown14: v })} />}
         </InspectorGroup>
       )}

@@ -347,7 +347,7 @@ export const OBJECT_SCHEMAS = new Map<number, ObjectFieldDesc[]>([
 
   // ── Forest ──
   [128, oDesc(['-', 'Rotation Y', '-', '-', '-', '-', 'Icon', 'Switch', '5', '6'])],                    // Forest Door
-  [129, oDesc(['-', 'Rotation Y', '-', '-', '-', '-', 'Switch ID', '-', 'Colour', '-'])],               // Forest Switch
+  [129, oDesc(['-', 'Rotation Y', '-', '-', '-', '-', 'Switch ID', '-', 'Glyph', '-'])],                // Forest Switch
   [130, oDesc(['-', 'Rotation Y', '-', 'Colour', '-', '-', 'Switch ID', '-', 'Model', '-'])],           // Laser Fence
   [131, oDesc(['-', 'Rotation Y', '-', 'Colour', '-', '-', 'Switch ID', '-', 'Model', '-'])],           // Laser Square Fence
   [132, oDesc(['-', 'Rotation Y', '-', '-', '-', '-', 'Switch ID', '-', 'Colour', '-'])],               // Forest Laser Fence Switch
@@ -757,6 +757,42 @@ export const MONSTER_SUBTYPES = new Map<number, MonsterSubtypeDef>([
   [278, { field: 'movementFlag', options: [{ value: 0, label: 'Dorphon' },      { value: 1, label: 'Dorphon Eclair' }] }],
   [279, { field: 'movementFlag', options: [{ value: 0, label: 'Goran' },        { value: 1, label: 'Goran Detonator' }, { value: 2, label: 'Pyro Goran' }] }],
   [281, { field: 'movementFlag', options: [{ value: 0, label: 'Saint Million' }, { value: 1, label: 'Shambertin' },  { value: 2, label: 'Kondrieu' }] }],
+]);
+
+// ─── Object colour system ─────────────────────────────────────────────────────
+//
+// Certain skins encode a colour variant in one of their fields; the in-game
+// engine swaps texture slots at runtime to change the appearance.
+// This drives both the 3D preview (see TEXTURE_SWAP_ITEMS in Viewer3D.tsx) and
+// the inspector DualSelectRow widget below.
+//
+// field:   which QuestObject field holds the colour index — same names as the
+//          binary struct so save/load is always faithful to PSO format.
+// options: discrete values and their display labels.
+
+export interface ObjectColorDef { field: keyof QuestObject; options: SubtypeOption[]; }
+
+const FENCE_4_COLORS: SubtypeOption[] = [
+  { value: 0, label: 'Red' },
+  { value: 1, label: 'Cyan' },
+  { value: 2, label: 'Green' },
+  { value: 3, label: 'Purple' },
+];
+
+export const OBJECT_COLOR_SUBTYPES = new Map<number, ObjectColorDef>([
+  // ── Forest ──
+  [129, { field: 'unknown13', options: Array.from({ length: 10 }, (_, i) => ({ value: i, label: `Glyph ${i}` })) }],
+  [130, { field: 'scaleX',    options: FENCE_4_COLORS }],  // Laser Fence
+  [131, { field: 'scaleX',    options: FENCE_4_COLORS }],  // Laser Square Fence
+  [132, { field: 'unknown13', options: FENCE_4_COLORS }],  // Laser Fence Switch
+  [150, { field: 'scaleX',    options: FENCE_4_COLORS }],  // Laser Fence Ex
+  [151, { field: 'scaleX',    options: FENCE_4_COLORS }],  // Laser Square Fence Ex
+  // ── Ruins ──
+  [333, { field: 'action',    options: FENCE_4_COLORS }],  // Ruins Fence Switch
+  [334, { field: 'action',    options: FENCE_4_COLORS }],  // Ruins Laser Fence 4x2
+  [335, { field: 'action',    options: FENCE_4_COLORS }],  // Ruins Laser Fence 6x2
+  [336, { field: 'action',    options: FENCE_4_COLORS }],  // Ruins Laser Fence 4x4
+  [337, { field: 'action',    options: FENCE_4_COLORS }],  // Ruins Laser Fence 6x4
 ]);
 
 export function resolveSubtype(monster: Monster, episode: 1|2|4): string | null {
