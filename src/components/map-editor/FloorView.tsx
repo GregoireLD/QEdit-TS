@@ -5,66 +5,189 @@ import { MapCanvas } from '../map-canvas/MapCanvas';
 import { Viewer3D } from '../viewer-3d/Viewer3D';
 import {
   MONSTER_SCHEMAS, OBJECT_SCHEMAS,
-  MONSTER_NPC_NAMES, objectName,
-  type MonsterFieldDesc, type ObjectFieldDesc,
+  MONSTER_NPC_NAMES, OBJECT_NAMES, objectName,
+  MONSTER_SUBTYPES, resolveSubtype,
+  type MonsterFieldDesc, type ObjectFieldDesc, type SubtypeOption,
 } from '../../core/map/entitySchemas';
 import styles from './FloorView.module.css';
 
 // ─── Monster names ──────────────────────────────────────────────────────────
+// Skin values and names are derived from Unit1.pas CheckMonsterType +
+// MonsterName array (1..111) in the Delphi source.  Variants differentiated
+// by movementFlag / unknow10 / episode are listed in comments but the table
+// maps each base skin to its primary name only.
 const MONSTER_NAMES: Record<number, string> = {
   // NPC skins from npcname.ini (skins 1–51, 69–70, 208–256, 280)
   ...MONSTER_NPC_NAMES,
-  // Enemy skins
-  0x44: 'Booma', 0x45: 'Gobooma', 0x46: 'Gigobooma',
-  0x40: 'Hildebear', 0x41: 'Hildeblue',
-  0x60: 'Rappies', 0x61: 'Al Rappy', 0x62: 'Pal Rappy',
-  0x80: 'Monest', 0x81: 'Mothmant',
-  0xa0: 'Savage Wolf', 0xa1: 'Barbarous Wolf',
-  0xc0: 'Poison Lily', 0xc1: 'Nar Lily',
-  0x110: 'Nano Dragon',
-  0x140: 'Shark', 0x141: 'Tollaw', 0x142: 'Baracuda',
-  0x160: 'Slime',
-  0x180: 'Pan Arms', 0x181: 'Migium', 0x182: 'Hidoom',
-  0x1a0: 'Dubchic', 0x1a1: 'Garanz',
-  0x1c0: 'Sinow Beat', 0x1c1: 'Sinow Gold',
-  0x1e0: 'Canadine', 0x1e1: 'Canane',
-  0x200: 'Delsaber',
-  0x220: 'Chaos Sorcerer', 0x221: 'BEE-L', 0x222: 'BEE-R',
-  0x280: 'Dark Gunner', 0x281: 'Death Gunner',
-  0x2a0: 'Chaos Bringer',
-  0x2c0: 'Dark Belra',
-  0x300: 'Dimenian', 0x301: 'La Dimenian', 0x302: 'So Dimenian',
-  0x320: 'Bulclaw', 0x321: 'Claw',
-  0x340: 'Dragon', 0x360: 'De Rol Le', 0x380: 'Vol Opt', 0x3a0: 'Dark Falz',
-  0x400: 'Hildebear', 0x401: 'Hildeblue',
-  0x440: 'Merillia', 0x441: 'Merillas',
-  0x460: 'Gibbon', 0x461: 'Gibbles',
-  0x480: 'Gee',
-  0x4a0: 'Gi Gue',
-  0x4c0: 'Deldepth', 0x4e0: 'Delbiter',
-  0x500: 'Dolmolm', 0x501: 'Dolmdari',
-  0x520: 'Morfos',
-  0x540: 'Recobox', 0x541: 'Recon',
-  0x560: 'Sinow Zoa', 0x561: 'Sinow Zele',
-  0x580: 'Mericarol', 0x581: 'Merikle', 0x582: 'Mericus',
-  0x5a0: 'Ul Gibbon', 0x5a1: 'Zol Gibbon',
-  0x5c0: 'Gulgus', 0x5c1: 'Gulgus-Gue',
-  0x5e0: 'Gal Gryphon',
-  0x600: 'Olga Flow',
-  0x640: 'Sand Rappy', 0x641: 'Del Rappy',
-  0x660: 'Astark',
-  0x680: 'Satellite Lizard', 0x681: 'Yowie',
-  0x6a0: 'Merissa A', 0x6a1: 'Merissa AA',
-  0x6c0: 'Girtablulu',
-  0x6e0: 'Zu', 0x6e1: 'Pazuzu',
-  0x700: 'Boota', 0x701: 'Ze Boota', 0x702: 'Ba Boota',
-  0x720: 'Dorphon', 0x721: 'Dorphon Eclair',
-  0x740: 'Goran', 0x741: 'Pyro Goran', 0x742: 'Goran Detonator',
-  0x760: 'Saint Milion', 0x761: 'Shambertin', 0x762: 'Kondrieu',
+
+  // ── Episode 1 ──
+  64:  'Hildebear',        // Hildeblue: same skin, different movementFlag
+  65:  'Rag Rappy',        // Al Rappy: movementFlag=1; Sand/Del Rappy in ep4
+  66:  'Monest',
+  67:  'Savage Wolf',      // Barbarous Wolf: unknow10≥1
+  68:  'Booma',            // Gobooma: movementFlag=1; Gigobooma: movementFlag=2
+  96:  'Grass Assassin',
+  97:  'Poison Lily',      // Del Lily: ep1 + unknow3=17
+  98:  'Nano Dragon',
+  99:  'Evil Shark',       // Pal Shark: movementFlag=1; Guil Shark: movementFlag=2
+  100: 'Pofuilly Slime',
+  101: 'Pan Arms',
+  128: 'Dubchic',          // Gilchic: movementFlag=1
+  129: 'Garanz',
+  130: 'Sinow Beat',       // Sinow Gold: unknow10=1
+  131: 'Canadine',
+  132: 'Canane',
+  133: 'Dubswitch',
+  160: 'Delsaber',
+  161: 'Chaos Sorcerer',
+  162: 'Dark Gunner',
+  163: 'Death Gunner',
+  164: 'Chaos Bringer',
+  165: 'Dark Belra',
+  166: 'Dimenian',         // La Dimenian: movementFlag=1; So Dimenian: movementFlag=2
+  167: 'Bulclaw',
+  168: 'Claw',
+  192: 'Dragon',           // Gal Gryphon in ep2 (same skin, different episode)
+  193: 'De Rol Le',
+  194: 'Vol Opt (Parts)',
+  197: 'Vol Opt',
+  200: 'Dark Falz',
+
+  // ── Episode 2 ──
+  201: 'Gal Gryphon',
+  202: 'Olga Flow',
+  203: 'Barba Ray',
+  204: 'Gol Dragon',
+  212: 'Sinow Berill',     // Sinow Spigell: movementFlag=1
+  213: 'Merillia',         // Meriltas: movementFlag=1
+  214: 'Mericarol',        // Merikle: movementFlag=1; Mericus: movementFlag=2
+  215: 'Ul Gibbon',        // Zol Gibbon: movementFlag=1
+  216: 'Gibbles',
+  217: 'Gee',
+  218: 'Gi Gue',
+  219: 'Deldepth',
+  220: 'Delbiter',
+  221: 'Dolmolm',          // Dolmdarl: movementFlag=1
+  222: 'Morfos',
+  223: 'Recobox',
+  224: 'Sinow Zoa',        // Sinow Zele: movementFlag=1; Epsilon: unknow3=17
+  225: 'Ill Gill',
+  65312: 'Epsilon',        // 0xFF20 = -224 as i16
+
+  // ── Episode 4 ──
+  272: 'Astark',
+  273: 'Satellite Lizard', // Yowie: unknow10=1
+  274: 'Merissa A',        // Merissa AA: movementFlag=1
+  275: 'Girtablulu',
+  276: 'Zu',               // Pazuzu: movementFlag=1
+  277: 'Boota',            // Ze Boota: movementFlag=1; Ba Boota: movementFlag=2
+  278: 'Dorphon',          // Dorphon Eclair: movementFlag=1
+  279: 'Goran',            // Pyro Goran: movementFlag=2; Goran Detonator: movementFlag=1
+  281: 'Saint Million',    // Shambertin / Kondrieu: movementFlag variants
 };
 
 function monsterName(skin: number): string {
   return MONSTER_NAMES[skin] ?? `0x${skin.toString(16).toUpperCase().padStart(4, '0')}`;
+}
+
+// Per-area valid monster skins derived from FloorSet.ini monsv1–4 (union per area).
+const AREA_MONSTER_SKINS = new Map<number, number[]>([
+  [0,  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,256]],
+  [1,  [51,65,66,67,68,69]],
+  [2,  [51,64,65,66,67,68,69,70]],
+  [3,  [51,96,97,98,99,101]],
+  [4,  [51,96,97,98,99,100]],
+  [5,  [29,51,97,98,99,100,101]],
+  [6,  [51,128,129,130,131,132,133]],
+  [7,  [51,128,129,130,131,132,133]],
+  [8,  [51,160,161,165,166,167,168]],
+  [9,  [51,160,162,163,164,166,167,168,169]],
+  [10, [51,161,162,163,164,165,166,167,168,169]],
+  [11, [192]],
+  [12, [193]],
+  [13, [51,194,195,196,197,198,199]],
+  [14, [200]],
+  [15, [8]],
+  [16, [51,64,96,99,130,160,164]],
+  [17, [51,64,96,99,130,160,164]],
+  [18, [3,6,9,11,13,14,25,27,28,29,31,32,37,38,39,40,49,51,208,209,210,211,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256]],
+  [19, [51,64,65,66,96,97,165,166]],
+  [20, [64,65,66,96,97,165,166]],
+  [21, [51,67,101,128,129,133,160]],
+  [22, [51,67,101,128,133,160,161]],
+  [23, [51,69,212,213,214,215,216,217,218,246,253]],
+  [24, [51,69,212,213,214,215,216,217,218,246,253]],
+  [25, [51,69,212,213,214,215,216,217,218,246,253]],
+  [26, [51,69,212,213,214,215,216,217,218,246,253]],
+  [27, [51,69,212,213,214,215,216,217,218,246,253]],
+  [28, [51,219,220,221,222,223,224,244]],
+  [29, [51,219,220,221,222,223,224,244]],
+  [30, [192]],
+  [31, [202,246]],
+  [32, [203]],
+  [33, [204]],
+  [34, [51,69,213,215,217,221,223,253]],
+  [35, [51,97,214,216,218,220,223,224,225,246]],
+  [36, [25,65,69,211,243,244,272,273,276,277,278,280]],
+  [37, [25,65,69,211,243,244,272,273,276,277,278,280]],
+  [38, [25,65,69,211,243,244,272,273,276,277,278,280]],
+  [39, [25,65,69,211,243,244,272,273,276,277,278,280]],
+  [40, [25,65,69,243,244,272,273,276,277,278,280]],
+  [41, [25,65,69,243,244,273,274,275,276,279,280]],
+  [42, [25,41,50,65,69,243,244,273,274,275,276,279,280]],
+  [43, [25,41,50,65,69,243,244,273,274,275,276,279,280]],
+  [44, [25,41,243,244,280,281]],
+  [45, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,243,244,256,280]],
+  [46, [65,272,273,274,275,276,277,278,279,280]],
+]);
+
+function getMonsterSkinOptions(areaId: number): SubtypeOption[] {
+  const skins = AREA_MONSTER_SKINS.get(areaId) ?? [];
+  return skins
+    .map(v => ({ value: v, label: MONSTER_NAMES[v] ?? `0x${v.toString(16).toUpperCase().padStart(4,'0')}` }))
+    .sort((a, b) => a.value - b.value);
+}
+
+function getObjectSkinOptions(areaId: number): SubtypeOption[] {
+  const r: [number, number][] = [[0, 87], [384, 396]];
+  if      (areaId >= 1  && areaId <= 2)   r.push([128, 151]);
+  else if (areaId >= 3  && areaId <= 5)   r.push([192, 225]);
+  else if (areaId >= 6  && areaId <= 7)   r.push([256, 268]);
+  else if (areaId >= 8  && areaId <= 10)  r.push([304, 372]);
+  else if (areaId >= 11 && areaId <= 17)  r.push([128, 372]);
+  else if (areaId === 18)                 r.push([400, 403], [640, 701]);
+  else if (areaId >= 19 && areaId <= 20)  r.push([128, 151], [304, 372], [416, 448]);
+  else if (areaId >= 21 && areaId <= 22)  r.push([192, 268], [400, 403], [640, 701]);
+  else if (areaId >= 23 && areaId <= 35)  r.push([512, 576], [640, 701]);
+  else if (areaId >= 36 && areaId <= 43)  r.push([768, 913]);
+  else if (areaId === 44)                 r.push([768, 913], [960, 961]);
+  return Array.from(OBJECT_NAMES.entries())
+    .filter(([k]) => k < 10000 && r.some(([lo, hi]) => k >= lo && k <= hi))
+    .map(([k, v]) => ({ value: k, label: v }))
+    .sort((a, b) => a.value - b.value);
+}
+
+// ─── Column resize ──────────────────────────────────────────────────────────
+function startColResize(
+  e: React.MouseEvent,
+  colIdx: number,
+  widthsRef: React.MutableRefObject<number[]>,
+  setWidths: React.Dispatch<React.SetStateAction<number[]>>,
+) {
+  e.preventDefault();
+  e.stopPropagation();
+  const startX = e.clientX;
+  const startW = widthsRef.current[colIdx];
+  const onMove = (me: MouseEvent) => {
+    const w = Math.max(30, startW + (me.clientX - startX));
+    setWidths(prev => { const n = [...prev]; n[colIdx] = w; return n; });
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 }
 
 // ─── Editable cell ──────────────────────────────────────────────────────────
@@ -169,34 +292,41 @@ function EditableCell({ value, kind, className, onCommit, display }: EditableCel
 
 // ─── Monster table ──────────────────────────────────────────────────────────
 
+const M_COL_INIT = [32, 120, 100, 55, 70, 70, 70, 70, 50, 70, 70];
+const O_COL_INIT = [32, 130, 50, 50, 55, 70, 70, 70, 55, 55];
+
 function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: number }) {
   const updateMonster = useQuestStore(s => s.updateMonster);
   const selectEntity  = useQuestStore(s => s.selectEntity);
   const selectedEntity = useQuestStore(s => s.selectedEntity);
+  const episode = (useQuestStore(s => s.quest?.episode) ?? 1) as 1|2|4;
   const upd = useCallback(
     (i: number, patch: Partial<Monster>) => updateMonster(floorId, i, patch),
     [updateMonster, floorId]
   );
+  const [colW, setColW] = useState(M_COL_INIT);
+  const colWRef = useRef(colW);
+  colWRef.current = colW;
+  const rs = (e: React.MouseEvent, i: number) => startColResize(e, i, colWRef, setColW);
 
   if (monsters.length === 0) {
     return <div className={styles.empty}>No monsters on this floor</div>;
   }
 
+  const H = ['#','Type','Subtype','Section','Pos X','Pos Y','Pos Z','Direction','Mobile','Char ID','Action'];
+
   return (
     <div className={styles.tableWrap}>
-      <table className={styles.table}>
+      <table className={styles.table} style={{ tableLayout: 'fixed', width: 'max-content', minWidth: '100%' }}>
+        <colgroup>{colW.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Type</th>
-            <th>Section</th>
-            <th>Pos X</th>
-            <th>Pos Y</th>
-            <th>Pos Z</th>
-            <th>Direction</th>
-            <th>Mobile</th>
-            <th>Char ID</th>
-            <th>Action</th>
+            {H.map((h, i) => (
+              <th key={h}>
+                {h}
+                <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -214,6 +344,7 @@ function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: num
                   display={monsterName(m.skin)}
                   onCommit={v => upd(i, { skin: v })}
                 />
+                <SubtypeCell monster={m} episode={episode} onCommit={v => upd(i, { movementFlag: v })} />
                 <EditableCell value={m.mapSection} kind="int"
                   onCommit={v => upd(i, { mapSection: v })} />
                 <EditableCell value={m.posX} kind="float" className={styles.num}
@@ -249,26 +380,29 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
     (i: number, patch: Partial<QuestObject>) => updateObject(floorId, i, patch),
     [updateObject, floorId]
   );
+  const [colW, setColW] = useState(O_COL_INIT);
+  const colWRef = useRef(colW);
+  colWRef.current = colW;
+  const rs = (e: React.MouseEvent, i: number) => startColResize(e, i, colWRef, setColW);
 
   if (objects.length === 0) {
     return <div className={styles.empty}>No objects on this floor</div>;
   }
 
+  const H = ['#','Skin','ID','Group','Section','Pos X','Pos Y','Pos Z','Obj ID','Action'];
+
   return (
     <div className={styles.tableWrap}>
-      <table className={styles.table}>
+      <table className={styles.table} style={{ tableLayout: 'fixed', width: 'max-content', minWidth: '100%' }}>
+        <colgroup>{colW.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Skin</th>
-            <th>ID</th>
-            <th>Group</th>
-            <th>Section</th>
-            <th>Pos X</th>
-            <th>Pos Y</th>
-            <th>Pos Z</th>
-            <th>Obj ID</th>
-            <th>Action</th>
+            {H.map((h, i) => (
+              <th key={h}>
+                {h}
+                <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -281,7 +415,8 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
                 onClick={() => selectEntity({ type: 'object', index: i })}
               >
                 <td className={styles.idx}>{i}</td>
-                <EditableCell value={o.skin} kind="hex" className={styles.num}
+                <EditableCell value={o.skin} kind="hex" className={styles.name}
+                  display={objectName(o.skin)}
                   onCommit={v => upd(i, { skin: v })} />
                 <EditableCell value={o.id} kind="int"
                   onCommit={v => upd(i, { id: v })} />
@@ -371,6 +506,74 @@ function InspectorGroup({ label, children }: { label: string; children: React.Re
   );
 }
 
+function DualSelectRow({ label, value, options, kind, onCommit }: {
+  label: string; value: number; options: SubtypeOption[]; kind: CellKind; onCommit: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(null); }, [value]);
+
+  const commit = useCallback(() => {
+    if (draft !== null) {
+      const parsed = parseEdit(draft, kind);
+      if (parsed !== null) onCommit(parsed);
+      setDraft(null);
+    }
+  }, [draft, kind, onCommit]);
+
+  const matched = options.find(o => o.value === value);
+
+  return (
+    <div className={styles.inspRow}>
+      <span className={styles.inspLabel}>{label}</span>
+      <select
+        className={styles.inspSelectInline}
+        value={matched ? String(value) : ''}
+        onChange={e => { if (e.target.value !== '') onCommit(Number(e.target.value)); }}
+      >
+        {!matched && <option value="">—</option>}
+        {options.map(o => <option key={o.value} value={String(o.value)}>{o.label}</option>)}
+      </select>
+      <input
+        ref={inputRef}
+        className={styles.inspInputInline}
+        value={draft ?? formatEdit(value, kind)}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter')  { e.preventDefault(); commit(); inputRef.current?.blur(); }
+          if (e.key === 'Escape') { setDraft(null); inputRef.current?.blur(); }
+        }}
+      />
+    </div>
+  );
+}
+
+function SubtypeCell({ monster, episode, onCommit }: {
+  monster: Monster; episode: 1|2|4; onCommit: (v: number) => void;
+}) {
+  const hasUnk3Override = (monster.skin === 97 || monster.skin === 224) && monster.unknown3 === 17;
+  const def = MONSTER_SUBTYPES.get(monster.skin);
+  if (!hasUnk3Override && def?.field === 'movementFlag') {
+    const opts: SubtypeOption[] = typeof def.options === 'function' ? def.options(episode) : def.options;
+    return (
+      <td>
+        <select
+          className={styles.subtypeSelect}
+          value={monster.movementFlag}
+          onChange={e => { e.stopPropagation(); onCommit(Number(e.target.value)); }}
+          onClick={e => e.stopPropagation()}
+        >
+          {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
+    );
+  }
+  const label = resolveSubtype(monster, episode);
+  return <td className={label ? styles.name : undefined}>{label ?? ''}</td>;
+}
+
 // ─── Schema label / kind helpers ─────────────────────────────────────────────
 
 function msl(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: string): string {
@@ -391,8 +594,9 @@ function oskind(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, f
 
 // ─── Inspectors ───────────────────────────────────────────────────────────────
 
-function MonsterInspector({ monster, index, floorId }: { monster: Monster; index: number; floorId: number }) {
+function MonsterInspector({ monster, index, floorId, areaId }: { monster: Monster; index: number; floorId: number; areaId: number }) {
   const updateMonster = useQuestStore(s => s.updateMonster);
+  const episode = (useQuestStore(s => s.quest?.episode) ?? 1) as 1|2|4;
   const upd = useCallback(
     (patch: Partial<Monster>) => updateMonster(floorId, index, patch),
     [updateMonster, floorId, index],
@@ -403,6 +607,11 @@ function MonsterInspector({ monster, index, floorId }: { monster: Monster; index
 
   const hasAnyBeh = has('action') || has('movementFlag') || has('charId') || has('movementData');
 
+  const subtypeDef = MONSTER_SUBTYPES.get(monster.skin);
+  const subtypeOpts: SubtypeOption[] | null = subtypeDef?.field === 'movementFlag'
+    ? (typeof subtypeDef.options === 'function' ? subtypeDef.options(episode) : subtypeDef.options)
+    : null;
+
   return (
     <div className={styles.inspScroll}>
       <div className={styles.inspTitle}>
@@ -411,7 +620,7 @@ function MonsterInspector({ monster, index, floorId }: { monster: Monster; index
       </div>
 
       <InspectorGroup label="Identity">
-        <InspectorRow label="Skin"    value={monster.skin}       kind="hex"  display={monsterName(monster.skin)} onCommit={v => upd({ skin: v })} />
+        <DualSelectRow label="Skin" value={monster.skin} kind="hex" options={getMonsterSkinOptions(areaId)} onCommit={v => upd({ skin: v })} />
         <InspectorRow label="Section" value={monster.mapSection} kind="int"  onCommit={v => upd({ mapSection: v })} />
       </InspectorGroup>
 
@@ -430,7 +639,10 @@ function MonsterInspector({ monster, index, floorId }: { monster: Monster; index
       {hasAnyBeh && (
         <InspectorGroup label="Behaviour">
           {has('action')       && <InspectorRow label={sl('action',       'Action')}    value={monster.action}       kind="float" onCommit={v => upd({ action: v })} />}
-          {has('movementFlag') && <InspectorRow label={sl('movementFlag', 'Mobile')}    value={monster.movementFlag} kind="bool"  onCommit={v => upd({ movementFlag: v })} />}
+          {has('movementFlag') && (subtypeOpts
+            ? <DualSelectRow label={sl('movementFlag', 'Subtype')} value={monster.movementFlag} kind="int" options={subtypeOpts} onCommit={v => upd({ movementFlag: v })} />
+            : <InspectorRow  label={sl('movementFlag', 'Mobile')}  value={monster.movementFlag} kind="bool" onCommit={v => upd({ movementFlag: v })} />
+          )}
           {has('charId')       && <InspectorRow label={sl('charId',       'Char ID')}   value={monster.charId}       kind="float" onCommit={v => upd({ charId: v })} />}
           {has('movementData') && <InspectorRow label={sl('movementData', 'Move Data')} value={monster.movementData} kind="float" onCommit={v => upd({ movementData: v })} />}
         </InspectorGroup>
@@ -453,7 +665,7 @@ function MonsterInspector({ monster, index, floorId }: { monster: Monster; index
   );
 }
 
-function ObjectInspector({ object, index, floorId }: { object: QuestObject; index: number; floorId: number }) {
+function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObject; index: number; floorId: number; areaId: number }) {
   const updateObject = useQuestStore(s => s.updateObject);
   const upd = useCallback(
     (patch: Partial<QuestObject>) => updateObject(floorId, index, patch),
@@ -477,7 +689,7 @@ function ObjectInspector({ object, index, floorId }: { object: QuestObject; inde
       </div>
 
       <InspectorGroup label="Identity">
-        <InspectorRow label="Skin"    value={object.skin}       kind="hex" display={objectName(object.skin)} onCommit={v => upd({ skin: v })} />
+        <DualSelectRow label="Skin" value={object.skin} kind="hex" options={getObjectSkinOptions(areaId)} onCommit={v => upd({ skin: v })} />
         <InspectorRow label="ID"      value={object.id}         kind="int" onCommit={v => upd({ id: v })} />
         <InspectorRow label="Group"   value={object.group}      kind="int" onCommit={v => upd({ group: v })} />
         <InspectorRow label="Section" value={object.mapSection} kind="int" onCommit={v => upd({ mapSection: v })} />
@@ -604,11 +816,13 @@ export function FloorView() {
                 monster={floor.monsters[selectedEntity.index]}
                 index={selectedEntity.index}
                 floorId={floor.id}
+                areaId={selectedFloorId!}
               />
             : <ObjectInspector
                 object={floor.objects[selectedEntity.index]}
                 index={selectedEntity.index}
                 floorId={floor.id}
+                areaId={selectedFloorId!}
               />
         }
       </div>

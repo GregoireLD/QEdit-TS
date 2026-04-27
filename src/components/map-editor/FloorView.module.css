@@ -201,7 +201,22 @@
   padding: 4px 8px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
 }
+
+.resizeHandle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+}
+.resizeHandle:hover,
+.resizeHandle:active { background: var(--accent); opacity: 0.6; }
 
 .table td {
   padding: 3px 8px;
@@ -244,4 +259,70 @@
   font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
   padding: 3px 8px;
   box-sizing: border-box;
+}
+
+/* ─── Dual select rows (popup + raw input side-by-side) ───────────────────── */
+
+.inspSelectInline {
+  flex: 1;
+  min-width: 0;
+  background: #0d1b2a;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+  cursor: pointer;
+}
+.inspSelectInline:focus { border-color: var(--accent); }
+
+.inspInputInline {
+  width: 68px;
+  flex-shrink: 0;
+  background: #0d1b2a;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: #9cdcfe;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+}
+.inspInputInline:focus { border-color: var(--accent); color: var(--text); }
+
+/* ─── Subtype selects ──────────────────────────────────────────────────────── */
+
+.inspSelect {
+  flex: 1;
+  background: #0d1b2a;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.subtypeSelect {
+  background: transparent;
+  border: none;
+  color: var(--text-head);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  cursor: pointer;
+  padding: 2px 4px;
+  outline: none;
+  width: 100%;
+}
+.subtypeSelect:hover,
+.subtypeSelect:focus {
+  background: #1e2a3a;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  border-radius: 2px;
 }

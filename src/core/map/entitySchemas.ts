@@ -721,3 +721,61 @@ export const OBJECT_NAMES: Map<number, string> = new Map([
 export function objectName(skin: number): string {
   return OBJECT_NAMES.get(skin) ?? `0x${skin.toString(16).toUpperCase().padStart(4, '0')}`;
 }
+
+// ─── Monster subtype system ───────────────────────────────────────────────────
+//
+// Monsters sharing a skin value are differentiated by movementFlag (most cases),
+// unknown10 (float ≥ 1), unknown3 (value 17), or episode.
+// MONSTER_SUBTYPES covers the movementFlag-based variants; resolveSubtype()
+// handles all cases for display and the Subtype column.
+
+export interface SubtypeOption { value: number; label: string; }
+export type SubtypeOptions = SubtypeOption[] | ((ep: 1|2|4) => SubtypeOption[]);
+export interface MonsterSubtypeDef { field: keyof Monster; options: SubtypeOptions; }
+
+export const MONSTER_SUBTYPES = new Map<number, MonsterSubtypeDef>([
+  // ── Episode 1 ──
+  [64,  { field: 'movementFlag', options: [{ value: 0, label: 'Hildebear' },    { value: 1, label: 'Hildeblue' }] }],
+  [65,  { field: 'movementFlag', options: (ep: 1|2|4) => ep === 4
+    ? [{ value: 0, label: 'Sand Rappy' },   { value: 1, label: 'Del Rappy' }]
+    : [{ value: 0, label: 'Rag Rappy' },    { value: 1, label: 'Al Rappy' }] }],
+  [68,  { field: 'movementFlag', options: [{ value: 0, label: 'Booma' },        { value: 1, label: 'Gobooma' },       { value: 2, label: 'Gigobooma' }] }],
+  [99,  { field: 'movementFlag', options: [{ value: 0, label: 'Evil Shark' },   { value: 1, label: 'Pal Shark' },     { value: 2, label: 'Guil Shark' }] }],
+  [128, { field: 'movementFlag', options: [{ value: 0, label: 'Dubchic' },      { value: 1, label: 'Gilchic' }] }],
+  [166, { field: 'movementFlag', options: [{ value: 0, label: 'Dimenian' },     { value: 1, label: 'La Dimenian' },   { value: 2, label: 'So Dimenian' }] }],
+  // ── Episode 2 ──
+  [212, { field: 'movementFlag', options: [{ value: 0, label: 'Sinow Berill' }, { value: 1, label: 'Sinow Spigell' }] }],
+  [213, { field: 'movementFlag', options: [{ value: 0, label: 'Merillia' },     { value: 1, label: 'Meriltas' }] }],
+  [214, { field: 'movementFlag', options: [{ value: 0, label: 'Mericarol' },    { value: 1, label: 'Merikle' },       { value: 2, label: 'Mericus' }] }],
+  [215, { field: 'movementFlag', options: [{ value: 0, label: 'Ul Gibbon' },    { value: 1, label: 'Zol Gibbon' }] }],
+  [221, { field: 'movementFlag', options: [{ value: 0, label: 'Dolmolm' },      { value: 1, label: 'Dolmdarl' }] }],
+  [224, { field: 'movementFlag', options: [{ value: 0, label: 'Sinow Zoa' },    { value: 1, label: 'Sinow Zele' }] }],
+  // ── Episode 4 ──
+  [274, { field: 'movementFlag', options: [{ value: 0, label: 'Merissa A' },    { value: 1, label: 'Merissa AA' }] }],
+  [276, { field: 'movementFlag', options: [{ value: 0, label: 'Zu' },           { value: 1, label: 'Pazuzu' }] }],
+  [277, { field: 'movementFlag', options: [{ value: 0, label: 'Boota' },        { value: 1, label: 'Ze Boota' },      { value: 2, label: 'Ba Boota' }] }],
+  [278, { field: 'movementFlag', options: [{ value: 0, label: 'Dorphon' },      { value: 1, label: 'Dorphon Eclair' }] }],
+  [279, { field: 'movementFlag', options: [{ value: 0, label: 'Goran' },        { value: 1, label: 'Goran Detonator' }, { value: 2, label: 'Pyro Goran' }] }],
+  [281, { field: 'movementFlag', options: [{ value: 0, label: 'Saint Million' }, { value: 1, label: 'Shambertin' },  { value: 2, label: 'Kondrieu' }] }],
+]);
+
+export function resolveSubtype(monster: Monster, episode: 1|2|4): string | null {
+  // unknown3=17 overrides take priority over movementFlag for these two skins
+  if (monster.skin === 97  && monster.unknown3 === 17) return 'Del Lily';
+  if (monster.skin === 224 && monster.unknown3 === 17) return 'Epsilon';
+  // movementFlag-based variants
+  const def = MONSTER_SUBTYPES.get(monster.skin);
+  if (def?.field === 'movementFlag') {
+    const opts: SubtypeOption[] = typeof def.options === 'function' ? def.options(episode) : def.options;
+    return opts.find(o => o.value === monster.movementFlag)?.label ?? null;
+  }
+  // Float-based (only label when not in base state)
+  if (monster.skin === 67  && Math.round(monster.unknown10) >= 1) return 'Barbarous Wolf';
+  if (monster.skin === 130 && Math.round(monster.unknown10) === 1) return 'Sinow Gold';
+  if (monster.skin === 273 && Math.round(monster.unknown10) === 1) return 'Yowie';
+  // Episode alias (Dragon skin reused as Gal Gryphon in ep2)
+  if (monster.skin === 192 && episode === 2) return 'Gal Gryphon';
+  // Stage NPC with an active subtype
+  if (monster.skin === 51 && monster.unknown7 > 0) return `Type ${monster.unknown7}`;
+  return null;
+}
