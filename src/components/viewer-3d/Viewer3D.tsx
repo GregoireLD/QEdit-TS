@@ -1061,9 +1061,31 @@ export function Viewer3D() {
     // which is floor.id (relative, 0-based within episode) + EP_OFFSET[episode].
     const floorId = (floor?.id ?? 0) + EP_OFFSET[episode];
 
+    // Load secondary model file (e.g. "72-2.xj" alongside "72.xj").
+    // Tries the secondary-specific XVM first, then falls back to the primary model's XVM.
+    const loadSecondaryModel = async (secPaths: string[], xvmFallbacks: string[]): Promise<ModelData> => {
+      const loaded = await loadNjBuf(secPaths);
+      if (!loaded) return { nj: null, textures: [] };
+      let nj: NjResult;
+      try { nj = parseNjOrXj(loaded.buf, loaded.isXj); }
+      catch { return { nj: null, textures: [] }; }
+      let textures: (THREE.CompressedTexture | null)[] = [];
+      for (const xvmBase of [loaded.base, ...xvmFallbacks]) {
+        try {
+          textures = parseXvm(new Uint8Array(await readFile(xvmBase + '.xvm')))
+            .map(x => x ? buildThreeTexture(x, true) : null);
+          break;
+        } catch { /* try next XVM path */ }
+      }
+      return { nj, textures };
+    };
+
     // Collect the unique NJ model base paths required by this floor
-    const monsterBases = new Map<string, string>();    // key → single base path (no ext)
-    const objectBases  = new Map<string, string[]>(); // key → [primary, fallback] paths
+    const monsterBases   = new Map<string, string>();    // key → single base path (no ext)
+    const objectBases    = new Map<string, string[]>(); // key → [primary, fallback] paths
+    // Secondary object models: certain skins split geometry across two files
+    // (e.g. skin 72 → "72.xj" body + "72-2.xj" posts; skin 150 → laser beams + fence posts).
+    const objectSecBases = new Map<string, { secPaths: string[]; xvmFallbacks: string[] }>();
 
     // NPCs load from monster/npc/<hexSkin>. Matches Delphi IsNPC:
     //   skin < 64 → always NPC
@@ -1136,24 +1158,39 @@ export function Viewer3D() {
       }
       for (const o of floor.objects) {
         const entry = resolveObjEntry(o);
-        if (entry && !objectBases.has(entry.key))
+        if (!entry) continue;
+        if (!objectBases.has(entry.key))
           objectBases.set(entry.key, entry.paths);
+        // Also collect secondary model paths ({stem}-2) for skins that split
+        // geometry across two files (posts/frame separate from body/beams).
+        const secStem = `${entry.key}-2`;
+        if (!objectSecBases.has(secStem)) {
+          objectSecBases.set(secStem, {
+            secPaths: [
+              `${dataDir}obj${sep}Floor${floorId}${sep}${secStem}`,
+              `${dataDir}obj${sep}${secStem}`,
+            ],
+            xvmFallbacks: entry.paths, // fall back to primary XVM if no dedicated -2.xvm
+          });
+        }
       }
     }
 
-    const monsterEntries = [...monsterBases.entries()];
-    const objectEntries  = [...objectBases.entries()];
+    const monsterEntries   = [...monsterBases.entries()];
+    const objectEntries    = [...objectBases.entries()];
+    const objectSecEntries = [...objectSecBases.entries()];
 
     const mapLoads    = Promise.all([readFile(nPath), readFile(cPath), xvmPromise, tamPromise]);
     const entityLoads = Promise.all([
       Promise.all(monsterEntries.map(([, base])  => loadModelData(base))),
       Promise.all(objectEntries.map( ([, paths]) => loadModelData(paths))),
+      Promise.all(objectSecEntries.map(([, { secPaths, xvmFallbacks }]) => loadSecondaryModel(secPaths, xvmFallbacks))),
     ]);
 
     Promise.all([mapLoads, entityLoads])
-      .then(([[nBuf, cBuf, xBuf, tamBuf], [monsterData, objectData]]) => {
+      .then(([[nBuf, cBuf, xBuf, tamBuf], [monsterData, objectData, objectSecData]]) => {
         if (cancelled) {
-          [...monsterData, ...objectData].forEach(d => d.textures.forEach(t => t?.dispose()));
+          [...monsterData, ...objectData, ...objectSecData].forEach(d => d.textures.forEach(t => t?.dispose()));
           return;
         }
 
@@ -1171,10 +1208,12 @@ export function Viewer3D() {
         const sections = parseNRel(new Uint8Array(nBuf));
 
         // Resolve entity model data by key
-        const monsterModelMap = new Map<string, ModelData>();
+        const monsterModelMap   = new Map<string, ModelData>();
         monsterEntries.forEach(([stem], i) => monsterModelMap.set(stem, monsterData[i]));
-        const objectModelMap = new Map<string, ModelData>();
-        objectEntries.forEach(([key], i)  => objectModelMap.set(key,  objectData[i]));
+        const objectModelMap    = new Map<string, ModelData>();
+        objectEntries.forEach(([key], i)   => objectModelMap.set(key,   objectData[i]));
+        const objectSecModelMap = new Map<string, ModelData>();
+        objectSecEntries.forEach(([key], i) => objectSecModelMap.set(key, objectSecData[i]));
 
         // ── Build entity group (NJ model where available, placeholder otherwise) ──
         const markerGroup   = new THREE.Group();
@@ -1262,6 +1301,17 @@ export function Viewer3D() {
               og.add(base, pole, diamond, label);
               meshes = [base, pole, diamond];
               mats   = [baseMat, poleMat, diamondMat];
+            }
+
+            // Secondary model: some skins split geometry across two files
+            // (e.g. "72.xj" door panel + "72-2.xj" door posts).
+            const secModel = objectSecModelMap.get(`${key}-2`);
+            if (secModel?.nj && secModel.nj.subMeshes.length > 0) {
+              const { group: njg2, lambertMats: secMats } = buildNjGroup(secModel.nj, secModel.textures);
+              for (const t of secModel.textures) { if (t) entityTextures.push(t); }
+              og.add(njg2);
+              njg2.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+              for (const m of secMats) mats.push(m);
             }
 
             markerGroup.add(og);
