@@ -84,3 +84,9 @@
 }
 .toolBtn:hover { background: rgba(60,60,60,0.9); }
 .toolBtnActive { background: var(--accent) !important; color: #000; border-color: var(--accent); }
+
+.wrapFullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+}

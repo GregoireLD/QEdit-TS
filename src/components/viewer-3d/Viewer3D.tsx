@@ -555,6 +555,7 @@ export function Viewer3D() {
   const motionAxesRef       = useRef<THREE.AxesHelper[]>([]);
   const rendererRef         = useRef<THREE.WebGLRenderer | null>(null);
   const xrRigRef            = useRef<THREE.Group | null>(null);
+  const wrapRef             = useRef<HTMLDivElement>(null);
 
   const [locked,        setLocked]        = useState(false);
   const [status,        setStatus]        = useState<string | null>(null);
@@ -563,6 +564,7 @@ export function Viewer3D() {
   const [animPaused,    setAnimPaused]    = useState(false);
   const [vrSupported,   setVrSupported]   = useState(false);
   const [inVR,          setInVR]          = useState(false);
+  const [isFullscreen,  setIsFullscreen]  = useState(false);
 
   const { mapDir, previewVariantByArea } = useUiStore();
   const { quest, selectedFloorId } = useQuestStore();
@@ -713,7 +715,12 @@ export function Viewer3D() {
     el.addEventListener('mouseleave', onBlur);
 
     const keys: Record<string, boolean> = {};
-    const onKeyDown = (e: KeyboardEvent) => { keys[e.code] = true;  if (e.code === 'Space') e.preventDefault(); };
+    const onKeyDown = (e: KeyboardEvent) => {
+      keys[e.code] = true;
+      if (e.code === 'Space') e.preventDefault();
+      if (e.code === 'Escape') setIsFullscreen(false);
+      if (e.code === 'KeyF' && lockedRef.current) setIsFullscreen(v => !v);
+    };
     const onKeyUp   = (e: KeyboardEvent) => { keys[e.code] = false; };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup',   onKeyUp);
@@ -1396,7 +1403,7 @@ export function Viewer3D() {
   }, [selectedFloorId, mapDir, previewVariantByArea, quest, floor]);
 
   return (
-    <div className={css.wrap}>
+    <div ref={wrapRef} className={`${css.wrap} ${isFullscreen ? css.wrapFullscreen : ''}`}>
       <div ref={mountRef} className={css.viewport} />
       <div className={`${css.hint} ${locked ? css.hintHidden : ''}`}>
         Right-click drag to look · WASD move · Space/Shift up/down
@@ -1446,6 +1453,13 @@ export function Viewer3D() {
           }}
         >
           {animPaused ? '▶' : '⏸'}
+        </button>
+        <button
+          className={`${css.toolBtn} ${isFullscreen ? css.toolBtnActive : ''}`}
+          title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen (F)'}
+          onClick={() => setIsFullscreen(v => !v)}
+        >
+          ⛶
         </button>
         {vrSupported && (
           <button
