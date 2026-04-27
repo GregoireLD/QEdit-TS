@@ -1182,17 +1182,19 @@ export function Viewer3D() {
         if (!entry) continue;
         if (!objectBases.has(entry.key))
           objectBases.set(entry.key, entry.paths);
-        // Also collect secondary model paths ({stem}-2) for skins that split
-        // geometry across two files (posts/frame separate from body/beams).
-        const secStem = `${entry.key}-2`;
-        if (!objectSecBases.has(secStem)) {
-          objectSecBases.set(secStem, {
-            secPaths: [
-              `${dataDir}obj${sep}Floor${floorId}${sep}${secStem}`,
-              `${dataDir}obj${sep}${secStem}`,
-            ],
-            xvmFallbacks: entry.paths, // fall back to primary XVM if no dedicated -2.xvm
-          });
+        // Collect secondary model paths ({stem}-2 … {stem}-9) for skins that
+        // split geometry across multiple files (posts/frame separate from body/beams).
+        for (let idx = 2; idx <= 9; idx++) {
+          const secStem = `${entry.key}-${idx}`;
+          if (!objectSecBases.has(secStem)) {
+            objectSecBases.set(secStem, {
+              secPaths: [
+                `${dataDir}obj${sep}Floor${floorId}${sep}${secStem}`,
+                `${dataDir}obj${sep}${secStem}`,
+              ],
+              xvmFallbacks: entry.paths,
+            });
+          }
         }
       }
     }
@@ -1324,10 +1326,11 @@ export function Viewer3D() {
               mats   = [baseMat, poleMat, diamondMat];
             }
 
-            // Secondary model: some skins split geometry across two files
-            // (e.g. "72.xj" door panel + "72-2.xj" door posts).
-            const secModel = objectSecModelMap.get(`${key}-2`);
-            if (secModel?.nj && secModel.nj.subMeshes.length > 0) {
+            // Secondary models: some skins split geometry across multiple files
+            // (e.g. "72.xj" door panel + "72-2.xj" door posts, "77-2.nj" + "77-3.nj" + "77-4.nj" …).
+            for (let secIdx = 2; secIdx <= 9; secIdx++) {
+              const secModel = objectSecModelMap.get(`${key}-${secIdx}`);
+              if (!secModel?.nj || secModel.nj.subMeshes.length === 0) continue;
               const { group: njg2, lambertMats: secMats } = buildNjGroup(secModel.nj, secModel.textures);
               for (const t of secModel.textures) { if (t) entityTextures.push(t); }
               og.add(njg2);
