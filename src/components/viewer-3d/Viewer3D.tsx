@@ -1185,10 +1185,11 @@ export function Viewer3D() {
           for (let i = 0; i < floor.monsters.length; i++) {
             const m = floor.monsters[i];
             const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
+            const secRot   = sections.find(s => s.id === m.mapSection)?.rotation ?? 0;
 
             const label = makeLabel(`M${i}`);
             const mg    = new THREE.Group();
-            mg.rotation.y = m.direction * BAM_TO_RAD;
+            mg.rotation.y = (m.direction + secRot) * BAM_TO_RAD + Math.PI;
             mg.position.set(wx, m.posZ, wz);
 
             const key   = monsterKey(m);
