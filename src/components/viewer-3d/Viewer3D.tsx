@@ -718,8 +718,15 @@ export function Viewer3D() {
     const onKeyDown = (e: KeyboardEvent) => {
       keys[e.code] = true;
       if (e.code === 'Space') e.preventDefault();
-      if (e.code === 'Escape') setIsFullscreen(false);
-      if (e.code === 'KeyF' && lockedRef.current) setIsFullscreen(v => !v);
+      if (e.code === 'Escape') setIsFullscreen(false); // exits CSS-fallback fullscreen; native fullscreen exits via browser + fullscreenchange
+      if (e.code === 'KeyF' && lockedRef.current) {
+        if (typeof wrapRef.current?.requestFullscreen === 'function') {
+          if (!document.fullscreenElement) wrapRef.current.requestFullscreen().catch(() => {});
+          else document.exitFullscreen().catch(() => {});
+        } else {
+          setIsFullscreen(v => !v);
+        }
+      }
     };
     const onKeyUp   = (e: KeyboardEvent) => { keys[e.code] = false; };
     window.addEventListener('keydown', onKeyDown);
@@ -888,6 +895,13 @@ export function Viewer3D() {
       sceneRef.current = null;
       if (el.contains(canvas)) el.removeChild(canvas);
     };
+  }, []);
+
+  // ── Sync fullscreen state from native Fullscreen API (non-macOS) ──────────
+  useEffect(() => {
+    const onFSChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFSChange);
+    return () => document.removeEventListener('fullscreenchange', onFSChange);
   }, []);
 
   // ── Sync collision overlay visibility ─────────────────────────────────────
@@ -1403,7 +1417,7 @@ export function Viewer3D() {
   }, [selectedFloorId, mapDir, previewVariantByArea, quest, floor]);
 
   return (
-    <div ref={wrapRef} className={`${css.wrap} ${isFullscreen ? css.wrapFullscreen : ''}`}>
+    <div ref={wrapRef} className={`${css.wrap} ${isFullscreen && typeof document.documentElement.requestFullscreen !== 'function' ? css.wrapFullscreen : ''}`}>
       <div ref={mountRef} className={css.viewport} />
       <div className={`${css.hint} ${locked ? css.hintHidden : ''}`}>
         Right-click drag to look · WASD move · Space/Shift up/down
@@ -1457,7 +1471,14 @@ export function Viewer3D() {
         <button
           className={`${css.toolBtn} ${isFullscreen ? css.toolBtnActive : ''}`}
           title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen (F)'}
-          onClick={() => setIsFullscreen(v => !v)}
+          onClick={() => {
+            if (typeof wrapRef.current?.requestFullscreen === 'function') {
+              if (!document.fullscreenElement) wrapRef.current.requestFullscreen().catch(() => {});
+              else document.exitFullscreen().catch(() => {});
+            } else {
+              setIsFullscreen(v => !v);
+            }
+          }}
         >
           ⛶
         </button>
