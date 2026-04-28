@@ -362,6 +362,47 @@
 }
 .bamInput:focus { border-color: var(--accent); color: var(--text); }
 
+.snapFloorBtn {
+  flex-shrink: 0;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1;
+  padding: 1px 4px;
+  cursor: pointer;
+}
+.snapFloorBtn:hover { background: var(--bg-panel); color: var(--accent); border-color: var(--accent); }
+.snapFloorBtn:active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ─── BAM step buttons ───────────────────────────────────────────────────── */
+
+.bamButtons {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px 4px;
+}
+
+.bamStepBtn {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-size: 9px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 2px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.bamStepBtn:hover  { background: var(--bg-panel); color: var(--accent); border-color: var(--accent); }
+.bamStepBtn:active { background: var(--accent);   color: #fff;          border-color: var(--accent); }
+
 /* ─── Add entity button (pane header) ─────────────────────────────────────── */
 
 .addEntityBtn {

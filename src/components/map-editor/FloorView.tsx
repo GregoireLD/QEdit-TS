@@ -811,34 +811,30 @@ function RelocateButton({ floorId, entityType, entityIndex, skin }: {
   );
 }
 
-// ─── BAM rotation input ──────────────────────────────────────────────────────
-// Shows degrees + a horizontal drag scrubber (drag left/right to change value)
-// alongside a raw BAM integer input.  Shift-drag for 10× speed.
+// ─── Float position scrub input ──────────────────────────────────────────────
+// Shows the float value + a horizontal drag scrubber alongside a text input.
+// Normal drag: 0.1 units/px  |  Shift-drag: 1 unit/px.
 
-function BamInputRow({ label, value, onCommit }: {
-  label: string; value: number; onCommit: (v: number) => void;
+function FloatScrubRow({ label, value, onCommit, onSnapFloor }: {
+  label: string; value: number; onCommit: (v: number) => void; onSnapFloor?: () => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const degrees = (value * 360 / 65536).toFixed(1);
-
   const commit = useCallback(() => {
     if (draft === null) return;
-    const s = draft.trim();
-    const n = s.startsWith('0x') || s.startsWith('0X') ? parseInt(s, 16) : parseInt(s, 10);
-    if (!isNaN(n)) onCommit(((n % 65536) + 65536) % 65536);
+    const n = parseFloat(draft.trim());
+    if (!isNaN(n)) onCommit(n);
     setDraft(null);
   }, [draft, onCommit]);
 
   const startScrub = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    const startX  = e.clientX;
+    const startX   = e.clientX;
     const startVal = value;
     const onMove = (me: MouseEvent) => {
-      const speed = me.shiftKey ? 640 : 64;
-      const delta = Math.round((me.clientX - startX) * speed);
-      onCommit(((startVal + delta) % 65536 + 65536) % 65536);
+      const speed = me.shiftKey ? 1.0 : 0.1;
+      onCommit(Math.round((startVal + (me.clientX - startX) * speed) * 1000) / 1000);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
@@ -855,11 +851,11 @@ function BamInputRow({ label, value, onCommit }: {
         className={styles.bamScrub}
         title="Drag to scrub (Shift = 10× faster)"
         onMouseDown={startScrub}
-      >{degrees}° ↔</span>
+      >{value.toFixed(1)} ↔</span>
       <input
         ref={inputRef}
         className={styles.bamInput}
-        value={draft ?? String(value)}
+        value={draft ?? value.toFixed(2)}
         onChange={e => setDraft(e.target.value)}
         onFocus={() => { if (draft === null) setDraft(String(value)); }}
         onBlur={commit}
@@ -868,7 +864,125 @@ function BamInputRow({ label, value, onCommit }: {
           if (e.key === 'Escape') { setDraft(null); inputRef.current?.blur(); }
         }}
       />
+      {onSnapFloor && (
+        <button
+          className={styles.snapFloorBtn}
+          title="Snap to floor height"
+          onClick={onSnapFloor}
+        >↧</button>
+      )}
     </div>
+  );
+}
+
+// ─── BAM rotation input ──────────────────────────────────────────────────────
+// Shows degrees + a horizontal drag scrubber (drag left/right to change value)
+// alongside a raw BAM integer input.  Shift-drag for 10× speed.
+// Scroll wheel on the scrub handle also adjusts the value (~5.6° per notch;
+// Shift = ~22.5° per notch).  Seven step buttons below let you snap to common
+// rotation increments.
+
+const BAM_STEPS: Array<{ label: string; deg: number }> = [
+  { label: '-90°',   deg: -90   },
+  { label: '-45°',   deg: -45   },
+  { label: '-22.5°', deg: -22.5 },
+  { label: 'flip',   deg: 180   },
+  { label: '+22.5°', deg: 22.5  },
+  { label: '+45°',   deg: 45    },
+  { label: '+90°',   deg: 90    },
+];
+
+function BamInputRow({ label, value, onCommit }: {
+  label: string; value: number; onCommit: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const scrubRef  = useRef<HTMLSpanElement>(null);
+  const commitRef = useRef(onCommit);
+  const valueRef  = useRef(value);
+  useEffect(() => { commitRef.current = onCommit; }, [onCommit]);
+  useEffect(() => { valueRef.current  = value;    }, [value]);
+
+  const degrees = (value * 360 / 65536).toFixed(1);
+
+  const commit = useCallback(() => {
+    if (draft === null) return;
+    const s = draft.trim();
+    const n = s.startsWith('0x') || s.startsWith('0X') ? parseInt(s, 16) : parseInt(s, 10);
+    if (!isNaN(n)) onCommit(((n % 65536) + 65536) % 65536);
+    setDraft(null);
+  }, [draft, onCommit]);
+
+  const startScrub = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX   = e.clientX;
+    const startVal = value;
+    const onMove = (me: MouseEvent) => {
+      const speed = me.shiftKey ? 640 : 64;
+      const delta = Math.round((me.clientX - startX) * speed);
+      onCommit(((startVal + delta) % 65536 + 65536) % 65536);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [value, onCommit]);
+
+  const applyDeg = useCallback((deg: number) => {
+    const bam = Math.round(deg * 65536 / 360);
+    onCommit(((value + bam) % 65536 + 65536) % 65536);
+  }, [value, onCommit]);
+
+  // Non-passive wheel listener so we can call preventDefault().
+  useEffect(() => {
+    const el = scrubRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const step  = e.shiftKey ? 4096 : 1024;
+      const delta = e.deltaY < 0 ? step : -step;
+      commitRef.current(((valueRef.current + delta) % 65536 + 65536) % 65536);
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
+  return (
+    <>
+      <div className={styles.inspRow}>
+        <span className={styles.inspLabel}>{label}</span>
+        <span
+          ref={scrubRef}
+          className={styles.bamScrub}
+          title="Drag or scroll to adjust (Shift = 10×)"
+          onMouseDown={startScrub}
+        >{degrees}° ↔</span>
+        <input
+          ref={inputRef}
+          className={styles.bamInput}
+          value={draft ?? String(value)}
+          onChange={e => setDraft(e.target.value)}
+          onFocus={() => { if (draft === null) setDraft(String(value)); }}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === 'Enter')  { commit(); inputRef.current?.blur(); }
+            if (e.key === 'Escape') { setDraft(null); inputRef.current?.blur(); }
+          }}
+        />
+      </div>
+      <div className={styles.bamButtons}>
+        {BAM_STEPS.map(s => (
+          <button
+            key={s.label}
+            className={styles.bamStepBtn}
+            title={`${s.deg > 0 ? '+' : ''}${s.deg}°`}
+            onClick={() => applyDeg(s.deg)}
+          >{s.label}</button>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -910,9 +1024,17 @@ function MonsterInspector({ monster, index, floorId, areaId }: {
         label="Position"
         action={<RelocateButton floorId={floorId} entityType="monster" entityIndex={index} skin={undefined} />}
       >
-        <InspectorRow label="X" value={monster.posX} kind="float" onCommit={v => upd({ posX: v })} />
-        <InspectorRow label="Y" value={monster.posY} kind="float" onCommit={v => upd({ posY: v })} />
-        <InspectorRow label="Z" value={monster.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
+        <FloatScrubRow label="X" value={monster.posX} onCommit={v => upd({ posX: v })} />
+        <FloatScrubRow label="Y" value={monster.posY} onCommit={v => upd({ posY: v })} />
+        <FloatScrubRow label="Z" value={monster.posZ} onCommit={v => upd({ posZ: v })}
+          onSnapFloor={() => {
+            const md = useUiStore.getState().loadedMapData;
+            if (!md) return;
+            const [wx, wy] = toWorldPos(monster.posX, monster.posY, monster.mapSection, md.sections);
+            const z = sampleFloorHeight(wx, wy, md.triangles);
+            if (z !== null) upd({ posZ: z });
+          }}
+        />
       </InspectorGroup>
 
       {has('direction') && (
@@ -987,9 +1109,17 @@ function ObjectInspector({ object, index, floorId, areaId }: {
         label="Position"
         action={<RelocateButton floorId={floorId} entityType="object" entityIndex={index} skin={object.skin} />}
       >
-        <InspectorRow label="X" value={object.posX} kind="float" onCommit={v => upd({ posX: v })} />
-        <InspectorRow label="Y" value={object.posY} kind="float" onCommit={v => upd({ posY: v })} />
-        <InspectorRow label="Z" value={object.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
+        <FloatScrubRow label="X" value={object.posX} onCommit={v => upd({ posX: v })} />
+        <FloatScrubRow label="Y" value={object.posY} onCommit={v => upd({ posY: v })} />
+        <FloatScrubRow label="Z" value={object.posZ} onCommit={v => upd({ posZ: v })}
+          onSnapFloor={() => {
+            const md = useUiStore.getState().loadedMapData;
+            if (!md) return;
+            const [wx, wy] = toWorldPos(object.posX, object.posY, object.mapSection, md.sections);
+            const z = sampleFloorHeight(wx, wy, md.triangles);
+            if (z !== null) upd({ posZ: z });
+          }}
+        />
       </InspectorGroup>
 
       {hasAnyRot && (
