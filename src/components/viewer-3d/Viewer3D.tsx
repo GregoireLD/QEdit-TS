@@ -31,6 +31,8 @@ import { toNRelName } from '../../core/map/mapFileNames';
 import { parseNj, parseXj } from '../../core/formats/nj';
 import type { NjResult } from '../../core/formats/nj';
 import { checkMonsterType, monsterFilename, npc51FileIndex } from '../../core/map/monsterSkins';
+import type { Monster, QuestObject, Floor } from '../../core/model/types';
+import type { RelSection } from '../../core/formats/rel';
 import css from './Viewer3D.module.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -550,6 +552,280 @@ function buildCollisionMesh(buf: Uint8Array): THREE.LineSegments {
   return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x00ff88, opacity: 0.35, transparent: true }));
 }
 
+// ─── Shared types ────────────────────────────────────────────────────────────
+
+type ModelData = { nj: NjResult | null; textures: (THREE.CompressedTexture | null)[] };
+type LoadCtx   = { dataDir: string; sep: string; floorId: number; episode: 1 | 2 | 4 };
+
+// ─── Monster/Object key helpers (used by both effects) ───────────────────────
+
+function computeMonsterKey(
+  m: Pick<Monster, 'skin' | 'movementFlag' | 'unknown10' | 'unknown3' | 'unknown7'>,
+  floorId: number,
+  episode: 1 | 2 | 4,
+): string | null {
+  if (m.skin === 51) {
+    const fileIdx = npc51FileIndex(floorId, m.unknown7);
+    if (fileIdx === 0 || fileIdx === 112) return null;
+    return monsterFilename(fileIdx);
+  }
+  const typeIdx = checkMonsterType(m.skin, m.movementFlag, m.unknown10, m.unknown3, episode);
+  const fname = monsterFilename(typeIdx);
+  if (fname) return fname;
+  if (m.skin < 64 || (m.skin >= 0xD0 && m.skin < 257))
+    return `npc:${m.skin.toString(16).padStart(2, '0')}`;
+  return null;
+}
+
+function computeMonsterBase(key: string, dataDir: string, sep: string): string {
+  if (key.startsWith('npc:')) return `${dataDir}monster${sep}npc${sep}${key.slice(4)}`;
+  if (key.startsWith('../'))  return dataDir + key.slice(3).replace(/\//g, sep);
+  return `${dataDir}monster${sep}${key}`;
+}
+
+function computeObjEntry(
+  o: Pick<QuestObject, 'skin' | 'unknown13' | 'scaleX' | 'scaleZ' | 'objId' | 'action'>,
+  floorId: number,
+  dataDir: string,
+  sep: string,
+): { key: string; baseStem: string; paths: string[] } | null {
+  if (o.skin === 0) return null;
+  let skin = o.skin;
+  if (skin === 130 || skin === 150) skin = o.unknown13 === 0 ? 150 : 130;
+  else if (skin === 131 || skin === 151) skin = o.unknown13 === 0 ? 151 : 131;
+  const baseStem = String(skin);
+  let suffix = '';
+  for (const { skin: s, v, max } of SUBTYPED_ITEMS) {
+    if (s === skin) {
+      let val = v === 1 ? Math.round(o.scaleX)
+              : v === 2 ? o.objId
+              : v === 4 ? o.action
+              : v === 5 ? Math.round(o.scaleZ)
+              : o.unknown13;
+      val = Math.min(Math.max(val, 0), max);
+      suffix = `-${val}`;
+      break;
+    }
+  }
+  const stem = `${skin}${suffix}`;
+  return {
+    key:      stem,
+    baseStem,
+    paths: [
+      `${dataDir}obj${sep}Floor${floorId}${sep}${stem}`,
+      `${dataDir}obj${sep}${stem}`,
+    ],
+  };
+}
+
+// ─── Module-level async model loaders ────────────────────────────────────────
+
+async function loadNjBufRaw(
+  basePaths: string[],
+): Promise<{ buf: Uint8Array; isXj: boolean; base: string } | null> {
+  for (const bp of basePaths) {
+    try { return { buf: new Uint8Array(await readFile(bp + '.nj')), isXj: false, base: bp }; } catch { /* */ }
+    try { return { buf: new Uint8Array(await readFile(bp + '.xj')), isXj: true,  base: bp }; } catch { /* */ }
+  }
+  return null;
+}
+
+function parseNjOrXjRaw(buf: Uint8Array, isXj: boolean): NjResult {
+  return isXj ? parseXj(buf) : parseNj(buf);
+}
+
+async function loadModelDataRaw(basePaths: string | string[]): Promise<ModelData> {
+  const paths  = Array.isArray(basePaths) ? basePaths : [basePaths];
+  const loaded = await loadNjBufRaw(paths);
+  if (!loaded) return { nj: null, textures: [] };
+  const basePath = loaded.base;
+  let nj: NjResult;
+  try { nj = parseNjOrXjRaw(loaded.buf, loaded.isXj); }
+  catch { return { nj: null, textures: [] }; }
+  if (nj.nmdlRef) {
+    const lastSep = Math.max(basePath.lastIndexOf('/'), basePath.lastIndexOf('\\'));
+    const dir     = lastSep >= 0 ? basePath.slice(0, lastSep + 1) : '';
+    const refBase = dir + nj.nmdlRef;
+    const refLoaded = await loadNjBufRaw([refBase]);
+    if (refLoaded) {
+      try { nj = parseNjOrXjRaw(refLoaded.buf, refLoaded.isXj); }
+      catch { return { nj: null, textures: [] }; }
+    } else {
+      return { nj: null, textures: [] };
+    }
+    let textures: (THREE.CompressedTexture | null)[] = [];
+    try {
+      textures = parseXvm(new Uint8Array(await readFile(refBase + '.xvm')))
+        .map(x => x ? buildThreeTexture(x, true) : null);
+    } catch { /* XVM optional */ }
+    return { nj, textures };
+  }
+  let textures: (THREE.CompressedTexture | null)[] = [];
+  try {
+    textures = parseXvm(new Uint8Array(await readFile(basePath + '.xvm')))
+      .map(x => x ? buildThreeTexture(x, true) : null);
+  } catch { /* XVM optional */ }
+  return { nj, textures };
+}
+
+async function loadSecondaryModelRaw(secPaths: string[], xvmFallbacks: string[]): Promise<ModelData> {
+  const loaded = await loadNjBufRaw(secPaths);
+  if (!loaded) return { nj: null, textures: [] };
+  let nj: NjResult;
+  try { nj = parseNjOrXjRaw(loaded.buf, loaded.isXj); }
+  catch { return { nj: null, textures: [] }; }
+  let textures: (THREE.CompressedTexture | null)[] = [];
+  for (const xvmBase of [loaded.base, ...xvmFallbacks]) {
+    try {
+      textures = parseXvm(new Uint8Array(await readFile(xvmBase + '.xvm')))
+        .map(x => x ? buildThreeTexture(x, true) : null);
+      break;
+    } catch { /* try next */ }
+  }
+  return { nj, textures };
+}
+
+// ─── Core entity marker builder (shared by mapLoadEffect + entityDiffEffect) ─
+
+function buildEntityMarkersCore(
+  floor:            Floor,
+  sections:         RelSection[],
+  ctx:              LoadCtx,
+  monsterModelMap:  ReadonlyMap<string, ModelData>,
+  objectModelMap:   ReadonlyMap<string, ModelData>,
+  objectSecModelMap: ReadonlyMap<string, ModelData>,
+  entityTexOut:     THREE.CompressedTexture[],
+): {
+  group:         THREE.Group;
+  pickables:     MarkerPickable[];
+  monsterGroups: THREE.Group[];
+  objectGroups:  THREE.Group[];
+} {
+  const markerGroup   = new THREE.Group();
+  const pickables:     MarkerPickable[] = [];
+  const monsterGroups: THREE.Group[]    = [];
+  const objectGroups:  THREE.Group[]    = [];
+
+  for (let i = 0; i < floor.monsters.length; i++) {
+    const m        = floor.monsters[i];
+    const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
+    const secRot   = sections.find(s => s.id === m.mapSection)?.rotation ?? 0;
+    const label    = makeLabel(`M${i}`);
+    const mg       = new THREE.Group();
+    mg.rotation.y  = (m.direction + secRot) * BAM_TO_RAD + Math.PI;
+    mg.position.set(wx, m.posZ, wz);
+
+    const key   = computeMonsterKey(m, ctx.floorId, ctx.episode);
+    const model = key ? monsterModelMap.get(key) : undefined;
+    let meshes: THREE.Mesh[];
+    let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+
+    if (model?.nj && model.nj.subMeshes.length > 0) {
+      const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures);
+      for (const t of model.textures) { if (t) entityTexOut.push(t); }
+      label.position.set(0, 25, 0);
+      mg.add(njg, label);
+      meshes = [];
+      njg.traverse(o => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+      mats = lambertMats;
+    } else {
+      const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
+      const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+      const body    = new THREE.Mesh(_bodyCylGeo, bodyMat);
+      body.position.set(0, 2, 0);
+      const nose    = new THREE.Mesh(_noseConeGeo, noseMat);
+      nose.rotation.x = Math.PI / 2;
+      nose.position.set(0, 2, 4.5);
+      label.position.set(0, 8, 0);
+      mg.add(body, nose, label);
+      meshes = [body, nose];
+      mats   = [bodyMat, noseMat];
+    }
+    markerGroup.add(mg);
+    monsterGroups.push(mg);
+    pickables.push({ meshes, type: 'monster', index: i, mats,
+      defaultColor:  model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : MONSTER_COLOR,
+      selectedColor: MONSTER_SEL, label });
+  }
+
+  for (let i = 0; i < floor.objects.length; i++) {
+    const o        = floor.objects[i];
+    const [wx, wz] = toWorldPos(o.posX, o.posY, o.mapSection, sections);
+    const secRot   = sections.find(s => s.id === o.mapSection)?.rotation ?? 0;
+    const label    = makeLabel(`O${i}`);
+    const og       = new THREE.Group();
+    og.rotation.x  = o.rotX * BAM_TO_RAD;
+    og.rotation.y  = (o.rotY + secRot) * BAM_TO_RAD + Math.PI;
+    og.rotation.z  = -o.rotZ * BAM_TO_RAD;
+    og.position.set(wx, o.posZ, wz);
+
+    const objEntry = computeObjEntry(o, ctx.floorId, ctx.dataDir, ctx.sep);
+    const key      = objEntry?.key      ?? String(o.skin);
+    const baseStem = objEntry?.baseStem ?? key;
+    const model    = objectModelMap.get(key);
+    let meshes: THREE.Mesh[];
+    let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+
+    let texRemap: Map<number, number> | undefined;
+    for (const sw of TEXTURE_SWAP_ITEMS) {
+      if (sw.skin !== o.skin) continue;
+      const raw =
+        sw.field === 'scaleX'    ? Math.round(o.scaleX) :
+        sw.field === 'objIdHi'   ? Math.floor(o.objId / 256) :
+        sw.field === 'action'    ? o.action :
+        o.unknown13;
+      const val = Math.min(Math.max(raw, 0), sw.max);
+      if (val !== 0) texRemap = new Map([[sw.srcSlot, val + sw.dstOffset]]);
+      break;
+    }
+
+    if (model?.nj && model.nj.subMeshes.length > 0) {
+      const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures, texRemap);
+      for (const t of model.textures) { if (t) entityTexOut.push(t); }
+      label.position.set(0, 25, 0);
+      og.add(njg, label);
+      meshes = [];
+      njg.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+      mats = lambertMats;
+    } else {
+      const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+      const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+      const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
+      const base    = new THREE.Mesh(_baseBoxGeo, baseMat);
+      base.position.set(0, 0.75, 0);
+      const pole    = new THREE.Mesh(_poleGeo, poleMat);
+      pole.position.set(0, 4, 0);
+      const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
+      diamond.position.set(0, 7.5, 0);
+      label.position.set(0, 10.5, 0);
+      og.add(base, pole, diamond, label);
+      meshes = [base, pole, diamond];
+      mats   = [baseMat, poleMat, diamondMat];
+    }
+
+    for (let secIdx = 2; secIdx <= 9; secIdx++) {
+      const byKey    = objectSecModelMap.get(`${key}-${secIdx}`);
+      const secModel = byKey?.nj
+        ? byKey
+        : (key !== baseStem ? objectSecModelMap.get(`${baseStem}-${secIdx}`) : undefined);
+      if (!secModel?.nj || secModel.nj.subMeshes.length === 0) continue;
+      const { group: njg2, lambertMats: secMats } = buildNjGroup(secModel.nj, secModel.textures, texRemap);
+      for (const t of secModel.textures) { if (t) entityTexOut.push(t); }
+      og.add(njg2);
+      njg2.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+      for (const m of secMats) mats.push(m);
+    }
+
+    markerGroup.add(og);
+    objectGroups.push(og);
+    pickables.push({ meshes, type: 'object', index: i, mats,
+      defaultColor:  model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : OBJECT_COLOR,
+      selectedColor: OBJECT_SEL, label });
+  }
+
+  return { group: markerGroup, pickables, monsterGroups, objectGroups };
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function Viewer3D() {
@@ -581,6 +857,20 @@ export function Viewer3D() {
   const xrRigRef            = useRef<THREE.Group | null>(null);
   const wrapRef             = useRef<HTMLDivElement>(null);
 
+  // ── Live-edit refs (incremental entity updates without map reload) ─────────
+  const sectionsRef      = useRef<RelSection[]>([]);
+  const monsterGroupsRef = useRef<THREE.Group[]>([]);
+  const objectGroupsRef  = useRef<THREE.Group[]>([]);
+  const modelCacheRef    = useRef<{
+    monster: Map<string, ModelData>;
+    object:  Map<string, ModelData>;
+    sec:     Map<string, ModelData>;
+  }>({ monster: new Map(), object: new Map(), sec: new Map() });
+  const loadCtxRef       = useRef<LoadCtx | null>(null);
+  const prevMonstersRef  = useRef<Monster[]>([]);
+  const prevObjectsRef   = useRef<QuestObject[]>([]);
+  const floorRef         = useRef<Floor | null>(null);
+
   const [locked,        setLocked]        = useState(false);
   const [status,        setStatus]        = useState<string | null>(null);
   const [showCollision, setShowCollision] = useState(false);
@@ -591,9 +881,10 @@ export function Viewer3D() {
   const [isFullscreen,  setIsFullscreen]  = useState(false);
 
   const { mapDir, previewVariantByArea } = useUiStore();
-  const { quest, selectedFloorId } = useQuestStore();
+  const { selectedFloorId } = useQuestStore();
   const selectedEntity = useQuestStore(s => s.selectedEntity);
   const floor = useSelectedFloor();
+  floorRef.current = floor; // always current without triggering effect re-runs
 
   // ── Three.js scene (created once) ──────────────────────────────────────────
   useEffect(() => {
@@ -986,6 +1277,11 @@ export function Viewer3D() {
     animTargetsRef.current = [];
     motionGroupsRef.current = [];
     motionAxesRef.current = [];
+    sectionsRef.current      = [];
+    monsterGroupsRef.current = [];
+    objectGroupsRef.current  = [];
+    modelCacheRef.current    = { monster: new Map(), object: new Map(), sec: new Map() };
+    loadCtxRef.current       = null;
 
     if (selectedFloorId === null || !mapDir || !scene) return;
 
@@ -993,7 +1289,7 @@ export function Viewer3D() {
     if (!area) return;
 
     const previewIdx   = previewVariantByArea[selectedFloorId];
-    const committedIdx = quest?.variantByArea[selectedFloorId];
+    const committedIdx = useQuestStore.getState().quest?.variantByArea[selectedFloorId];
     const variantIdx   = previewIdx ?? committedIdx ?? 0;
     const variant = area.variants[variantIdx] ?? area.variants[0];
     if (!variant) return;
@@ -1042,88 +1338,13 @@ export function Viewer3D() {
 
     // ── Entity model loading (parallel with map files) ──────────────────────
     // Derive the data root from mapDir (e.g. "…/data/map" → "…/data/")
-    const dataDir = getDataDir(mapDir, sep);
-    const episode = (quest?.episode ?? 1) as 1 | 2 | 4;
-
-    type ModelData = { nj: NjResult | null; textures: (THREE.CompressedTexture | null)[] };
-
-    // Returns the buffer and whether it was loaded as XJ (vs NJ).
-    // XJ and NJ share the outer NJCM/NMDL chunk envelope but use different
-    // internal geometry formats — dispatch is by file extension.
-    // Accepts multiple candidate base paths; tries each in order (NJ first, then XJ).
-    const loadNjBuf = async (basePaths: string[]): Promise<{ buf: Uint8Array; isXj: boolean; base: string } | null> => {
-      for (const bp of basePaths) {
-        try { return { buf: new Uint8Array(await readFile(bp + '.nj')), isXj: false, base: bp }; } catch { /* try .xj */ }
-        try { return { buf: new Uint8Array(await readFile(bp + '.xj')), isXj: true,  base: bp }; } catch { /* try next */ }
-      }
-      return null;
-    };
-
-    const parseNjOrXj = (buf: Uint8Array, isXj: boolean): NjResult =>
-      isXj ? parseXj(buf) : parseNj(buf);
-
-    // Accepts one or more candidate base paths (floor-specific first, flat fallback).
-    const loadModelData = async (basePaths: string | string[]): Promise<ModelData> => {
-      const paths  = Array.isArray(basePaths) ? basePaths : [basePaths];
-      const loaded = await loadNjBuf(paths);
-      if (!loaded) return { nj: null, textures: [] };
-
-      const basePath = loaded.base;
-      let nj: NjResult;
-      try { nj = parseNjOrXj(loaded.buf, loaded.isXj); }
-      catch { return { nj: null, textures: [] }; }
-
-      // NMDL redirect: the file references another model in the SAME directory.
-      // Delphi opens the referenced file from the same directory as the source NJ/XJ.
-      if (nj.nmdlRef) {
-        const lastSep = Math.max(basePath.lastIndexOf('/'), basePath.lastIndexOf('\\'));
-        const dir     = lastSep >= 0 ? basePath.slice(0, lastSep + 1) : '';
-        const refBase = dir + nj.nmdlRef;
-        const refLoaded = await loadNjBuf([refBase]);
-        if (refLoaded) {
-          try { nj = parseNjOrXj(refLoaded.buf, refLoaded.isXj); }
-          catch { return { nj: null, textures: [] }; }
-        } else {
-          return { nj: null, textures: [] };
-        }
-        let textures: (THREE.CompressedTexture | null)[] = [];
-        try {
-          textures = parseXvm(new Uint8Array(await readFile(refBase + '.xvm')))
-            .map(x => x ? buildThreeTexture(x, true) : null);
-        } catch { /* XVM optional */ }
-        return { nj, textures };
-      }
-
-      let textures: (THREE.CompressedTexture | null)[] = [];
-      try {
-        textures = parseXvm(new Uint8Array(await readFile(basePath + '.xvm')))
-          .map(x => x ? buildThreeTexture(x, true) : null);
-      } catch { /* XVM is optional */ }
-      return { nj, textures };
-    };
-
+    const dataDir   = getDataDir(mapDir, sep);
+    const episode   = (useQuestStore.getState().quest?.episode ?? 1) as 1 | 2 | 4;
+    const floorSnap = floorRef.current;
     // NPC51_FILE and floor-subdirectory lookups use the absolute area ID (0..45),
     // which is floor.id (relative, 0-based within episode) + EP_OFFSET[episode].
-    const floorId = (floor?.id ?? 0) + EP_OFFSET[episode];
-
-    // Load secondary model file (e.g. "72-2.xj" alongside "72.xj").
-    // Tries the secondary-specific XVM first, then falls back to the primary model's XVM.
-    const loadSecondaryModel = async (secPaths: string[], xvmFallbacks: string[]): Promise<ModelData> => {
-      const loaded = await loadNjBuf(secPaths);
-      if (!loaded) return { nj: null, textures: [] };
-      let nj: NjResult;
-      try { nj = parseNjOrXj(loaded.buf, loaded.isXj); }
-      catch { return { nj: null, textures: [] }; }
-      let textures: (THREE.CompressedTexture | null)[] = [];
-      for (const xvmBase of [loaded.base, ...xvmFallbacks]) {
-        try {
-          textures = parseXvm(new Uint8Array(await readFile(xvmBase + '.xvm')))
-            .map(x => x ? buildThreeTexture(x, true) : null);
-          break;
-        } catch { /* try next XVM path */ }
-      }
-      return { nj, textures };
-    };
+    const floorId   = (floorSnap?.id ?? 0) + EP_OFFSET[episode];
+    const floorCtx: LoadCtx = { dataDir, sep, floorId, episode };
 
     // Collect the unique NJ model base paths required by this floor
     const monsterBases   = new Map<string, string>();    // key → single base path (no ext)
@@ -1132,80 +1353,14 @@ export function Viewer3D() {
     // (e.g. skin 72 → "72.xj" body + "72-2.xj" posts; skin 150 → laser beams + fence posts).
     const objectSecBases = new Map<string, { secPaths: string[]; xvmFallbacks: string[] }>();
 
-    // NPCs load from monster/npc/<hexSkin>. Matches Delphi IsNPC:
-    //   skin < 64 → always NPC
-    //   skin >= 0xD0 && skin < 257 && no known monster type → NPC
-    // Skin 51 = stage NPCs: dispatch via NPC51File[floorId][unknown7].
-    const monsterKey = (m: { skin: number; movementFlag: number; unknown10: number; unknown3: number; unknown7: number }) => {
-      if (m.skin === 51) {
-        const fileIdx = npc51FileIndex(floorId, m.unknown7);
-        if (fileIdx === 0 || fileIdx === 112) return null; // no model or crash sentinel
-        return monsterFilename(fileIdx);
-      }
-      const typeIdx = checkMonsterType(m.skin, m.movementFlag, m.unknown10, m.unknown3, episode);
-      const fname = monsterFilename(typeIdx);
-      if (fname) return fname;
-      if (m.skin < 64 || (m.skin >= 0xD0 && m.skin < 257))
-        return `npc:${m.skin.toString(16).padStart(2, '0')}`;
-      return null;
-    };
-    const monsterBase = (key: string) => {
-      if (key.startsWith('npc:')) {
-        const hex = key.slice(4); // e.g. "01", "0a", "3f"
-        return `${dataDir}monster${sep}npc${sep}${hex}`;
-      }
-      // Cross-folder refs (e.g. "../obj/145") are relative to data/monster/, so
-      // strip the "../" prefix and resolve from dataDir directly.
-      if (key.startsWith('../')) {
-        return dataDir + key.slice(3).replace(/\//g, sep);
-      }
-      return `${dataDir}monster${sep}${key}`;
-    };
-
-    // Resolves an object's canonical stem (after skin aliasing + subtypeditem variant)
-    // and returns candidate base paths: floor-specific first, flat fallback second.
-    // baseStem is the skin number without any subtype suffix; equals key when no suffix applied.
-    const resolveObjEntry = (o: { skin: number; unknown13: number; scaleX: number; scaleZ: number; objId: number; action: number }): { key: string; baseStem: string; paths: string[] } | null => {
-      if (o.skin === 0) return null;
-      // Skin aliasing: 130↔150 and 131↔151 are the same object type;
-      // unknown13=0 → open/active form (150/151), unknown13≠0 → closed/base form (130/131).
-      let skin = o.skin;
-      if (skin === 130 || skin === 150) skin = o.unknown13 === 0 ? 150 : 130;
-      else if (skin === 131 || skin === 151) skin = o.unknown13 === 0 ? 151 : 131;
-      // Subtypeditem: certain skins have variant model files (e.g. "135-0.nj", "135-1.nj").
-      const baseStem = String(skin);
-      let suffix = '';
-      for (const { skin: s, v, max } of SUBTYPED_ITEMS) {
-        if (s === skin) {
-          let val = v === 1 ? Math.round(o.scaleX)
-                  : v === 2 ? o.objId
-                  : v === 4 ? o.action
-                  : v === 5 ? Math.round(o.scaleZ)
-                  : o.unknown13;
-          val = Math.min(Math.max(val, 0), max);
-          suffix = `-${val}`;
-          break;
-        }
-      }
-      const stem = `${skin}${suffix}`;
-      return {
-        key:      stem,
-        baseStem,
-        paths: [
-          `${dataDir}obj${sep}Floor${floorId}${sep}${stem}`, // floor-specific variant first
-          `${dataDir}obj${sep}${stem}`,                       // common fallback
-        ],
-      };
-    };
-
-    if (floor) {
-      for (const m of floor.monsters) {
-        const key = monsterKey(m);
+    if (floorSnap) {
+      for (const m of floorSnap.monsters) {
+        const key = computeMonsterKey(m, floorId, episode);
         if (key && !monsterBases.has(key))
-          monsterBases.set(key, monsterBase(key));
+          monsterBases.set(key, computeMonsterBase(key, dataDir, sep));
       }
-      for (const o of floor.objects) {
-        const entry = resolveObjEntry(o);
+      for (const o of floorSnap.objects) {
+        const entry = computeObjEntry(o, floorId, dataDir, sep);
         if (!entry) continue;
         if (!objectBases.has(entry.key))
           objectBases.set(entry.key, entry.paths);
@@ -1240,9 +1395,9 @@ export function Viewer3D() {
 
     const mapLoads    = Promise.all([readFile(nPath), readFile(cPath), xvmPromise, tamPromise]);
     const entityLoads = Promise.all([
-      Promise.all(monsterEntries.map(([, base])  => loadModelData(base))),
-      Promise.all(objectEntries.map( ([, paths]) => loadModelData(paths))),
-      Promise.all(objectSecEntries.map(([, { secPaths, xvmFallbacks }]) => loadSecondaryModel(secPaths, xvmFallbacks))),
+      Promise.all(monsterEntries.map(([, base])                           => loadModelDataRaw(base))),
+      Promise.all(objectEntries.map( ([, paths])                          => loadModelDataRaw(paths))),
+      Promise.all(objectSecEntries.map(([, { secPaths, xvmFallbacks }]) => loadSecondaryModelRaw(secPaths, xvmFallbacks))),
     ]);
 
     Promise.all([mapLoads, entityLoads])
@@ -1273,133 +1428,11 @@ export function Viewer3D() {
         const objectSecModelMap = new Map<string, ModelData>();
         objectSecEntries.forEach(([key], i) => objectSecModelMap.set(key, objectSecData[i]));
 
-        // ── Build entity group (NJ model where available, placeholder otherwise) ──
-        const markerGroup   = new THREE.Group();
-        const pickables: MarkerPickable[] = [];
+        // ── Build entity markers ──────────────────────────────────────────────
         const entityTextures: THREE.CompressedTexture[] = [];
-
-        if (floor) {
-          for (let i = 0; i < floor.monsters.length; i++) {
-            const m = floor.monsters[i];
-            const [wx, wz] = toWorldPos(m.posX, m.posY, m.mapSection, sections);
-            const secRot   = sections.find(s => s.id === m.mapSection)?.rotation ?? 0;
-
-            const label = makeLabel(`M${i}`);
-            const mg    = new THREE.Group();
-            mg.rotation.y = (m.direction + secRot) * BAM_TO_RAD + Math.PI;
-            mg.position.set(wx, m.posZ, wz);
-
-            const key   = monsterKey(m);
-            const model = key ? monsterModelMap.get(key) : undefined;
-            let meshes: THREE.Mesh[];
-            let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
-
-            if (model?.nj && model.nj.subMeshes.length > 0) {
-              const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures);
-              for (const t of model.textures) { if (t) entityTextures.push(t); }
-              label.position.set(0, 25, 0);
-              mg.add(njg, label);
-              meshes = [];
-              njg.traverse(o => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
-              mats = lambertMats;
-            } else {
-              const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
-              const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
-              const body = new THREE.Mesh(_bodyCylGeo, bodyMat);
-              body.position.set(0, 2, 0);
-              const nose = new THREE.Mesh(_noseConeGeo, noseMat);
-              nose.rotation.x = Math.PI / 2;
-              nose.position.set(0, 2, 4.5);
-              label.position.set(0, 8, 0);
-              mg.add(body, nose, label);
-              meshes = [body, nose];
-              mats   = [bodyMat, noseMat];
-            }
-
-            markerGroup.add(mg);
-            pickables.push({ meshes, type: 'monster', index: i, mats, defaultColor: model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : MONSTER_COLOR, selectedColor: MONSTER_SEL, label });
-          }
-
-          for (let i = 0; i < floor.objects.length; i++) {
-            const o = floor.objects[i];
-            const [wx, wz] = toWorldPos(o.posX, o.posY, o.mapSection, sections);
-
-            const label  = makeLabel(`O${i}`);
-            const og     = new THREE.Group();
-            const secRot = sections.find(s => s.id === o.mapSection)?.rotation ?? 0;
-            og.rotation.x = o.rotX * BAM_TO_RAD;
-            og.rotation.y = (o.rotY + secRot) * BAM_TO_RAD + Math.PI;
-            og.rotation.z = -o.rotZ * BAM_TO_RAD;
-            og.position.set(wx, o.posZ, wz);
-
-            const objEntry = resolveObjEntry(o);
-            const key      = objEntry?.key      ?? String(o.skin);
-            const baseStem = objEntry?.baseStem  ?? key;
-            const model = objectModelMap.get(key);
-            let meshes: THREE.Mesh[];
-            let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
-
-            // Texture-slot remap for colour-variant objects (fences, switches, etc.).
-            // Uses original o.skin, not the aliased key, matching Delphi's ColorItem lookup.
-            let texRemap: Map<number, number> | undefined;
-            for (const sw of TEXTURE_SWAP_ITEMS) {
-              if (sw.skin !== o.skin) continue;
-              const raw =
-                sw.field === 'scaleX'    ? Math.round(o.scaleX) :
-                sw.field === 'objIdHi'   ? Math.floor(o.objId / 256) :
-                sw.field === 'action'    ? o.action :
-                o.unknown13;
-              const val = Math.min(Math.max(raw, 0), sw.max);
-              if (val !== 0) texRemap = new Map([[sw.srcSlot, val + sw.dstOffset]]);
-              break;
-            }
-
-            if (model?.nj && model.nj.subMeshes.length > 0) {
-              const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures, texRemap);
-              for (const t of model.textures) { if (t) entityTextures.push(t); }
-              label.position.set(0, 25, 0);
-              og.add(njg, label);
-              meshes = [];
-              njg.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
-              mats = lambertMats;
-            } else {
-              const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
-              const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
-              const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
-              const base    = new THREE.Mesh(_baseBoxGeo,  baseMat);
-              base.position.set(0, 0.75, 0);
-              const pole    = new THREE.Mesh(_poleGeo, poleMat);
-              pole.position.set(0, 4, 0);
-              const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
-              diamond.position.set(0, 7.5, 0);
-              label.position.set(0, 10.5, 0);
-              og.add(base, pole, diamond, label);
-              meshes = [base, pole, diamond];
-              mats   = [baseMat, poleMat, diamondMat];
-            }
-
-            // Secondary models: some skins split geometry across multiple files
-            // (e.g. "72.xj" door panel + "72-2.xj" door posts, "77-2.nj" + "77-3.nj" + "77-4.nj" …).
-            // For subtypeditem skins (key ≠ baseStem, e.g. "69-0") also check the
-            // bare-skin secondary ("69-2") because shared parts are indexed from the base skin.
-            // Note: can't use ?? here — a missing file registers as { nj: null } (not undefined).
-            for (let secIdx = 2; secIdx <= 9; secIdx++) {
-              const byKey  = objectSecModelMap.get(`${key}-${secIdx}`);
-              const secModel = byKey?.nj
-                ? byKey
-                : (key !== baseStem ? objectSecModelMap.get(`${baseStem}-${secIdx}`) : undefined);
-              if (!secModel?.nj || secModel.nj.subMeshes.length === 0) continue;
-              const { group: njg2, lambertMats: secMats } = buildNjGroup(secModel.nj, secModel.textures, texRemap);
-              for (const t of secModel.textures) { if (t) entityTextures.push(t); }
-              og.add(njg2);
-              njg2.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
-              for (const m of secMats) mats.push(m);
-            }
-
-            markerGroup.add(og);
-            pickables.push({ meshes, type: 'object', index: i, mats, defaultColor: model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : OBJECT_COLOR, selectedColor: OBJECT_SEL, label });
-          }
-        }
+        const { group: markerGroup, pickables, monsterGroups, objectGroups } = floorSnap
+          ? buildEntityMarkersCore(floorSnap, sections, floorCtx, monsterModelMap, objectModelMap, objectSecModelMap, entityTextures)
+          : { group: new THREE.Group(), pickables: [] as MarkerPickable[], monsterGroups: [] as THREE.Group[], objectGroups: [] as THREE.Group[] };
 
         const s = sceneRef.current;
         if (!s) {
@@ -1422,6 +1455,13 @@ export function Viewer3D() {
         tamRef.current             = tamData;
         animTargetsRef.current     = animTargets;
         motionGroupsRef.current    = motionGroups;
+        sectionsRef.current        = sections;
+        monsterGroupsRef.current   = monsterGroups;
+        objectGroupsRef.current    = objectGroups;
+        modelCacheRef.current      = { monster: monsterModelMap, object: objectModelMap, sec: objectSecModelMap };
+        loadCtxRef.current         = floorCtx;
+        prevMonstersRef.current    = floorSnap?.monsters ?? [];
+        prevObjectsRef.current     = floorSnap?.objects  ?? [];
 
         // Attach per-object axes helpers + numbered labels (shown/hidden with showAxes).
         const mAxes: THREE.AxesHelper[] = [];
@@ -1475,7 +1515,299 @@ export function Viewer3D() {
     return () => { cancelled = true; };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFloorId, mapDir, previewVariantByArea, quest, floor]);
+  }, [selectedFloorId, mapDir, previewVariantByArea]);
+
+  // ── Incremental entity update — live edits without reloading map files ──────
+  // Compares the current floor snapshot to the previous one and applies only
+  // what changed: direct THREE.Group transform updates for position/rotation,
+  // or a fast cached-model rebuild for skin/model-key changes.
+  useEffect(() => {
+    const ctx = loadCtxRef.current;
+    if (!ctx || !sceneRef.current || !markersRef.current) return;
+
+    const curMonsters = floor?.monsters ?? [];
+    const curObjects  = floor?.objects  ?? [];
+    if (curMonsters === prevMonstersRef.current && curObjects === prevObjectsRef.current) return;
+
+    const sections      = sectionsRef.current;
+    const prevMonsters  = prevMonstersRef.current;
+    const prevObjects   = prevObjectsRef.current;
+
+    // Snapshot before any async gap
+    prevMonstersRef.current = curMonsters;
+    prevObjectsRef.current  = curObjects;
+
+    // ── Helper: dispose an entity group's children (geom+mat, NOT cached textures) ──
+    const disposeEntityGroup = (g: THREE.Group) => {
+      g.traverse(o => {
+        if ((o as THREE.Mesh).isMesh) {
+          (o as THREE.Mesh).geometry.dispose();
+          ((o as THREE.Mesh).material as THREE.Material).dispose();
+        }
+        if ((o as THREE.Sprite).isSprite) {
+          const sm = (o as THREE.Sprite).material as THREE.SpriteMaterial;
+          sm.map?.dispose(); // label canvas texture
+          sm.dispose();
+        }
+      });
+      while (g.children.length) g.remove(g.children[0]);
+    };
+
+    // ── Helper: rebuild all entity markers from cache (no disk I/O) ──────────
+    const rebuildAllFromCache = (freshFloor: Floor | null) => {
+      const scene = sceneRef.current;
+      if (!scene) return;
+      if (markersRef.current) {
+        scene.remove(markersRef.current);
+        markersRef.current.traverse(o => {
+          if ((o as THREE.Mesh).isMesh)   { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); }
+          if ((o as THREE.Sprite).isSprite) { const sm = (o as THREE.Sprite).material as THREE.SpriteMaterial; sm.map?.dispose(); sm.dispose(); }
+        });
+        markersRef.current = null;
+      }
+      const newTex: THREE.CompressedTexture[] = [];
+      const { group, pickables, monsterGroups: mgs, objectGroups: ogs } = freshFloor
+        ? buildEntityMarkersCore(freshFloor, sections, ctx, modelCacheRef.current.monster, modelCacheRef.current.object, modelCacheRef.current.sec, newTex)
+        : { group: new THREE.Group(), pickables: [] as MarkerPickable[], monsterGroups: [] as THREE.Group[], objectGroups: [] as THREE.Group[] };
+      for (const t of newTex) entityTexRef.current.push(t);
+      scene.add(group);
+      markersRef.current         = group;
+      markerPickablesRef.current = pickables;
+      monsterGroupsRef.current   = mgs;
+      objectGroupsRef.current    = ogs;
+      // Re-apply selection highlight
+      const sel = useQuestStore.getState().selectedEntity;
+      if (sel) {
+        selectedEntityRef.current = { ...sel };
+        const p = pickables.find(x => x.type === sel.type && x.index === sel.index);
+        if (p) for (const mat of p.mats) mat.color.setHex(p.selectedColor);
+      } else {
+        selectedEntityRef.current = null;
+      }
+    };
+
+    const sameCount =
+      curMonsters.length === prevMonsters.length &&
+      curObjects.length  === prevObjects.length;
+
+    // ── Classify per-entity changes ───────────────────────────────────────────
+    type Change = 'transform' | 'model';
+    const monsterChanges = new Map<number, Change>();
+    const objectChanges  = new Map<number, Change>();
+    let needAsyncLoad    = false;
+
+    if (sameCount) {
+      for (let i = 0; i < curMonsters.length; i++) {
+        const om = prevMonsters[i], nm = curMonsters[i];
+        if (om === nm) continue;
+        const oldKey = computeMonsterKey(om, ctx.floorId, ctx.episode);
+        const newKey = computeMonsterKey(nm, ctx.floorId, ctx.episode);
+        if (oldKey !== newKey) {
+          monsterChanges.set(i, 'model');
+          if (newKey && !modelCacheRef.current.monster.has(newKey)) needAsyncLoad = true;
+        } else {
+          monsterChanges.set(i, 'transform');
+        }
+      }
+      for (let i = 0; i < curObjects.length; i++) {
+        const oo = prevObjects[i], no = curObjects[i];
+        if (oo === no) continue;
+        const oldEntry = computeObjEntry(oo, ctx.floorId, ctx.dataDir, ctx.sep);
+        const newEntry = computeObjEntry(no, ctx.floorId, ctx.dataDir, ctx.sep);
+        if (oldEntry?.key !== newEntry?.key) {
+          objectChanges.set(i, 'model');
+          if (newEntry?.key && !modelCacheRef.current.object.has(newEntry.key)) needAsyncLoad = true;
+        } else {
+          // Transform OR texture-remap field changed — rebuild group from cache (fast)
+          objectChanges.set(i, 'model');
+        }
+      }
+    }
+
+    // ── Async path: entity count changed, or new skin needs loading ───────────
+    if (!sameCount || needAsyncLoad) {
+      let cancelled = false;
+      const curFloor = floor; // capture
+
+      const loadAndRebuild = async () => {
+        if (!sameCount) {
+          // New or deleted entities — rebuild from existing cache directly
+          if (!cancelled) rebuildAllFromCache(curFloor);
+          return;
+        }
+        // Load missing monster models
+        for (let i = 0; i < curMonsters.length; i++) {
+          if (!monsterChanges.has(i) || monsterChanges.get(i) !== 'model') continue;
+          const nm  = curMonsters[i];
+          const key = computeMonsterKey(nm, ctx.floorId, ctx.episode);
+          if (!key || modelCacheRef.current.monster.has(key)) continue;
+          if (cancelled) return;
+          const data = await loadModelDataRaw(computeMonsterBase(key, ctx.dataDir, ctx.sep));
+          if (cancelled) { data.textures.forEach(t => t?.dispose()); return; }
+          modelCacheRef.current.monster.set(key, data);
+          data.textures.forEach(t => { if (t) entityTexRef.current.push(t); });
+        }
+        // Load missing object models
+        for (let i = 0; i < curObjects.length; i++) {
+          if (!objectChanges.has(i) || objectChanges.get(i) !== 'model') continue;
+          const no    = curObjects[i];
+          const entry = computeObjEntry(no, ctx.floorId, ctx.dataDir, ctx.sep);
+          if (!entry || modelCacheRef.current.object.has(entry.key)) continue;
+          if (cancelled) return;
+          const data = await loadModelDataRaw(entry.paths);
+          if (cancelled) { data.textures.forEach(t => t?.dispose()); return; }
+          modelCacheRef.current.object.set(entry.key, data);
+          data.textures.forEach(t => { if (t) entityTexRef.current.push(t); });
+          // Also probe secondary models for the new skin
+          const stemsToCheck = entry.key !== entry.baseStem ? [entry.key, entry.baseStem] : [entry.key];
+          for (const stem of stemsToCheck) {
+            for (let si = 2; si <= 9; si++) {
+              const secStem = `${stem}-${si}`;
+              if (modelCacheRef.current.sec.has(secStem)) continue;
+              if (cancelled) return;
+              const secData = await loadSecondaryModelRaw(
+                [`${ctx.dataDir}obj${ctx.sep}Floor${ctx.floorId}${ctx.sep}${secStem}`, `${ctx.dataDir}obj${ctx.sep}${secStem}`],
+                entry.paths,
+              );
+              if (cancelled) { secData.textures.forEach(t => t?.dispose()); return; }
+              if (secData.nj) {
+                modelCacheRef.current.sec.set(secStem, secData);
+                secData.textures.forEach(t => { if (t) entityTexRef.current.push(t); });
+              }
+            }
+          }
+        }
+        if (!cancelled) rebuildAllFromCache(curFloor);
+      };
+
+      loadAndRebuild().catch(() => {});
+      return () => { cancelled = true; };
+    }
+
+    // ── Synchronous incremental updates ───────────────────────────────────────
+
+    for (const [i, kind] of monsterChanges) {
+      const nm = curMonsters[i];
+      const mg = monsterGroupsRef.current[i];
+      if (!mg) continue;
+
+      const [wx, wz] = toWorldPos(nm.posX, nm.posY, nm.mapSection, sections);
+      const secRot   = sections.find(s => s.id === nm.mapSection)?.rotation ?? 0;
+
+      if (kind === 'transform') {
+        // Position/rotation only — update Three.js group directly (instant, no allocation)
+        mg.position.set(wx, nm.posZ, wz);
+        mg.rotation.y = (nm.direction + secRot) * BAM_TO_RAD + Math.PI;
+      } else {
+        // Model key changed but new model is in cache — rebuild group content
+        disposeEntityGroup(mg);
+        mg.position.set(wx, nm.posZ, wz);
+        mg.rotation.y = (nm.direction + secRot) * BAM_TO_RAD + Math.PI;
+        const key   = computeMonsterKey(nm, ctx.floorId, ctx.episode);
+        const model = key ? modelCacheRef.current.monster.get(key) : undefined;
+        const label = makeLabel(`M${i}`);
+        let meshes: THREE.Mesh[];
+        let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+        if (model?.nj && model.nj.subMeshes.length > 0) {
+          const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures);
+          label.position.set(0, 25, 0);
+          mg.add(njg, label);
+          meshes = [];
+          njg.traverse(o => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+          mats = lambertMats;
+        } else {
+          const bodyMat = new THREE.MeshBasicMaterial({ color: MONSTER_COLOR });
+          const noseMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+          const body    = new THREE.Mesh(_bodyCylGeo, bodyMat);
+          body.position.set(0, 2, 0);
+          const nose    = new THREE.Mesh(_noseConeGeo, noseMat);
+          nose.rotation.x = Math.PI / 2;
+          nose.position.set(0, 2, 4.5);
+          label.position.set(0, 8, 0);
+          mg.add(body, nose, label);
+          meshes = [body, nose];
+          mats   = [bodyMat, noseMat];
+        }
+        const p = markerPickablesRef.current.find(x => x.type === 'monster' && x.index === i);
+        if (p) { p.meshes = meshes; p.mats = mats; p.label = label; p.defaultColor = model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : MONSTER_COLOR; }
+      }
+    }
+
+    for (const [i] of objectChanges) {
+      const no  = curObjects[i];
+      const og  = objectGroupsRef.current[i];
+      if (!og) continue;
+      const [wx, wz] = toWorldPos(no.posX, no.posY, no.mapSection, sections);
+      const secRot   = sections.find(s => s.id === no.mapSection)?.rotation ?? 0;
+      // Objects: rebuild group from cache for any change (model OR texture remap)
+      disposeEntityGroup(og);
+      og.position.set(wx, no.posZ, wz);
+      og.rotation.x = no.rotX * BAM_TO_RAD;
+      og.rotation.y = (no.rotY + secRot) * BAM_TO_RAD + Math.PI;
+      og.rotation.z = -no.rotZ * BAM_TO_RAD;
+      const entry    = computeObjEntry(no, ctx.floorId, ctx.dataDir, ctx.sep);
+      const key      = entry?.key      ?? String(no.skin);
+      const baseStem = entry?.baseStem ?? key;
+      const model    = modelCacheRef.current.object.get(key);
+      let meshes: THREE.Mesh[];
+      let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
+      let texRemap: Map<number, number> | undefined;
+      for (const sw of TEXTURE_SWAP_ITEMS) {
+        if (sw.skin !== no.skin) continue;
+        const raw =
+          sw.field === 'scaleX'  ? Math.round(no.scaleX) :
+          sw.field === 'objIdHi' ? Math.floor(no.objId / 256) :
+          sw.field === 'action'  ? no.action : no.unknown13;
+        const val = Math.min(Math.max(raw, 0), sw.max);
+        if (val !== 0) texRemap = new Map([[sw.srcSlot, val + sw.dstOffset]]);
+        break;
+      }
+      if (model?.nj && model.nj.subMeshes.length > 0) {
+        const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures, texRemap);
+        const label = makeLabel(`O${i}`);
+        label.position.set(0, 25, 0);
+        og.add(njg, label);
+        meshes = [];
+        njg.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+        mats = lambertMats;
+        for (let si = 2; si <= 9; si++) {
+          const byKey    = modelCacheRef.current.sec.get(`${key}-${si}`);
+          const secModel = byKey?.nj ? byKey : (key !== baseStem ? modelCacheRef.current.sec.get(`${baseStem}-${si}`) : undefined);
+          if (!secModel?.nj || secModel.nj.subMeshes.length === 0) continue;
+          const { group: njg2, lambertMats: sm2 } = buildNjGroup(secModel.nj, secModel.textures, texRemap);
+          og.add(njg2);
+          njg2.traverse(o2 => { if ((o2 as THREE.Mesh).isMesh) meshes.push(o2 as THREE.Mesh); });
+          for (const m of sm2) mats.push(m);
+        }
+      } else {
+        const baseMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+        const poleMat    = new THREE.MeshBasicMaterial({ color: OBJECT_COLOR });
+        const diamondMat = new THREE.MeshBasicMaterial({ color: 0x66aaff });
+        const base    = new THREE.Mesh(_baseBoxGeo, baseMat);
+        base.position.set(0, 0.75, 0);
+        const pole    = new THREE.Mesh(_poleGeo, poleMat);
+        pole.position.set(0, 4, 0);
+        const diamond = new THREE.Mesh(_diamondGeo, diamondMat);
+        diamond.position.set(0, 7.5, 0);
+        const label = makeLabel(`O${i}`);
+        label.position.set(0, 10.5, 0);
+        og.add(base, pole, diamond, label);
+        meshes = [base, pole, diamond];
+        mats   = [baseMat, poleMat, diamondMat];
+      }
+      const p = markerPickablesRef.current.find(x => x.type === 'object' && x.index === i);
+      if (p) { p.meshes = meshes; p.mats = mats; p.defaultColor = model?.nj && model.nj.subMeshes.length > 0 ? 0xffffff : OBJECT_COLOR; }
+    }
+
+    // Re-apply selection highlight after sync updates
+    const sel = selectedEntityRef.current;
+    if (sel) {
+      const p = markerPickablesRef.current.find(x => x.type === sel.type && x.index === sel.index);
+      if (p) for (const mat of p.mats) mat.color.setHex(p.selectedColor);
+    }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [floor]);
 
   return (
     <div ref={wrapRef} className={`${css.wrap} ${isFullscreen && typeof document.documentElement.requestFullscreen !== 'function' ? css.wrapFullscreen : ''}`}>
