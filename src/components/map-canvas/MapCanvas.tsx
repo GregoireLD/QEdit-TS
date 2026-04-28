@@ -2,8 +2,9 @@ import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react
 import { readFile, openDirectoryDialog } from '../../platform/fs';
 import { isTauri } from '../../platform/index';
 import type { Floor, SelectedEntity } from '../../core/model/types';
-import { parseNRel, parseCRel, toWorldPos } from '../../core/formats/rel';
+import { parseNRel, parseCRel, toWorldPos, fromWorldPos, findNearestSection, worldDirToBAM, bamToWorldDir, sampleFloorHeight } from '../../core/formats/rel';
 import type { RelSection, RelTriangle } from '../../core/formats/rel';
+import { getPlacementType } from '../../core/data/presets';
 import { toNRelName } from '../../core/map/mapFileNames';
 import { AREA_BY_ID } from '../../core/map/areaData';
 import { useUiStore } from '../../stores/uiStore';
@@ -78,6 +79,8 @@ function renderMap(
 
   const DOT_R = Math.max(3 * dpr, 5 * dpr * zoom / 100);
 
+  const ARROW_LEN = DOT_R * 3.5; // screen pixels for direction arrow
+
   // Monsters
   for (let i = 0; i < floor.monsters.length; i++) {
     const m = floor.monsters[i];
@@ -98,6 +101,18 @@ function renderMap(
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(i), sx, sy);
     }
+    // Direction arrow for selected monster
+    if (isSel) {
+      const sec = data.sections.find(s => s.id === m.mapSection);
+      if (sec) {
+        const [dwx, dwy] = bamToWorldDir(m.direction, sec);
+        const ax = sx + dwx * ARROW_LEN;
+        const ay = sy + dwy * ARROW_LEN;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ax, ay);
+        ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+        drawArrowHead(ctx, sx, sy, ax, ay, DOT_R * 1.2, '#ffcc00', dpr);
+      }
+    }
   }
 
   // Objects
@@ -107,6 +122,7 @@ function renderMap(
     const [sx, sy] = toScreen(wx, wy);
     if (sx < -DOT_R || sx > PW + DOT_R || sy < -DOT_R || sy > PH + DOT_R) continue;
     const isSel = selectedEntity?.type === 'object' && selectedEntity.index === i;
+    const placementKind = getPlacementType(o.skin);
     if (isSel) {
       ctx.beginPath(); ctx.arc(sx, sy, DOT_R * 1.8, 0, Math.PI * 2);
       ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
@@ -114,7 +130,49 @@ function renderMap(
     ctx.beginPath(); ctx.arc(sx, sy, DOT_R * 0.75, 0, Math.PI * 2);
     ctx.fillStyle = isSel ? '#00ffcc' : '#4080ff'; ctx.fill();
     ctx.strokeStyle = isSel ? '#ccffee' : '#80b0ff'; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
+    // Selection indicators (skipped for 'none' placement objects)
+    if (isSel && placementKind !== 'none') {
+      if (placementKind === 'radius' && o.scaleX > 0) {
+        // Faint radius disk
+        const screenR = o.scaleX * zoom * dpr;
+        ctx.beginPath(); ctx.arc(sx, sy, screenR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,255,204,0.06)';
+        ctx.strokeStyle = 'rgba(0,255,204,0.55)';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.fill(); ctx.stroke();
+      } else {
+        // Direction arrow using rotY
+        const sec = data.sections.find(s => s.id === o.mapSection);
+        if (sec) {
+          const [dwx, dwy] = bamToWorldDir(o.rotY, sec);
+          const ax = sx + dwx * ARROW_LEN;
+          const ay = sy + dwy * ARROW_LEN;
+          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ax, ay);
+          ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+          drawArrowHead(ctx, sx, sy, ax, ay, DOT_R * 1.2, '#00ffcc', dpr);
+        }
+      }
+    }
   }
+}
+
+function drawArrowHead(
+  ctx: CanvasRenderingContext2D,
+  x1: number, y1: number,
+  x2: number, y2: number,
+  size: number,
+  color: string,
+  dpr: number,
+) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - size * Math.cos(angle - 0.45), y2 - size * Math.sin(angle - 0.45));
+  ctx.lineTo(x2 - size * Math.cos(angle + 0.45), y2 - size * Math.sin(angle + 0.45));
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.lineWidth = 0.5 * dpr;
+  ctx.fill();
 }
 
 // ─── Fit ─────────────────────────────────────────────────────────────────────
@@ -155,7 +213,7 @@ interface MapCanvasProps {
 }
 
 export function MapCanvas({ floor, areaId }: MapCanvasProps) {
-  const { mapDir, setMapDir, previewVariantByArea } = useUiStore();
+  const { mapDir, setMapDir, previewVariantByArea, placementTarget, clearPlacementTarget, setLoadedMapData } = useUiStore();
   const { quest } = useQuestStore();
   const selectedEntity = useQuestStore(s => s.selectedEntity);
   const area = AREA_BY_ID[areaId];
@@ -170,16 +228,42 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
   const [zoom, setZoom]   = useState(1);
   const [panX, setPanX]   = useState(0);
   const [panY, setPanY]   = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wrapRef   = useRef<HTMLDivElement>(null);
-  const dragRef   = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
-  const fitted    = useRef(false);
+
+  // Placement mode overlay: relative coords within the canvas wrapper
+  const [overlayLine, setOverlayLine] = useState<{
+    sx: number; sy: number; cx: number; cy: number;
+  } | null>(null);
+
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const wrapRef     = useRef<HTMLDivElement>(null);
+  const dragRef     = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
+  const placeDragRef = useRef<{ sx: number; sy: number } | null>(null);
+  const fitted      = useRef(false);
+
+  // True when this canvas is the active placement target floor
+  const isPlacementFloor =
+    placementTarget !== null &&
+    floor !== null &&
+    placementTarget.floorId === floor.id;
 
   // Reset load state when area changes
   useEffect(() => {
     setLoadState({ status: 'idle' });
     fitted.current = false;
   }, [areaId]);
+
+  // Escape cancels placement mode
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && useUiStore.getState().placementTarget) {
+        clearPlacementTarget();
+        placeDragRef.current = null;
+        setOverlayLine(null);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [clearPlacementTarget]);
 
   // In web mode, probe for a server-served data folder once on mount.
   useEffect(() => {
@@ -203,6 +287,7 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
         const triangles = parseCRel(new Uint8Array(cBuf));
         const sections  = parseNRel(new Uint8Array(nBuf));
         setLoadState({ status: 'ok', data: { triangles, sections } });
+        setLoadedMapData({ areaId, triangles, sections });
       })
       .catch(e => setLoadState({ status: 'error', msg: String(e) }));
   }, [mapDir, selectedFile]);
@@ -254,31 +339,113 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     const logW = canvas.width  / dpr, logH = canvas.height / dpr;
     const rect = canvas.getBoundingClientRect();
     const cx   = e.clientX - rect.left, cy = e.clientY - rect.top;
-    setZoom(z => {
-      const nz = Math.max(0.01, Math.min(z * factor, 50));
-      setPanX(px => (cx - logW / 2) / nz - (cx - logW / 2) / z + px);
-      setPanY(py => (cy - logH / 2) / nz - (cy - logH / 2) / z + py);
-      return nz;
-    });
-  }, []);
+    const nz   = Math.max(0.01, Math.min(zoom * factor, 50));
+    setZoom(nz);
+    setPanX(panX + (cx - logW / 2) * (1 / nz - 1 / zoom));
+    setPanY(panY + (cy - logH / 2) * (1 / nz - 1 / zoom));
+  }, [zoom, panX, panY]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isPlacementFloor) {
+      const rect = wrapRef.current!.getBoundingClientRect();
+      placeDragRef.current = { sx: e.clientX - rect.left, sy: e.clientY - rect.top };
+      return;
+    }
     dragRef.current = { startX: e.clientX, startY: e.clientY, panX, panY };
-  }, [panX, panY]);
+  }, [panX, panY, isPlacementFloor]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (placeDragRef.current) {
+      const pt = useUiStore.getState().placementTarget;
+      if (pt && pt.placement !== 'none') {
+        const rect = wrapRef.current!.getBoundingClientRect();
+        setOverlayLine({
+          sx: placeDragRef.current.sx,
+          sy: placeDragRef.current.sy,
+          cx: e.clientX - rect.left,
+          cy: e.clientY - rect.top,
+        });
+      }
+      return;
+    }
     if (!dragRef.current) return;
     setPanX(dragRef.current.panX + (e.clientX - dragRef.current.startX) / zoom);
     setPanY(dragRef.current.panY + (e.clientY - dragRef.current.startY) / zoom);
   }, [zoom]);
 
-  const onDragCancel = useCallback(() => { dragRef.current = null; }, []);
+  const onDragCancel = useCallback(() => {
+    dragRef.current = null;
+    // Don't cancel placement drag on mouse-leave — user may just be moving quickly
+  }, []);
 
   const onMouseUp = useCallback((e: React.MouseEvent) => {
+    // ── Placement mode ───────────────────────────────────────────────
+    if (placeDragRef.current) {
+      const startRel = placeDragRef.current;
+      placeDragRef.current = null;
+      setOverlayLine(null);
+
+      const pt = useUiStore.getState().placementTarget;
+      if (!pt || loadState.status !== 'ok' || !floor) return;
+      const { data } = loadState;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const dpr  = window.devicePixelRatio || 1;
+      const logW = canvas.width / dpr;
+      const logH = canvas.height / dpr;
+      const rect = canvas.getBoundingClientRect();
+
+      // Click (start) position → world coords
+      const clickX = startRel.sx;
+      const clickY = startRel.sy;
+      const wx = (clickX - logW / 2) / zoom - panX;
+      const wy = (clickY - logH / 2) / zoom - panY;
+
+      const sec = findNearestSection(wx, wy, data.sections);
+      if (!sec) return;
+      const { posX, posY } = fromWorldPos(wx, wy, sec);
+      const posZ = sampleFloorHeight(wx, wy, data.triangles) ?? 0;
+
+      const releaseRelX = e.clientX - rect.left;
+      const releaseRelY = e.clientY - rect.top;
+      const dragDist = Math.hypot(releaseRelX - startRel.sx, releaseRelY - startRel.sy);
+      const isDrag = dragDist >= 5;
+
+      if (pt.entityType === 'monster') {
+        const patch: { posX: number; posY: number; posZ: number; mapSection: number; direction?: number } = {
+          posX, posY, posZ, mapSection: sec.id,
+        };
+        if (isDrag && pt.placement === 'rotation') {
+          const rwx = (releaseRelX - logW / 2) / zoom - panX;
+          const rwy = (releaseRelY - logH / 2) / zoom - panY;
+          patch.direction = worldDirToBAM(rwx - wx, rwy - wy, sec);
+        }
+        useQuestStore.getState().updateMonster(pt.floorId, pt.entityIndex, patch);
+      } else {
+        const patch: { posX: number; posY: number; posZ: number; mapSection: number; rotY?: number; scaleX?: number } = {
+          posX, posY, posZ, mapSection: sec.id,
+        };
+        if (isDrag && pt.placement !== 'none') {
+          const rwx = (releaseRelX - logW / 2) / zoom - panX;
+          const rwy = (releaseRelY - logH / 2) / zoom - panY;
+          if (pt.placement === 'radius') {
+            patch.scaleX = Math.hypot(rwx - wx, rwy - wy);
+          } else {
+            patch.rotY = worldDirToBAM(rwx - wx, rwy - wy, sec);
+          }
+        }
+        useQuestStore.getState().updateObject(pt.floorId, pt.entityIndex, patch);
+      }
+
+      useUiStore.getState().clearPlacementTarget();
+      return;
+    }
+
+    // ── Normal pick ──────────────────────────────────────────────────
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
-    // Only treat as a click if the mouse barely moved
     if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) >= 5) return;
     if (loadState.status !== 'ok' || !floor) return;
     const { data } = loadState;
@@ -290,10 +457,8 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     const rect = canvas.getBoundingClientRect();
     const cx = e.clientX - rect.left;
     const cy = e.clientY - rect.top;
-    // CSS-pixel click → world coordinates
     const wx = (cx - logW / 2) / zoom - panX;
     const wy = (cy - logH / 2) / zoom - panY;
-    // Pick radius scales with dot size so it's always easy to hit
     const dotR = Math.max(3, 5 * zoom / 100);
     const pickR = dotR * 2.5 / zoom;
     let bestDist = pickR;
@@ -326,10 +491,16 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     setZoom(f.zoom); setPanX(f.panX); setPanY(f.panY); fitted.current = true;
   }, [loadState, floor]);
 
+  // Compute overlay geometry for rendering
+  const overlayRadius = overlayLine
+    ? Math.hypot(overlayLine.cx - overlayLine.sx, overlayLine.cy - overlayLine.sy)
+    : 0;
+
   return (
     <div
       ref={wrapRef}
       className={css.canvasWrap}
+      style={{ cursor: isPlacementFloor ? 'crosshair' : undefined }}
       onWheel={onWheel}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
@@ -337,6 +508,51 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
       onMouseLeave={onDragCancel}
     >
       <canvas ref={canvasRef} className={css.canvas} />
+
+      {/* Placement mode overlay line / radius circle */}
+      {overlayLine && placementTarget?.placement !== 'none' && (
+        <svg
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        >
+          {placementTarget?.placement === 'radius' ? (
+            <>
+              <circle
+                cx={overlayLine.sx} cy={overlayLine.sy}
+                r={overlayRadius}
+                fill="rgba(0,255,204,0.08)"
+                stroke="#00ffcc"
+                strokeWidth={1.5}
+                strokeDasharray="6 3"
+              />
+              <circle cx={overlayLine.sx} cy={overlayLine.sy} r={4} fill="#00ffcc" />
+            </>
+          ) : (
+            <>
+              <line
+                x1={overlayLine.sx} y1={overlayLine.sy}
+                x2={overlayLine.cx} y2={overlayLine.cy}
+                stroke="#ffcc00"
+                strokeWidth={1.5}
+              />
+              <circle cx={overlayLine.sx} cy={overlayLine.sy} r={4} fill="#ffcc00" />
+              <circle cx={overlayLine.cx} cy={overlayLine.cy} r={3} fill="#ffcc00" opacity={0.6} />
+            </>
+          )}
+        </svg>
+      )}
+
+      {/* Placement mode banner */}
+      {isPlacementFloor && (
+        <div className={css.placementBanner}>
+          {placementTarget!.placement === 'radius' ? 'Click to place — drag to set radius'
+            : placementTarget!.placement === 'none' ? 'Click to place'
+            : 'Click to place — drag to set rotation'}
+          <button
+            className={css.placementCancel}
+            onClick={() => { clearPlacementTarget(); placeDragRef.current = null; setOverlayLine(null); }}
+          >✕</button>
+        </div>
+      )}
 
       {!mapDir && (
         <div className={css.overlay} style={{ flexDirection: 'column', gap: 10 }}>

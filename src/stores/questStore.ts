@@ -46,6 +46,14 @@ interface QuestStore {
   updateBin: (bin: QuestBin) => void;
   updateMonster: (floorId: number, index: number, patch: Partial<Monster>) => void;
   updateObject: (floorId: number, index: number, patch: Partial<QuestObject>) => void;
+  /** Append a new monster to a floor and select it. */
+  addMonster: (floorId: number, monster: Monster) => void;
+  /** Append a new object to a floor and select it. */
+  addObject: (floorId: number, obj: QuestObject) => void;
+  deleteMonster: (floorId: number, index: number) => void;
+  deleteObject: (floorId: number, index: number) => void;
+  duplicateMonster: (floorId: number, index: number) => void;
+  duplicateObject: (floorId: number, index: number) => void;
   /**
    * Commit a variant change: updates quest.variantByArea (written back to
    * bytecode on save) AND the UI preview so the canvas updates immediately.
@@ -261,6 +269,89 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       return { ...f, objects };
     });
     set({ quest: { ...quest, floors } });
+  },
+
+  addMonster: (floorId, monster) => {
+    const { quest } = get();
+    if (!quest) return;
+    // Set unknown3 (floor ID field) to the relative area ID
+    const entry: Monster = { ...monster, unknown3: floorId };
+    const floors = quest.floors.map(f => {
+      if (f.id !== floorId) return f;
+      return { ...f, monsters: [...f.monsters, entry] };
+    });
+    const newIndex = (quest.floors.find(f => f.id === floorId)?.monsters.length ?? 0);
+    set({ quest: { ...quest, floors }, selectedEntity: { type: 'monster', index: newIndex } });
+  },
+
+  addObject: (floorId, obj) => {
+    const { quest } = get();
+    if (!quest) return;
+    const floors = quest.floors.map(f => {
+      if (f.id !== floorId) return f;
+      return { ...f, objects: [...f.objects, obj] };
+    });
+    const newIndex = (quest.floors.find(f => f.id === floorId)?.objects.length ?? 0);
+    set({ quest: { ...quest, floors }, selectedEntity: { type: 'object', index: newIndex } });
+  },
+
+  deleteMonster: (floorId, index) => {
+    const { quest, selectedEntity } = get();
+    if (!quest) return;
+    const floors = quest.floors.map(f => {
+      if (f.id !== floorId) return f;
+      // Clear warp parent references for sensor objects (skin 10000)
+      const deleted = f.monsters[index];
+      let objects = f.objects;
+      if (deleted?.skin === 10000) {
+        objects = f.objects.map(o =>
+          o.id === deleted.unknown4 ? { ...o, id: 0 } : o
+        );
+      }
+      return { ...f, monsters: f.monsters.filter((_, i) => i !== index), objects };
+    });
+    // Adjust selection
+    let newSel = selectedEntity;
+    if (selectedEntity?.type === 'monster') {
+      if (selectedEntity.index === index) newSel = null;
+      else if (selectedEntity.index > index)
+        newSel = { type: 'monster', index: selectedEntity.index - 1 };
+    }
+    set({ quest: { ...quest, floors }, selectedEntity: newSel });
+  },
+
+  deleteObject: (floorId, index) => {
+    const { quest, selectedEntity } = get();
+    if (!quest) return;
+    const floors = quest.floors.map(f => {
+      if (f.id !== floorId) return f;
+      return { ...f, objects: f.objects.filter((_, i) => i !== index) };
+    });
+    let newSel = selectedEntity;
+    if (selectedEntity?.type === 'object') {
+      if (selectedEntity.index === index) newSel = null;
+      else if (selectedEntity.index > index)
+        newSel = { type: 'object', index: selectedEntity.index - 1 };
+    }
+    set({ quest: { ...quest, floors }, selectedEntity: newSel });
+  },
+
+  duplicateMonster: (floorId, index) => {
+    const { quest } = get();
+    if (!quest) return;
+    const floor = quest.floors.find(f => f.id === floorId);
+    if (!floor || !floor.monsters[index]) return;
+    const copy = { ...floor.monsters[index] };
+    get().addMonster(floorId, copy);
+  },
+
+  duplicateObject: (floorId, index) => {
+    const { quest } = get();
+    if (!quest) return;
+    const floor = quest.floors.find(f => f.id === floorId);
+    if (!floor || !floor.objects[index]) return;
+    const copy = { ...floor.objects[index] };
+    get().addObject(floorId, copy);
   },
 
   commitVariant: (areaId, variantIdx) => {

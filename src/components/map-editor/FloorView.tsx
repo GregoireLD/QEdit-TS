@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuestStore, useSelectedFloor } from '../../stores/questStore';
+import { useUiStore } from '../../stores/uiStore';
 import type { Monster, QuestObject } from '../../core/model/types';
 import { MapCanvas } from '../map-canvas/MapCanvas';
 import { Viewer3D } from '../viewer-3d/Viewer3D';
@@ -9,32 +10,27 @@ import {
   MONSTER_SUBTYPES, OBJECT_COLOR_SUBTYPES, resolveSubtype,
   type MonsterFieldDesc, type ObjectFieldDesc, type SubtypeOption,
 } from '../../core/map/entitySchemas';
+import { MONSTER_PRESETS, OBJECT_PRESETS, getPlacementType } from '../../core/data/presets';
+import { toWorldPos, sampleFloorHeight } from '../../core/formats/rel';
 import styles from './FloorView.module.css';
 
 // ─── Monster names ──────────────────────────────────────────────────────────
-// Skin values and names are derived from Unit1.pas CheckMonsterType +
-// MonsterName array (1..111) in the Delphi source.  Variants differentiated
-// by movementFlag / unknow10 / episode are listed in comments but the table
-// maps each base skin to its primary name only.
 const MONSTER_NAMES: Record<number, string> = {
-  // NPC skins from npcname.ini (skins 1–51, 69–70, 208–256, 280)
   ...MONSTER_NPC_NAMES,
-
-  // ── Episode 1 ──
-  64:  'Hildebear',        // Hildeblue: same skin, different movementFlag
-  65:  'Rag Rappy',        // Al Rappy: movementFlag=1; Sand/Del Rappy in ep4
+  64:  'Hildebear',
+  65:  'Rag Rappy',
   66:  'Monest',
-  67:  'Savage Wolf',      // Barbarous Wolf: unknow10≥1
-  68:  'Booma',            // Gobooma: movementFlag=1; Gigobooma: movementFlag=2
+  67:  'Savage Wolf',
+  68:  'Booma',
   96:  'Grass Assassin',
-  97:  'Poison Lily',      // Del Lily: ep1 + unknow3=17
+  97:  'Poison Lily',
   98:  'Nano Dragon',
-  99:  'Evil Shark',       // Pal Shark: movementFlag=1; Guil Shark: movementFlag=2
+  99:  'Evil Shark',
   100: 'Pofuilly Slime',
   101: 'Pan Arms',
-  128: 'Dubchic',          // Gilchic: movementFlag=1
+  128: 'Dubchic',
   129: 'Garanz',
-  130: 'Sinow Beat',       // Sinow Gold: unknow10=1
+  130: 'Sinow Beat',
   131: 'Canadine',
   132: 'Canane',
   133: 'Dubswitch',
@@ -44,53 +40,48 @@ const MONSTER_NAMES: Record<number, string> = {
   163: 'Death Gunner',
   164: 'Chaos Bringer',
   165: 'Dark Belra',
-  166: 'Dimenian',         // La Dimenian: movementFlag=1; So Dimenian: movementFlag=2
+  166: 'Dimenian',
   167: 'Bulclaw',
   168: 'Claw',
-  192: 'Dragon',           // Gal Gryphon in ep2 (same skin, different episode)
+  192: 'Dragon',
   193: 'De Rol Le',
   194: 'Vol Opt (Parts)',
   197: 'Vol Opt',
   200: 'Dark Falz',
-
-  // ── Episode 2 ──
   201: 'Gal Gryphon',
   202: 'Olga Flow',
   203: 'Barba Ray',
   204: 'Gol Dragon',
-  212: 'Sinow Berill',     // Sinow Spigell: movementFlag=1
-  213: 'Merillia',         // Meriltas: movementFlag=1
-  214: 'Mericarol',        // Merikle: movementFlag=1; Mericus: movementFlag=2
-  215: 'Ul Gibbon',        // Zol Gibbon: movementFlag=1
+  212: 'Sinow Berill',
+  213: 'Merillia',
+  214: 'Mericarol',
+  215: 'Ul Gibbon',
   216: 'Gibbles',
   217: 'Gee',
   218: 'Gi Gue',
   219: 'Deldepth',
   220: 'Delbiter',
-  221: 'Dolmolm',          // Dolmdarl: movementFlag=1
+  221: 'Dolmolm',
   222: 'Morfos',
   223: 'Recobox',
-  224: 'Sinow Zoa',        // Sinow Zele: movementFlag=1; Epsilon: unknow3=17
+  224: 'Sinow Zoa',
   225: 'Ill Gill',
-  65312: 'Epsilon',        // 0xFF20 = -224 as i16
-
-  // ── Episode 4 ──
+  65312: 'Epsilon',
   272: 'Astark',
-  273: 'Satellite Lizard', // Yowie: unknow10=1
-  274: 'Merissa A',        // Merissa AA: movementFlag=1
+  273: 'Satellite Lizard',
+  274: 'Merissa A',
   275: 'Girtablulu',
-  276: 'Zu',               // Pazuzu: movementFlag=1
-  277: 'Boota',            // Ze Boota: movementFlag=1; Ba Boota: movementFlag=2
-  278: 'Dorphon',          // Dorphon Eclair: movementFlag=1
-  279: 'Goran',            // Pyro Goran: movementFlag=2; Goran Detonator: movementFlag=1
-  281: 'Saint Million',    // Shambertin / Kondrieu: movementFlag variants
+  276: 'Zu',
+  277: 'Boota',
+  278: 'Dorphon',
+  279: 'Goran',
+  281: 'Saint Million',
 };
 
 function monsterName(skin: number): string {
   return MONSTER_NAMES[skin] ?? `0x${skin.toString(16).toUpperCase().padStart(4, '0')}`;
 }
 
-// Per-area valid monster skins derived from FloorSet.ini monsv1–4 (union per area).
 const AREA_MONSTER_SKINS = new Map<number, number[]>([
   [0,  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,256]],
   [1,  [51,65,66,67,68,69]],
@@ -148,7 +139,7 @@ function getMonsterSkinOptions(areaId: number): SubtypeOption[] {
     .sort((a, b) => a.value - b.value);
 }
 
-function getObjectSkinOptions(areaId: number): SubtypeOption[] {
+function getObjectSkinRanges(areaId: number): [number, number][] {
   const r: [number, number][] = [[0, 87], [384, 396]];
   if      (areaId >= 1  && areaId <= 2)   r.push([128, 151]);
   else if (areaId >= 3  && areaId <= 5)   r.push([192, 225]);
@@ -161,6 +152,11 @@ function getObjectSkinOptions(areaId: number): SubtypeOption[] {
   else if (areaId >= 23 && areaId <= 35)  r.push([512, 576], [640, 701]);
   else if (areaId >= 36 && areaId <= 43)  r.push([768, 913]);
   else if (areaId === 44)                 r.push([768, 913], [960, 961]);
+  return r;
+}
+
+function getObjectSkinOptions(areaId: number): SubtypeOption[] {
+  const r = getObjectSkinRanges(areaId);
   return Array.from(OBJECT_NAMES.entries())
     .filter(([k]) => k < 10000 && r.some(([lo, hi]) => k >= lo && k <= hi))
     .map(([k, v]) => ({ value: k, label: v }))
@@ -198,9 +194,8 @@ interface EditableCellProps {
   value: number;
   kind: CellKind;
   className?: string;
-  /** Called with the validated new value on commit */
   onCommit: (v: number) => void;
-  display?: string; // override displayed text (e.g. monster name)
+  display?: string;
 }
 
 function formatDisplay(value: number, kind: CellKind, display?: string): string {
@@ -229,7 +224,6 @@ function parseEdit(raw: string, kind: CellKind): number | null {
     if (s === '0' || s.toLowerCase() === 'false') return 0;
     return null;
   }
-  // int or hex
   const n = s.startsWith('0x') || s.startsWith('0X')
     ? parseInt(s, 16)
     : parseInt(s, 10);
@@ -290,15 +284,54 @@ function EditableCell({ value, kind, className, onCommit, display }: EditableCel
   );
 }
 
+// ─── Row action menu ("...") ────────────────────────────────────────────────
+
+function RowMenu({ onDuplicate, onDelete }: { onDuplicate: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <td className={styles.menuCell} onClick={e => e.stopPropagation()}>
+      <div ref={wrapRef} className={styles.menuWrap}>
+        <button
+          className={styles.menuTrigger}
+          title="Actions"
+          onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        >⋯</button>
+        {open && (
+          <div className={styles.menuDropdown}>
+            <button onClick={() => { onDuplicate(); setOpen(false); }}>Duplicate</button>
+            <button
+              className={styles.menuDelete}
+              onClick={() => { onDelete(); setOpen(false); }}
+            >Delete</button>
+          </div>
+        )}
+      </div>
+    </td>
+  );
+}
+
 // ─── Monster table ──────────────────────────────────────────────────────────
 
-const M_COL_INIT = [32, 120, 100, 55, 70, 70, 70, 70, 50, 70, 70];
-const O_COL_INIT = [32, 130, 50, 50, 55, 70, 70, 70, 55, 55];
+const M_COL_INIT = [32, 120, 100, 55, 70, 70, 70, 70, 50, 70, 70, 28];
+const O_COL_INIT = [32, 130, 50, 50, 55, 70, 70, 70, 55, 55, 28];
 
 function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: number }) {
-  const updateMonster = useQuestStore(s => s.updateMonster);
-  const selectEntity  = useQuestStore(s => s.selectEntity);
-  const selectedEntity = useQuestStore(s => s.selectedEntity);
+  const updateMonster   = useQuestStore(s => s.updateMonster);
+  const deleteMonster   = useQuestStore(s => s.deleteMonster);
+  const duplicateMonster = useQuestStore(s => s.duplicateMonster);
+  const selectEntity    = useQuestStore(s => s.selectEntity);
+  const selectedEntity  = useQuestStore(s => s.selectedEntity);
   const episode = (useQuestStore(s => s.quest?.episode) ?? 1) as 1|2|4;
   const upd = useCallback(
     (i: number, patch: Partial<Monster>) => updateMonster(floorId, i, patch),
@@ -313,7 +346,7 @@ function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: num
     return <div className={styles.empty}>No monsters on this floor</div>;
   }
 
-  const H = ['#','Type','Subtype','Section','Pos X','Pos Y','Pos Z','Direction','Mobile','Char ID','Action'];
+  const H = ['#','Type','Subtype','Section','Pos X','Pos Y','Pos Z','Direction','Mobile','Char ID','Action',''];
 
   return (
     <div className={styles.tableWrap}>
@@ -322,9 +355,9 @@ function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: num
         <thead>
           <tr>
             {H.map((h, i) => (
-              <th key={h}>
+              <th key={i}>
                 {h}
-                <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />
+                {i < H.length - 1 && <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />}
               </th>
             ))}
           </tr>
@@ -361,6 +394,10 @@ function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: num
                   onCommit={v => upd(i, { charId: v })} />
                 <EditableCell value={m.action} kind="float" className={styles.num}
                   onCommit={v => upd(i, { action: v })} />
+                <RowMenu
+                  onDuplicate={() => duplicateMonster(floorId, i)}
+                  onDelete={() => deleteMonster(floorId, i)}
+                />
               </tr>
             );
           })}
@@ -373,8 +410,10 @@ function MonsterTable({ monsters, floorId }: { monsters: Monster[]; floorId: num
 // ─── Object table ───────────────────────────────────────────────────────────
 
 function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: number }) {
-  const updateObject  = useQuestStore(s => s.updateObject);
-  const selectEntity  = useQuestStore(s => s.selectEntity);
+  const updateObject   = useQuestStore(s => s.updateObject);
+  const deleteObject   = useQuestStore(s => s.deleteObject);
+  const duplicateObject = useQuestStore(s => s.duplicateObject);
+  const selectEntity   = useQuestStore(s => s.selectEntity);
   const selectedEntity = useQuestStore(s => s.selectedEntity);
   const upd = useCallback(
     (i: number, patch: Partial<QuestObject>) => updateObject(floorId, i, patch),
@@ -389,7 +428,7 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
     return <div className={styles.empty}>No objects on this floor</div>;
   }
 
-  const H = ['#','Skin','ID','Group','Section','Pos X','Pos Y','Pos Z','Obj ID','Action'];
+  const H = ['#','Skin','ID','Group','Section','Pos X','Pos Y','Pos Z','Obj ID','Action',''];
 
   return (
     <div className={styles.tableWrap}>
@@ -398,9 +437,9 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
         <thead>
           <tr>
             {H.map((h, i) => (
-              <th key={h}>
+              <th key={i}>
                 {h}
-                <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />
+                {i < H.length - 1 && <div className={styles.resizeHandle} onMouseDown={e => rs(e, i)} />}
               </th>
             ))}
           </tr>
@@ -434,6 +473,10 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
                   onCommit={v => upd(i, { objId: v })} />
                 <EditableCell value={o.action} kind="int"
                   onCommit={v => upd(i, { action: v })} />
+                <RowMenu
+                  onDuplicate={() => duplicateObject(floorId, i)}
+                  onDelete={() => deleteObject(floorId, i)}
+                />
               </tr>
             );
           })}
@@ -443,7 +486,155 @@ function ObjectTable({ objects, floorId }: { objects: QuestObject[]; floorId: nu
   );
 }
 
-// ─── Inspector ──────────────────────────────────────────────────────────────
+// ─── Add panel ──────────────────────────────────────────────────────────────
+
+interface AddPanelProps {
+  kind: 'monster' | 'object';
+  floorId: number;
+  areaId: number;
+  episode: 1 | 2 | 4;
+  onDone: () => void;
+}
+
+function AddPanel({ kind, floorId, areaId, episode: _episode, onDone }: AddPanelProps) {
+  const addMonster = useQuestStore(s => s.addMonster);
+  const addObject  = useQuestStore(s => s.addObject);
+  const [query, setQuery]   = useState('');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [wave, setWave]     = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Filter presets to the skins relevant for this area
+  const presets = useMemo(() => {
+    if (kind === 'monster') {
+      const allowed = new Set(AREA_MONSTER_SKINS.get(areaId) ?? []);
+      return allowed.size > 0
+        ? MONSTER_PRESETS.filter(p => allowed.has(p.skin))
+        : MONSTER_PRESETS;
+    } else {
+      const ranges = getObjectSkinRanges(areaId);
+      return OBJECT_PRESETS.filter(p =>
+        ranges.some(([lo, hi]) => p.skin >= lo && p.skin <= hi)
+      );
+    }
+  }, [kind, areaId]);
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return q ? presets.filter(p => p.name.toLowerCase().includes(q)) : presets;
+  }, [presets, query]);
+
+  const selectedPreset = useMemo(
+    () => presets.find(p => p.name === selected) ?? null,
+    [presets, selected]
+  );
+
+  const handleAdd = useCallback(() => {
+    if (!selectedPreset) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { name: _name, ...entityData } = selectedPreset;
+    const mapData = useUiStore.getState().loadedMapData;
+    const sampledZ = (() => {
+      if (!mapData) return null;
+      const e = entityData as { posX: number; posY: number; mapSection: number };
+      const [wx, wy] = toWorldPos(e.posX, e.posY, e.mapSection, mapData.sections);
+      return sampleFloorHeight(wx, wy, mapData.triangles);
+    })();
+    if (kind === 'monster') {
+      const m = { ...(entityData as Monster), unknown5: wave, unknown6: wave };
+      if (sampledZ !== null) m.posZ = sampledZ;
+      addMonster(floorId, m);
+    } else {
+      const o = { ...(entityData as QuestObject) };
+      if (sampledZ !== null) o.posZ = sampledZ;
+      addObject(floorId, o);
+    }
+    onDone();
+  }, [selectedPreset, kind, wave, floorId, addMonster, addObject, onDone]);
+
+  return (
+    <div className={styles.addPanel}>
+      <div className={styles.addPanelHeader}>
+        <span>Add {kind === 'monster' ? 'Monster' : 'Object'}</span>
+        <button className={styles.addPanelCancel} onClick={onDone}>✕</button>
+      </div>
+
+      <div className={styles.addSearch}>
+        <input
+          ref={inputRef}
+          className={styles.addSearchInput}
+          placeholder="Search…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Escape') onDone();
+            if (e.key === 'Enter' && filtered.length > 0) {
+              setSelected(filtered[0].name);
+            }
+          }}
+        />
+      </div>
+
+      <div className={styles.addList}>
+        {filtered.map(p => (
+          <div
+            key={p.name}
+            className={`${styles.addListItem} ${selected === p.name ? styles.addListSelected : ''}`}
+            onClick={() => setSelected(p.name)}
+            onDoubleClick={() => { setSelected(p.name); handleAdd(); }}
+          >
+            {p.name}
+          </div>
+        ))}
+        {filtered.length === 0 && <div className={styles.addListEmpty}>No matches</div>}
+      </div>
+
+      {kind === 'monster' && (
+        <div className={styles.addMeta}>
+          <span className={styles.addMetaLabel}>Wave</span>
+          <input
+            className={styles.addMetaInput}
+            type="number"
+            min={0}
+            value={wave}
+            onChange={e => setWave(Math.max(0, parseInt(e.target.value) || 0))}
+          />
+        </div>
+      )}
+
+      <div className={styles.addFooter}>
+        <button
+          className={styles.addBtn}
+          disabled={!selectedPreset}
+          onClick={handleAdd}
+        >Add</button>
+        <button className={styles.addCancelBtn} onClick={onDone}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Schema label / kind helpers ─────────────────────────────────────────────
+
+function msl(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: string): string {
+  return schema?.find(d => d.key === key)?.label ?? fallback;
+}
+
+function osl(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: string): string {
+  return schema?.find(d => d.key === key)?.label ?? fallback;
+}
+
+function mskind(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: CellKind): CellKind {
+  return schema?.find(d => d.key === key)?.kind ?? fallback;
+}
+
+function oskind(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: CellKind): CellKind {
+  return schema?.find(d => d.key === key)?.kind ?? fallback;
+}
+
+// ─── Inspector helpers ───────────────────────────────────────────────────────
 
 interface InspectorRowProps {
   label: string;
@@ -497,10 +688,13 @@ function InspectorRow({ label, value, kind, display, onCommit }: InspectorRowPro
   );
 }
 
-function InspectorGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function InspectorGroup({ label, children, action }: { label: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className={styles.inspGroup}>
-      <div className={styles.inspGroupLabel}>{label}</div>
+      <div className={styles.inspGroupLabel}>
+        {label}
+        {action && <span className={styles.inspGroupAction}>{action}</span>}
+      </div>
       {children}
     </div>
   );
@@ -574,27 +768,115 @@ function SubtypeCell({ monster, episode, onCommit }: {
   return <td className={label ? styles.name : undefined}>{label ?? ''}</td>;
 }
 
-// ─── Schema label / kind helpers ─────────────────────────────────────────────
+// ─── Relocate button ─────────────────────────────────────────────────────────
 
-function msl(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: string): string {
-  return schema?.find(d => d.key === key)?.label ?? fallback;
+function RelocateButton({ floorId, entityType, entityIndex, skin }: {
+  floorId: number;
+  entityType: 'monster' | 'object';
+  entityIndex: number;
+  skin?: number;
+}) {
+  const { setPlacementTarget, setViewMode, placementTarget } = useUiStore();
+  const placement = entityType === 'object' && skin !== undefined
+    ? getPlacementType(skin)
+    : 'rotation';
+  const isActive =
+    placementTarget?.floorId === floorId &&
+    placementTarget?.entityType === entityType &&
+    placementTarget?.entityIndex === entityIndex;
+
+  const handleClick = useCallback(() => {
+    if (isActive) {
+      useUiStore.getState().clearPlacementTarget();
+    } else {
+      setViewMode('2d');
+      setPlacementTarget({ floorId, entityType, entityIndex, placement });
+    }
+  }, [isActive, setViewMode, setPlacementTarget, floorId, entityType, entityIndex, placement]);
+
+  const title = isActive
+    ? 'Cancel placement'
+    : placement === 'radius' ? 'Click map to set position & radius'
+    : placement === 'none'   ? 'Click map to set position'
+    :                          'Click map to set position & rotation';
+
+  return (
+    <button
+      className={`${styles.relocateBtn} ${isActive ? styles.relocateBtnActive : ''}`}
+      title={title}
+      onClick={handleClick}
+    >
+      {isActive ? '✕' : '⊕'}
+    </button>
+  );
 }
 
-function osl(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: string): string {
-  return schema?.find(d => d.key === key)?.label ?? fallback;
+// ─── BAM rotation input ──────────────────────────────────────────────────────
+// Shows degrees + a horizontal drag scrubber (drag left/right to change value)
+// alongside a raw BAM integer input.  Shift-drag for 10× speed.
+
+function BamInputRow({ label, value, onCommit }: {
+  label: string; value: number; onCommit: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const degrees = (value * 360 / 65536).toFixed(1);
+
+  const commit = useCallback(() => {
+    if (draft === null) return;
+    const s = draft.trim();
+    const n = s.startsWith('0x') || s.startsWith('0X') ? parseInt(s, 16) : parseInt(s, 10);
+    if (!isNaN(n)) onCommit(((n % 65536) + 65536) % 65536);
+    setDraft(null);
+  }, [draft, onCommit]);
+
+  const startScrub = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX  = e.clientX;
+    const startVal = value;
+    const onMove = (me: MouseEvent) => {
+      const speed = me.shiftKey ? 640 : 64;
+      const delta = Math.round((me.clientX - startX) * speed);
+      onCommit(((startVal + delta) % 65536 + 65536) % 65536);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [value, onCommit]);
+
+  return (
+    <div className={styles.inspRow}>
+      <span className={styles.inspLabel}>{label}</span>
+      <span
+        className={styles.bamScrub}
+        title="Drag to scrub (Shift = 10× faster)"
+        onMouseDown={startScrub}
+      >{degrees}° ↔</span>
+      <input
+        ref={inputRef}
+        className={styles.bamInput}
+        value={draft ?? String(value)}
+        onChange={e => setDraft(e.target.value)}
+        onFocus={() => { if (draft === null) setDraft(String(value)); }}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter')  { commit(); inputRef.current?.blur(); }
+          if (e.key === 'Escape') { setDraft(null); inputRef.current?.blur(); }
+        }}
+      />
+    </div>
+  );
 }
 
-function mskind(schema: MonsterFieldDesc[] | undefined, key: keyof Monster, fallback: CellKind): CellKind {
-  return schema?.find(d => d.key === key)?.kind ?? fallback;
-}
+// ─── Inspectors ──────────────────────────────────────────────────────────────
 
-function oskind(schema: ObjectFieldDesc[] | undefined, key: keyof QuestObject, fallback: CellKind): CellKind {
-  return schema?.find(d => d.key === key)?.kind ?? fallback;
-}
-
-// ─── Inspectors ───────────────────────────────────────────────────────────────
-
-function MonsterInspector({ monster, index, floorId, areaId }: { monster: Monster; index: number; floorId: number; areaId: number }) {
+function MonsterInspector({ monster, index, floorId, areaId }: {
+  monster: Monster; index: number; floorId: number; areaId: number;
+}) {
   const updateMonster = useQuestStore(s => s.updateMonster);
   const episode = (useQuestStore(s => s.quest?.episode) ?? 1) as 1|2|4;
   const upd = useCallback(
@@ -621,10 +903,13 @@ function MonsterInspector({ monster, index, floorId, areaId }: { monster: Monste
 
       <InspectorGroup label="Identity">
         <DualSelectRow label="Skin" value={monster.skin} kind="hex" options={getMonsterSkinOptions(areaId)} onCommit={v => upd({ skin: v })} />
-        <InspectorRow label="Section" value={monster.mapSection} kind="int"  onCommit={v => upd({ mapSection: v })} />
+        <InspectorRow label="Section" value={monster.mapSection} kind="int" onCommit={v => upd({ mapSection: v })} />
       </InspectorGroup>
 
-      <InspectorGroup label="Position">
+      <InspectorGroup
+        label="Position"
+        action={<RelocateButton floorId={floorId} entityType="monster" entityIndex={index} skin={undefined} />}
+      >
         <InspectorRow label="X" value={monster.posX} kind="float" onCommit={v => upd({ posX: v })} />
         <InspectorRow label="Y" value={monster.posY} kind="float" onCommit={v => upd({ posY: v })} />
         <InspectorRow label="Z" value={monster.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
@@ -632,7 +917,7 @@ function MonsterInspector({ monster, index, floorId, areaId }: { monster: Monste
 
       {has('direction') && (
         <InspectorGroup label="Direction">
-          <InspectorRow label={sl('direction', 'Rotation Y')} value={monster.direction} kind="float" onCommit={v => upd({ direction: v })} />
+          <BamInputRow label={sl('direction', 'Rotation Y')} value={monster.direction} onCommit={v => upd({ direction: v })} />
         </InspectorGroup>
       )}
 
@@ -665,7 +950,9 @@ function MonsterInspector({ monster, index, floorId, areaId }: { monster: Monste
   );
 }
 
-function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObject; index: number; floorId: number; areaId: number }) {
+function ObjectInspector({ object, index, floorId, areaId }: {
+  object: QuestObject; index: number; floorId: number; areaId: number;
+}) {
   const updateObject = useQuestStore(s => s.updateObject);
   const upd = useCallback(
     (patch: Partial<QuestObject>) => updateObject(floorId, index, patch),
@@ -673,8 +960,6 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
   );
   const sc = OBJECT_SCHEMAS.get(object.skin);
   const sl = (key: keyof QuestObject, fallback: string) => osl(sc, key, fallback);
-  // When no schema exists for this skin, show everything; otherwise only show fields present in the schema.
-  // This matches Delphi FEdit.pas dynamic row rendering (only non-'-' ini labels produce rows).
   const has = (key: keyof QuestObject) => sc == null || sc.some(d => d.key === key);
 
   const hasAnyRot   = has('rotX') || has('rotY') || has('rotZ');
@@ -698,7 +983,10 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
         {has('objId') && <InspectorRow label={sl('objId', 'Obj ID')} value={object.objId} kind="int" onCommit={v => upd({ objId: v })} />}
       </InspectorGroup>
 
-      <InspectorGroup label="Position">
+      <InspectorGroup
+        label="Position"
+        action={<RelocateButton floorId={floorId} entityType="object" entityIndex={index} skin={object.skin} />}
+      >
         <InspectorRow label="X" value={object.posX} kind="float" onCommit={v => upd({ posX: v })} />
         <InspectorRow label="Y" value={object.posY} kind="float" onCommit={v => upd({ posY: v })} />
         <InspectorRow label="Z" value={object.posZ} kind="float" onCommit={v => upd({ posZ: v })} />
@@ -706,9 +994,9 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
 
       {hasAnyRot && (
         <InspectorGroup label="Rotation (BAM)">
-          {has('rotX') && <InspectorRow label={sl('rotX', 'Rotation X')} value={object.rotX} kind="int" onCommit={v => upd({ rotX: v })} />}
-          {has('rotY') && <InspectorRow label={sl('rotY', 'Rotation Y')} value={object.rotY} kind="int" onCommit={v => upd({ rotY: v })} />}
-          {has('rotZ') && <InspectorRow label={sl('rotZ', 'Rotation Z')} value={object.rotZ} kind="int" onCommit={v => upd({ rotZ: v })} />}
+          {has('rotX') && <BamInputRow label={sl('rotX', 'Rotation X')} value={object.rotX} onCommit={v => upd({ rotX: v })} />}
+          {has('rotY') && <BamInputRow label={sl('rotY', 'Rotation Y')} value={object.rotY} onCommit={v => upd({ rotY: v })} />}
+          {has('rotZ') && <BamInputRow label={sl('rotZ', 'Rotation Z')} value={object.rotZ} onCommit={v => upd({ rotZ: v })} />}
         </InspectorGroup>
       )}
 
@@ -746,15 +1034,20 @@ function ObjectInspector({ object, index, floorId, areaId }: { object: QuestObje
   );
 }
 
-// ─── Floor view ─────────────────────────────────────────────────────────────
+// ─── Floor view ──────────────────────────────────────────────────────────────
 
 export function FloorView() {
   const { selectedFloorId, selectedEntity } = useQuestStore();
   const floor = useSelectedFloor();
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const episode = (useQuestStore(s => s.quest?.episode) ?? 1) as 1 | 2 | 4;
+  const { viewMode, setViewMode } = useUiStore();
+  const [addMode, setAddMode] = useState<'monster' | 'object' | null>(null);
 
-  const noArea = selectedFloorId === null;
+  const noArea   = selectedFloorId === null;
   const disabled = !noArea && !floor;
+
+  // Cancel add mode if area changes
+  useEffect(() => { setAddMode(null); }, [selectedFloorId]);
 
   return (
     <div className={styles.view}>
@@ -764,6 +1057,13 @@ export function FloorView() {
         <div className={styles.paneHeader}>
           <span className={styles.paneTitle}>Monsters</span>
           {floor && <span className={styles.count}>{floor.monsters.length}</span>}
+          {floor && (
+            <button
+              className={styles.addEntityBtn}
+              title="Add Monster"
+              onClick={() => setAddMode(addMode === 'monster' ? null : 'monster')}
+            >+</button>
+          )}
         </div>
         {noArea
           ? <div className={styles.placeholder}>Select an area from the sidebar</div>
@@ -778,6 +1078,13 @@ export function FloorView() {
         <div className={styles.paneHeader}>
           <span className={styles.paneTitle}>Objects</span>
           {floor && <span className={styles.count}>{floor.objects.length}</span>}
+          {floor && (
+            <button
+              className={styles.addEntityBtn}
+              title="Add Object"
+              onClick={() => setAddMode(addMode === 'object' ? null : 'object')}
+            >+</button>
+          )}
         </div>
         {noArea
           ? <div className={styles.placeholder}>Select an area from the sidebar</div>
@@ -810,31 +1117,41 @@ export function FloorView() {
         }
       </div>
 
-      {/* ── Bottom-right: Inspector ── */}
+      {/* ── Bottom-right: Inspector / Add panel ── */}
       <div className={styles.pane}>
         <div className={styles.paneHeader}>
           <span className={styles.paneTitle}>Inspector</span>
-          {selectedEntity && floor && (
+          {!addMode && selectedEntity && floor && (
             <span className={styles.count}>
               {selectedEntity.type === 'monster' ? 'M' : 'O'}#{selectedEntity.index}
             </span>
           )}
         </div>
-        {!selectedEntity || !floor
-          ? <div className={styles.placeholder}>Select an entity to inspect</div>
-          : selectedEntity.type === 'monster'
-            ? <MonsterInspector
-                monster={floor.monsters[selectedEntity.index]}
-                index={selectedEntity.index}
-                floorId={floor.id}
-                areaId={selectedFloorId!}
-              />
-            : <ObjectInspector
-                object={floor.objects[selectedEntity.index]}
-                index={selectedEntity.index}
-                floorId={floor.id}
-                areaId={selectedFloorId!}
-              />
+
+        {addMode && floor
+          ? <AddPanel
+              kind={addMode}
+              floorId={floor.id}
+              areaId={selectedFloorId!}
+              episode={episode}
+              onDone={() => setAddMode(null)}
+            />
+          : (!selectedEntity || !floor
+              ? <div className={styles.placeholder}>Select an entity to inspect</div>
+              : selectedEntity.type === 'monster'
+                ? <MonsterInspector
+                    monster={floor.monsters[selectedEntity.index]}
+                    index={selectedEntity.index}
+                    floorId={floor.id}
+                    areaId={selectedFloorId!}
+                  />
+                : <ObjectInspector
+                    object={floor.objects[selectedEntity.index]}
+                    index={selectedEntity.index}
+                    floorId={floor.id}
+                    areaId={selectedFloorId!}
+                  />
+            )
         }
       </div>
 

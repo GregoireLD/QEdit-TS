@@ -180,3 +180,99 @@ export function toWorldPos(
     sin * posX + cos * posY + sec.cy,
   ];
 }
+
+/**
+ * Inverse of toWorldPos: convert absolute world position back to section-local
+ * coordinates for a given section. Returns the section used.
+ */
+export function fromWorldPos(
+  wx: number,
+  wy: number,
+  sec: RelSection,
+): { posX: number; posY: number } {
+  const angle = -sec.rotation / 10430.37835;
+  const dx = wx - sec.cx;
+  const dy = wy - sec.cy;
+  return {
+    posX:  Math.cos(angle) * dx + Math.sin(angle) * dy,
+    posY: -Math.sin(angle) * dx + Math.cos(angle) * dy,
+  };
+}
+
+/** Return the section whose centre is closest to the given world-space point. */
+export function findNearestSection(
+  wx: number,
+  wy: number,
+  sections: RelSection[],
+): RelSection | null {
+  if (sections.length === 0) return null;
+  let best = sections[0];
+  let bestDist = (wx - best.cx) ** 2 + (wy - best.cy) ** 2;
+  for (let i = 1; i < sections.length; i++) {
+    const s = sections[i];
+    const d = (wx - s.cx) ** 2 + (wy - s.cy) ** 2;
+    if (d < bestDist) { bestDist = d; best = s; }
+  }
+  return best;
+}
+
+/**
+ * Convert a world-space direction vector (dx, dy) to a BAM rotation value,
+ * expressed in the local frame of the given section.
+ * PSO BAM convention: 0 = facing south (+posY / +depth), increases CW viewed from above.
+ * BAM: 0x10000 (65536) = full circle; stored as u32 but values stay ≤ 65535.
+ */
+export function worldDirToBAM(dx: number, dy: number, sec: RelSection): number {
+  // atan2(x, z) gives PSO convention: 0 for (0,1)=south, π/2 for (1,0)=east
+  const worldAngle = Math.atan2(dx, dy);
+  const localAngle = worldAngle - sec.rotation / 10430.37835;
+  return ((Math.round(localAngle * 10430.37835) % 65536) + 65536) % 65536;
+}
+
+/**
+ * Inverse of worldDirToBAM: convert a BAM value to a unit direction vector
+ * in world space (suitable for drawing arrows on the 2D canvas).
+ * Returns [worldDirX, worldDirY] where +Y is the depth / screen-down direction.
+ */
+export function bamToWorldDir(bam: number, sec: RelSection): [number, number] {
+  const b = bam * 2 * Math.PI / 65536;
+  // In local section space, BAM 0 = south = +posY, so facing = [sin(b), cos(b)]
+  const localDirX = Math.sin(b);
+  const localDirY = Math.cos(b);
+  const a = -sec.rotation / 10430.37835;
+  return [
+    Math.cos(a) * localDirX - Math.sin(a) * localDirY,
+    Math.sin(a) * localDirX + Math.cos(a) * localDirY,
+  ];
+}
+
+/**
+ * Sample the floor height (Y coordinate) at world position (wx, wy) by testing
+ * floor triangles (flags & 1) using barycentric coordinates in the XZ plane.
+ * Returns null when no floor triangle contains the point.
+ */
+export function sampleFloorHeight(wx: number, wy: number, triangles: RelTriangle[]): number | null {
+  for (const tri of triangles) {
+    if (!(tri.flags & 1)) continue;
+    const ax = tri.x0, az = tri.z0, ay = tri.y0;
+    const bx = tri.x1, bz = tri.z1, by = tri.y1;
+    const cx = tri.x2, cz = tri.z2, cy = tri.y2;
+    const v0x = bx - ax, v0z = bz - az;
+    const v1x = cx - ax, v1z = cz - az;
+    const v2x = wx - ax, v2z = wy - az;
+    const d00 = v0x * v0x + v0z * v0z;
+    const d01 = v0x * v1x + v0z * v1z;
+    const d11 = v1x * v1x + v1z * v1z;
+    const d02 = v0x * v2x + v0z * v2z;
+    const d12 = v1x * v2x + v1z * v2z;
+    const denom = d00 * d11 - d01 * d01;
+    if (Math.abs(denom) < 1e-10) continue;
+    const inv = 1 / denom;
+    const u = (d11 * d02 - d01 * d12) * inv;
+    const v = (d00 * d12 - d01 * d02) * inv;
+    if (u >= 0 && v >= 0 && u + v <= 1) {
+      return ay + u * (by - ay) + v * (cy - ay);
+    }
+  }
+  return null;
+}

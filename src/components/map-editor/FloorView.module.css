@@ -96,6 +96,9 @@
   margin-bottom: 2px;
 }
 .inspGroupLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -325,4 +328,271 @@
   outline: 1px solid var(--accent);
   outline-offset: -1px;
   border-radius: 2px;
+}
+
+/* ─── BAM rotation input ─────────────────────────────────────────────────── */
+
+.bamScrub {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: ew-resize;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.bamScrub:hover { background: var(--bg-panel); color: var(--accent); border-color: var(--accent); }
+
+.bamInput {
+  width: 54px;
+  flex-shrink: 0;
+  background: #0d1b2a;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: #9cdcfe;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+  min-width: 0;
+}
+.bamInput:focus { border-color: var(--accent); color: var(--text); }
+
+/* ─── Add entity button (pane header) ─────────────────────────────────────── */
+
+.addEntityBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 5px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.addEntityBtn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+
+/* ─── Row action menu ("⋯") ────────────────────────────────────────────────── */
+
+.menuCell {
+  width: 28px;
+  padding: 0 !important;
+  text-align: center;
+}
+
+.menuWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.menuTrigger {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.menuTrigger:hover { background: var(--bg-hover); color: var(--text); }
+
+.menuDropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 100;
+  background: #1e1e1e;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  min-width: 110px;
+  padding: 3px 0;
+  display: flex;
+  flex-direction: column;
+}
+.menuDropdown button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.menuDropdown button:hover { background: var(--bg-hover); }
+
+.menuDelete { color: #f08080 !important; }
+.menuDelete:hover { background: #3a1a1a !important; }
+
+/* ─── Add panel ─────────────────────────────────────────────────────────────── */
+
+.addPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.addPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-head);
+  flex-shrink: 0;
+}
+
+.addPanelCancel {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.addPanelCancel:hover { background: var(--bg-hover); color: var(--text); }
+
+.addSearch {
+  padding: 6px 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.addSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d1b2a;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 3px 7px;
+  outline: none;
+}
+.addSearchInput:focus { border-color: var(--accent); }
+
+.addList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 3px 0;
+}
+
+.addListItem {
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.addListItem:hover { background: var(--bg-hover); }
+
+.addListSelected { background: #1a3050 !important; color: var(--accent); }
+
+.addListEmpty {
+  padding: 12px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.addMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+
+.addMetaLabel {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.addMetaInput {
+  width: 60px;
+  background: #0d1b2a;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: #9cdcfe;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  padding: 1px 4px;
+  outline: none;
+}
+.addMetaInput:focus { border-color: var(--accent); }
+
+.addFooter {
+  display: flex;
+  gap: 6px;
+  padding: 7px 8px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+
+.addBtn {
+  flex: 1;
+  background: var(--accent);
+  border: none;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.addBtn:hover:not(:disabled) { filter: brightness(1.15); }
+.addBtn:disabled { opacity: 0.4; cursor: default; }
+
+.addCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.addCancelBtn:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ─── Inspector group action (e.g. Relocate button) ───────────────────────── */
+
+.inspGroupAction {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.relocateBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1;
+  padding: 1px 5px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.relocateBtn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+
+.relocateBtnActive {
+  background: #3a1a1a !important;
+  border-color: #f08080 !important;
+  color: #f08080 !important;
 }

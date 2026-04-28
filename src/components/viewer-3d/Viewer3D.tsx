@@ -1164,7 +1164,8 @@ export function Viewer3D() {
 
     // Resolves an object's canonical stem (after skin aliasing + subtypeditem variant)
     // and returns candidate base paths: floor-specific first, flat fallback second.
-    const resolveObjEntry = (o: { skin: number; unknown13: number; scaleX: number; scaleZ: number; objId: number; action: number }): { key: string; paths: string[] } | null => {
+    // baseStem is the skin number without any subtype suffix; equals key when no suffix applied.
+    const resolveObjEntry = (o: { skin: number; unknown13: number; scaleX: number; scaleZ: number; objId: number; action: number }): { key: string; baseStem: string; paths: string[] } | null => {
       if (o.skin === 0) return null;
       // Skin aliasing: 130↔150 and 131↔151 are the same object type;
       // unknown13=0 → open/active form (150/151), unknown13≠0 → closed/base form (130/131).
@@ -1172,6 +1173,7 @@ export function Viewer3D() {
       if (skin === 130 || skin === 150) skin = o.unknown13 === 0 ? 150 : 130;
       else if (skin === 131 || skin === 151) skin = o.unknown13 === 0 ? 151 : 131;
       // Subtypeditem: certain skins have variant model files (e.g. "135-0.nj", "135-1.nj").
+      const baseStem = String(skin);
       let suffix = '';
       for (const { skin: s, v, max } of SUBTYPED_ITEMS) {
         if (s === skin) {
@@ -1187,7 +1189,8 @@ export function Viewer3D() {
       }
       const stem = `${skin}${suffix}`;
       return {
-        key:   stem,
+        key:      stem,
+        baseStem,
         paths: [
           `${dataDir}obj${sep}Floor${floorId}${sep}${stem}`, // floor-specific variant first
           `${dataDir}obj${sep}${stem}`,                       // common fallback
@@ -1208,16 +1211,24 @@ export function Viewer3D() {
           objectBases.set(entry.key, entry.paths);
         // Collect secondary model paths ({stem}-2 … {stem}-9) for skins that
         // split geometry across multiple files (posts/frame separate from body/beams).
-        for (let idx = 2; idx <= 9; idx++) {
-          const secStem = `${entry.key}-${idx}`;
-          if (!objectSecBases.has(secStem)) {
-            objectSecBases.set(secStem, {
-              secPaths: [
-                `${dataDir}obj${sep}Floor${floorId}${sep}${secStem}`,
-                `${dataDir}obj${sep}${secStem}`,
-              ],
-              xvmFallbacks: entry.paths,
-            });
+        // For subtypeditem skins (key !== baseStem, e.g. "69-0") we also register
+        // paths from the bare skin ("69-2") because secondary parts are shared across
+        // all subtype variants and are numbered from the base skin, not the variant key.
+        const stemsToRegister = entry.key !== entry.baseStem
+          ? [entry.key, entry.baseStem]
+          : [entry.key];
+        for (const stem of stemsToRegister) {
+          for (let idx = 2; idx <= 9; idx++) {
+            const secStem = `${stem}-${idx}`;
+            if (!objectSecBases.has(secStem)) {
+              objectSecBases.set(secStem, {
+                secPaths: [
+                  `${dataDir}obj${sep}Floor${floorId}${sep}${secStem}`,
+                  `${dataDir}obj${sep}${secStem}`,
+                ],
+                xvmFallbacks: entry.paths,
+              });
+            }
           }
         }
       }
@@ -1321,7 +1332,9 @@ export function Viewer3D() {
             og.rotation.z = -o.rotZ * BAM_TO_RAD;
             og.position.set(wx, o.posZ, wz);
 
-            const key   = resolveObjEntry(o)?.key ?? String(o.skin);
+            const objEntry = resolveObjEntry(o);
+            const key      = objEntry?.key      ?? String(o.skin);
+            const baseStem = objEntry?.baseStem  ?? key;
             const model = objectModelMap.get(key);
             let meshes: THREE.Mesh[];
             let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
@@ -1367,8 +1380,14 @@ export function Viewer3D() {
 
             // Secondary models: some skins split geometry across multiple files
             // (e.g. "72.xj" door panel + "72-2.xj" door posts, "77-2.nj" + "77-3.nj" + "77-4.nj" …).
+            // For subtypeditem skins (key ≠ baseStem, e.g. "69-0") also check the
+            // bare-skin secondary ("69-2") because shared parts are indexed from the base skin.
+            // Note: can't use ?? here — a missing file registers as { nj: null } (not undefined).
             for (let secIdx = 2; secIdx <= 9; secIdx++) {
-              const secModel = objectSecModelMap.get(`${key}-${secIdx}`);
+              const byKey  = objectSecModelMap.get(`${key}-${secIdx}`);
+              const secModel = byKey?.nj
+                ? byKey
+                : (key !== baseStem ? objectSecModelMap.get(`${baseStem}-${secIdx}`) : undefined);
               if (!secModel?.nj || secModel.nj.subMeshes.length === 0) continue;
               const { group: njg2, lambertMats: secMats } = buildNjGroup(secModel.nj, secModel.textures, texRemap);
               for (const t of secModel.textures) { if (t) entityTextures.push(t); }
