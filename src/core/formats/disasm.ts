@@ -16,6 +16,7 @@
 
 import type { QuestBin, DataBlock } from '../model/types';
 import { BinVersion } from '../model/types';
+import asmJson from '../data/asm.json';
 
 // ─── Argument type constants (must match m.Add() order in main.pas) ────────
 
@@ -47,70 +48,43 @@ export interface AsmEntry {
   name:  string;      // mnemonic
   order: number;      // argument order type (T_IMED / T_ARGS / T_NONE / …)
   ver:   number;      // 0=DC, 1=V2, 2=V3, 3=V4
-  args:  number[];    // arg types, terminated by T_NONE
+  args:  number[];    // arg types as numeric constants
 }
 
-// ─── Parse Asm.txt lines into AsmEntry array ───────────────────────────────
+// ─── String → numeric maps for JSON → AsmEntry ────────────────────────────
 
-const ARG_NAMES: Record<string, number> = {
-  T_NONE: 0, T_IMED: 1, T_ARGS: 2, T_PUSH: 3,
-  T_VASTART: 4, T_VAEND: 5, T_DC: 6,
-  T_REG: 7, T_BYTE: 8, T_WORD: 9, T_DWORD: 10,
-  T_FLOAT: 11, T_STR: 12, T_RREG: 13,
-  T_FUNC: 14, T_FUNC2: 15,
-  T_SWITCH: 16, T_SWITCH2B: 17, T_PFLAG: 18,
-  T_STRDATA: 19, T_DATA: 20, T_BREG: 21, T_DREG: 22,
+const ORDER_MAP: Record<string, number> = {
+  NONE: 0, IMED: 1, ARGS: 2, PUSH: 3, VASTART: 4, VAEND: 5, DC: 6,
 };
+const ARG_MAP: Record<string, number> = {
+  REG: 7, BYTE: 8, WORD: 9, DWORD: 10, FLOAT: 11, STR: 12, RREG: 13,
+  FUNC: 14, FUNC2: 15, SWITCH: 16, SWITCH2B: 17, PFLAG: 18,
+  STRDATA: 19, DATA: 20, BREG: 21, DREG: 22,
+};
+
+function buildAsmTable(): AsmEntry[] {
+  const entries: AsmEntry[] = [];
+  const seen = new Set<string>();
+  for (const raw of asmJson) {
+    const fnc   = parseInt(raw.op, 16);
+    const order = ORDER_MAP[raw.order] ?? T_NONE;
+    const args  = (raw.args as string[]).map(a => ARG_MAP[a] ?? T_NONE);
+    const ver   = raw.minVer;
+    let name = raw.name;
+    if (seen.has(name)) {
+      name = name + entries.length.toString(16).padStart(2, '0').toUpperCase();
+    }
+    seen.add(raw.name);
+    entries.push({ fnc, name, order, ver, args });
+  }
+  return entries;
+}
 
 let _table: AsmEntry[] | null = null;
 
 export async function loadAsmTable(): Promise<AsmEntry[]> {
-  if (_table) return _table;
-
-  // Fetch the bundled Asm.txt from public assets (relative path works from any subfolder)
-  const res = await fetch('./Asm.txt');
-  const text = await res.text();
-  const entries: AsmEntry[] = [];
-  const seen = new Set<string>();
-
-  for (const raw of text.split('\n')) {
-    const line = raw.trim();
-    if (!line.startsWith('{') || !line.includes('}')) continue;
-
-    // Strip braces and split by comma+space or comma
-    const inner = line.slice(1, line.indexOf('}')).replace(/,\s*/g, ',');
-    const parts = inner.split(',');
-    if (parts.length < 3) continue;
-
-    const fnc   = parseInt(parts[0], 16);
-    const name  = parts[1].replace(/"/g, '').trim();
-    const order = ARG_NAMES[parts[2]] ?? T_NONE;
-
-    // Collect arg types until T_NONE or a version tag
-    const args: number[] = [];
-    let ver = 0;
-    for (let i = 3; i < parts.length; i++) {
-      const p = parts[i].trim();
-      if (p === 'T_V2') { ver = 1; break; }
-      if (p === 'T_V3') { ver = 2; break; }
-      if (p === 'T_V4') { ver = 3; break; }
-      const t = ARG_NAMES[p];
-      if (t === undefined || t === T_NONE) break;
-      args.push(t);
-    }
-
-    // Deduplicate names (same as Delphi: append hex index for dupes)
-    let finalName = name;
-    if (seen.has(name)) {
-      finalName = name + entries.length.toString(16).padStart(2, '0').toUpperCase();
-    }
-    seen.add(name);
-
-    entries.push({ fnc, name: finalName, order, ver, args });
-  }
-
-  _table = entries;
-  return entries;
+  if (!_table) _table = buildAsmTable();
+  return _table;
 }
 
 // ─── Lookup: find best matching entry for a given opcode ID ───────────────

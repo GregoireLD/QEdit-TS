@@ -1,0 +1,5521 @@
+[
+  {
+    "op": "0x00",
+    "name": "nop",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x01",
+    "name": "ret",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x02",
+    "name": "sync",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x03",
+    "name": "exit",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x04",
+    "name": "thread",
+    "order": "IMED",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "found in q236 gc, Fix Lee"
+  },
+  {
+    "op": "0x05",
+    "name": "va_start",
+    "order": "VASTART",
+    "args": [],
+    "minVer": 2,
+    "notes": "Variable start, Use argments for variables."
+  },
+  {
+    "op": "0x06",
+    "name": "va_end",
+    "order": "VAEND",
+    "args": [],
+    "minVer": 2
+  },
+  {
+    "op": "0x07",
+    "name": "va_call",
+    "order": "IMED",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x08",
+    "name": "let",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x09",
+    "name": "leti",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x0a",
+    "name": "letb",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "BYTE"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x0b",
+    "name": "letw",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "WORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x0c",
+    "name": "leta",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x0d",
+    "name": "leto",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x10",
+    "name": "set",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x11",
+    "name": "clear",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x12",
+    "name": "rev",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x13",
+    "name": "gset",
+    "order": "IMED",
+    "args": [
+      "PFLAG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x14",
+    "name": "gclear",
+    "order": "IMED",
+    "args": [
+      "PFLAG"
+    ],
+    "minVer": 0,
+    "notes": "name & fix Lee"
+  },
+  {
+    "op": "0x15",
+    "name": "grev",
+    "order": "IMED",
+    "args": [
+      "PFLAG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x16",
+    "name": "glet",
+    "order": "IMED",
+    "args": [
+      "PFLAG"
+    ],
+    "minVer": 0,
+    "notes": "Lee, found in q71 DC Ver.1"
+  },
+  {
+    "op": "0x17",
+    "name": "gget",
+    "order": "IMED",
+    "args": [
+      "PFLAG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x18",
+    "name": "add",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x19",
+    "name": "addi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1a",
+    "name": "sub",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1b",
+    "name": "subi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1c",
+    "name": "mul",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1d",
+    "name": "muli",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1e",
+    "name": "div",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x1f",
+    "name": "divi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x20",
+    "name": "and",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x21",
+    "name": "andi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x22",
+    "name": "or",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x23",
+    "name": "ori",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x24",
+    "name": "xor",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x25",
+    "name": "xori",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x26",
+    "name": "mod",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x27",
+    "name": "modi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x28",
+    "name": "jmp",
+    "order": "IMED",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x29",
+    "name": "call",
+    "order": "IMED",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x2a",
+    "name": "jmp_on",
+    "order": "IMED",
+    "args": [
+      "FUNC",
+      "SWITCH2B"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x2b",
+    "name": "jmp_off",
+    "order": "IMED",
+    "args": [
+      "FUNC",
+      "SWITCH2B"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x2c",
+    "name": "jmp_=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x2d",
+    "name": "jmpi_=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x2e",
+    "name": "jmp_!=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x2f",
+    "name": "jmpi_!=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x30",
+    "name": "ujmp_>",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x31",
+    "name": "ujmpi_>",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x32",
+    "name": "jmp_>",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x33",
+    "name": "jmpi_>",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x34",
+    "name": "ujmp_<",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x35",
+    "name": "ujmpi_<",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x36",
+    "name": "jmp_<",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x37",
+    "name": "jmpi_<",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x38",
+    "name": "ujmp_>=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x39",
+    "name": "ujmpi_>=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x3a",
+    "name": "jmp_>=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x3b",
+    "name": "jmpi_>=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x3c",
+    "name": "ujmp_<=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x3d",
+    "name": "ujmpi_<=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "estimated command, Lee"
+  },
+  {
+    "op": "0x3e",
+    "name": "jmp_<=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x3f",
+    "name": "jmpi_<=",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD",
+      "FUNC"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0x40",
+    "name": "switch_jmp",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "SWITCH"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x41",
+    "name": "switch_call",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "SWITCH"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x42",
+    "name": "stack_push",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x43",
+    "name": "stack_pop",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x44",
+    "name": "stack_pushm",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x45",
+    "name": "stack_popm",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x48",
+    "name": "arg_pushr",
+    "order": "PUSH",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x49",
+    "name": "arg_pushl",
+    "order": "PUSH",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x4a",
+    "name": "arg_pushb",
+    "order": "PUSH",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x4b",
+    "name": "arg_pushw",
+    "order": "PUSH",
+    "args": [
+      "WORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x4c",
+    "name": "arg_pusha",
+    "order": "PUSH",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x4d",
+    "name": "arg_pusho",
+    "order": "PUSH",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x4e",
+    "name": "arg_pushs",
+    "order": "PUSH",
+    "args": [
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x50",
+    "name": "message",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x51",
+    "name": "list",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x52",
+    "name": "fadein",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x53",
+    "name": "fadeout",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x54",
+    "name": "sound_effect",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x55",
+    "name": "bgm",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x58",
+    "name": "enable",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x59",
+    "name": "disable",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x5a",
+    "name": "window_msg",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x5b",
+    "name": "add_msg",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x5c",
+    "name": "mesend",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x5d",
+    "name": "gettime",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee (Displays in dec)"
+  },
+  {
+    "op": "0x5e",
+    "name": "winend",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x60",
+    "name": "npc_crt_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x60",
+    "name": "npc_crt_V3",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x61",
+    "name": "npc_stop",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x62",
+    "name": "npc_play",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x63",
+    "name": "npc_kill",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x64",
+    "name": "npc_nont",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x65",
+    "name": "npc_talk",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x66",
+    "name": "npc_crp_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x66",
+    "name": "npc_crp_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "gc fix Lee"
+  },
+  {
+    "op": "0x68",
+    "name": "create_pipe",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x69",
+    "name": "p_hpstat_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x69",
+    "name": "p_hpstat_V3",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x6a",
+    "name": "p_dead_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q74 dc  Gatene"
+  },
+  {
+    "op": "0x6a",
+    "name": "p_dead_V3",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x6b",
+    "name": "p_disablewarp",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q220  Gatene"
+  },
+  {
+    "op": "0x6c",
+    "name": "p_enablewarp",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q280 gc, fix Schthack & Ives"
+  },
+  {
+    "op": "0x6d",
+    "name": "p_move_v1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q95 dc"
+  },
+  {
+    "op": "0x6d",
+    "name": "p_move_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q143 BB, q141 gc"
+  },
+  {
+    "op": "0x6e",
+    "name": "p_look",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "fix Lee"
+  },
+  {
+    "op": "0x70",
+    "name": "p_action_disable",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x71",
+    "name": "p_action_enable",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x72",
+    "name": "disable_movement1",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Ives & Gatene"
+  },
+  {
+    "op": "0x73",
+    "name": "enable_movement1",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Ives & Gatene"
+  },
+  {
+    "op": "0x74",
+    "name": "p_noncol",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x75",
+    "name": "p_col",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x76",
+    "name": "p_setpos",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x77",
+    "name": "p_return_guild",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q74 dc, fix Lee"
+  },
+  {
+    "op": "0x78",
+    "name": "p_talk_guild",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x79",
+    "name": "npc_talk_pl_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x79",
+    "name": "npc_talk_pl_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x7a",
+    "name": "npc_talk_kill",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x7b",
+    "name": "npc_crtpk_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x7b",
+    "name": "npc_crtpk_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0x7c",
+    "name": "npc_crppk_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x7c",
+    "name": "npc_crppk_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q222"
+  },
+  {
+    "op": "0x7d",
+    "name": "npc_crptalk_v1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0x7d",
+    "name": "npc_crptalk_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x7e",
+    "name": "p_look_at",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x7f",
+    "name": "npc_crp_id_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q222  Gatene, renamed Lee"
+  },
+  {
+    "op": "0x7f",
+    "name": "npc_crp_id_v3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee, renamed"
+  },
+  {
+    "op": "0x80",
+    "name": "cam_quake",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x81",
+    "name": "cam_adj",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee, CM"
+  },
+  {
+    "op": "0x82",
+    "name": "cam_zmin",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x83",
+    "name": "cam_zmout",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x84",
+    "name": "cam_pan_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q222"
+  },
+  {
+    "op": "0x84",
+    "name": "cam_pan_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x85",
+    "name": "game_lev_super",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x86",
+    "name": "game_lev_reset",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x87",
+    "name": "pos_pipe_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x87",
+    "name": "pos_pipe_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q222, fix Lee"
+  },
+  {
+    "op": "0x88",
+    "name": "if_zone_clear",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Gatene & Ives"
+  },
+  {
+    "op": "0x89",
+    "name": "chk_ene_num",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "found in q118(mirai) gc"
+  },
+  {
+    "op": "0x8a",
+    "name": "unhide_obj",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "found in q220, name Ives & Schthack"
+  },
+  {
+    "op": "0x8b",
+    "name": "unhide_ene",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "name, Ives"
+  },
+  {
+    "op": "0x8c",
+    "name": "at_coords_call",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Gatene & Jodin"
+  },
+  {
+    "op": "0x8d",
+    "name": "at_coords_talk",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "name, Ives and Lee (sort of :P)"
+  },
+  {
+    "op": "0x8e",
+    "name": "walk_to_coord_call",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x8f",
+    "name": "col_npcinr",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x90",
+    "name": "switch_on",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q201, name Lee"
+  },
+  {
+    "op": "0x91",
+    "name": "switch_off",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q72 xbox, name Lee"
+  },
+  {
+    "op": "0x92",
+    "name": "playbgm_epi",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Jodin"
+  },
+  {
+    "op": "0x93",
+    "name": "set_mainwarp",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x94",
+    "name": "set_obj_param",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "BREG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x95",
+    "name": "set_floor_handler",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "FUNC2"
+    ],
+    "minVer": 0,
+    "notes": "GC"
+  },
+  {
+    "op": "0x96",
+    "name": "clr_floor_handler",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0x97",
+    "name": "check_npc_straggle",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0x98",
+    "name": "hud_hide",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x99",
+    "name": "hud_show",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x9a",
+    "name": "cine_enable",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x9b",
+    "name": "cine_disable",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0x9c",
+    "name": "unknown9C",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0x9d",
+    "name": "unknown9D",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0x9e",
+    "name": "unknown9E",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0x9f",
+    "name": "unknown9F",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xa0",
+    "name": "broken_list",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xa1",
+    "name": "set_qt_failure",
+    "order": "IMED",
+    "args": [
+      "FUNC2"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xa2",
+    "name": "set_qt_success",
+    "order": "IMED",
+    "args": [
+      "FUNC2"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xa3",
+    "name": "clr_qt_failure",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xa4",
+    "name": "clr_qt_success",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xa5",
+    "name": "set_qt_cancel",
+    "order": "IMED",
+    "args": [
+      "FUNC2"
+    ],
+    "minVer": 0,
+    "notes": "name Lee"
+  },
+  {
+    "op": "0xa6",
+    "name": "clr_qt_cancel",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xa8",
+    "name": "pl_walk_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xa8",
+    "name": "pl_walk_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xad",
+    "name": "UnknownAD",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "SWITCH"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xb0",
+    "name": "pl_add_meseta",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "name, Ives"
+  },
+  {
+    "op": "0xb1",
+    "name": "thread_stg",
+    "order": "IMED",
+    "args": [
+      "FUNC"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xb2",
+    "name": "del_obj_param",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Gatene & Jodin"
+  },
+  {
+    "op": "0xb3",
+    "name": "item_create",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xb4",
+    "name": "item_create2",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xb5",
+    "name": "item_delete",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "found in q280 gc"
+  },
+  {
+    "op": "0xb6",
+    "name": "item_delete2",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xb7",
+    "name": "item_check",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "name, Lee q3"
+  },
+  {
+    "op": "0xb8",
+    "name": "setevt",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in q72 xbox"
+  },
+  {
+    "op": "0xb9",
+    "name": "get_difflvl",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xba",
+    "name": "set_qt_exit",
+    "order": "IMED",
+    "args": [
+      "FUNC2"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xbb",
+    "name": "clr_qt_exit",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xbc",
+    "name": "unknownBC",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "nop on GC and later"
+  },
+  {
+    "op": "0xc0",
+    "name": "particle_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "name, Ives"
+  },
+  {
+    "op": "0xc0",
+    "name": "particle_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "name Ives"
+  },
+  {
+    "op": "0xc1",
+    "name": "npc_text",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 0,
+    "notes": "fix Lee"
+  },
+  {
+    "op": "0xc2",
+    "name": "npc_chkwarp",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xc3",
+    "name": "pl_pkoff",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xc4",
+    "name": "map_designate",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xc5",
+    "name": "masterkey_on",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0xc6",
+    "name": "masterkey_off",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0xc7",
+    "name": "window_time",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q207, Lee"
+  },
+  {
+    "op": "0xc8",
+    "name": "winend_time",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q222, Lee"
+  },
+  {
+    "op": "0xc9",
+    "name": "winset_time",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "found in q207, Lee"
+  },
+  {
+    "op": "0xca",
+    "name": "getmtime",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee, q211 bb"
+  },
+  {
+    "op": "0xcb",
+    "name": "set_quest_board_handler",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "FUNC2",
+      "STR"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xcc",
+    "name": "clear_quest_board_handler",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xcd",
+    "name": "particle_id_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xcd",
+    "name": "particle_id_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xce",
+    "name": "npc_crptalk_id_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0xce",
+    "name": "npc_crptalk_id_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xcf",
+    "name": "npc_lang_clean",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xd0",
+    "name": "pl_pkon",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xd1",
+    "name": "pl_chk_item2",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xd2",
+    "name": "enable_mainmenu",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xd3",
+    "name": "disable_mainmenu",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee, found in q71 DC Ver.1"
+  },
+  {
+    "op": "0xd4",
+    "name": "start_battlebgm",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee, name firefox276"
+  },
+  {
+    "op": "0xd5",
+    "name": "end_battlebgm",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee, name firefox276"
+  },
+  {
+    "op": "0xd6",
+    "name": "disp_msg_qb",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 0,
+    "notes": "name Ives"
+  },
+  {
+    "op": "0xd7",
+    "name": "close_msg_qb",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "name Ives"
+  },
+  {
+    "op": "0xd8",
+    "name": "set_eventflag_v1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xd8",
+    "name": "set_eventflag_v3",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xd9",
+    "name": "sync_leti",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "DC ONLY?"
+  },
+  {
+    "op": "0xda",
+    "name": "set_returnhunter",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xdb",
+    "name": "set_returncity",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xdc",
+    "name": "load_pvr",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "maxVer": 0,
+    "notes": "Lee, found in q71 DC Ver.1"
+  },
+  {
+    "op": "0xdd",
+    "name": "load_midi",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "maxVer": 0
+  },
+  {
+    "op": "0xde",
+    "name": "item_detect_bank",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Ralf; requires client bugfix"
+  },
+  {
+    "op": "0xdf",
+    "name": "npc_param_V1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "fix Gatene"
+  },
+  {
+    "op": "0xdf",
+    "name": "npc_param_V3",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xe0",
+    "name": "pad_dragon",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xe1",
+    "name": "clear_mainwarp",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "found in quest101@gc name Ives"
+  },
+  {
+    "op": "0xe2",
+    "name": "pcam_param_V1",
+    "order": "DC",
+    "args": [
+      "DREG"
+    ],
+    "minVer": 0,
+    "notes": "fix Lee"
+  },
+  {
+    "op": "0xe2",
+    "name": "pcam_param_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "fix Lee"
+  },
+  {
+    "op": "0xe3",
+    "name": "start_setevt_v1",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Lee"
+  },
+  {
+    "op": "0xe3",
+    "name": "start_setevt_v3",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xe4",
+    "name": "warp_on",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "Schthack, found by Ives, Name Lee"
+  },
+  {
+    "op": "0xe5",
+    "name": "warp_off",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "found in q220  Gatene"
+  },
+  {
+    "op": "0xe6",
+    "name": "get_slotnumber",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xe7",
+    "name": "get_servernumber",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xe8",
+    "name": "set_eventflag2",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "fix Lee"
+  },
+  {
+    "op": "0xe9",
+    "name": "res",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xea",
+    "name": "modi2",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "Ives & Schthack"
+  },
+  {
+    "op": "0xeb",
+    "name": "enable_bgmctrl",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xec",
+    "name": "sw_send",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Ives & Schthack, Uses Leti, Lee"
+  },
+  {
+    "op": "0xed",
+    "name": "create_bgmctrl",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0
+  },
+  {
+    "op": "0xee",
+    "name": "pl_add_meseta2",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xef",
+    "name": "sync_let",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DREG"
+    ],
+    "minVer": 0,
+    "notes": "Ives & Lee"
+  },
+  {
+    "op": "0xef",
+    "name": "sync_register",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2,
+    "notes": "Ives & Lee"
+  },
+  {
+    "op": "0xef",
+    "name": "sync_register2",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Ives & Lee"
+  },
+  {
+    "op": "0xf0",
+    "name": "send_regwork",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 0
+  },
+  {
+    "op": "0xf1",
+    "name": "leti_fixed_camera_V1",
+    "order": "DC",
+    "args": [
+      "DREG"
+    ],
+    "minVer": 0,
+    "notes": "name Ives"
+  },
+  {
+    "op": "0xf1",
+    "name": "leti_fixed_camera_V3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "name Ives"
+  },
+  {
+    "op": "0xf2",
+    "name": "default_camera_pos1",
+    "order": "NONE",
+    "args": [],
+    "minVer": 0,
+    "notes": "name Lee (& Ives sorta =P)"
+  },
+  {
+    "op": "0xf3",
+    "name": "unknownF3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf4",
+    "name": "unknownF4",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf5",
+    "name": "unknownF5",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf6",
+    "name": "unknownF6",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf7",
+    "name": "unknownF7",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf8",
+    "name": "unknownF8",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xfa",
+    "name": "get_gc_number",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "Lee, found in q71 DC Ver.1"
+  },
+  {
+    "op": "0xfb",
+    "name": "unknownFB",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 0,
+    "notes": "Gatene"
+  },
+  {
+    "op": "0xfc",
+    "name": "unknownFC",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 0,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf801",
+    "name": "set_chat_callback?",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "STR"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf808",
+    "name": "get_difflvl2",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf809",
+    "name": "get_number_of_player1",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf80a",
+    "name": "get_coord_of_player",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "q118 mirai (rename Lee)"
+  },
+  {
+    "op": "0xf80b",
+    "name": "enable_map",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1
+  },
+  {
+    "op": "0xf80c",
+    "name": "disable_map",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1
+  },
+  {
+    "op": "0xf80d",
+    "name": "map_designate_ex",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf80e",
+    "name": "disable_weapon_drop",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Usable in v2 only"
+  },
+  {
+    "op": "0xf80f",
+    "name": "enable_weapon_drop",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, usable in v2 only"
+  },
+  {
+    "op": "0xf810",
+    "name": "ba_initial_floor",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf811",
+    "name": "set_ba_rules",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf812",
+    "name": "ba_set_tech",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf813",
+    "name": "ba_set_equip",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf814",
+    "name": "ba_set_mag",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf815",
+    "name": "ba_set_item",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf816",
+    "name": "ba_set_trapmenu",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf817",
+    "name": "unknownF817",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf818",
+    "name": "ba_set_respawn",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf819",
+    "name": "ba_set_char",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf81a",
+    "name": "ba_dropwep",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf81b",
+    "name": "ba_teams",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf81c",
+    "name": "ba_disp_msg",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 1,
+    "notes": "Ives, fix Lee, BA"
+  },
+  {
+    "op": "0xf81d",
+    "name": "death_lvl_up",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf81e",
+    "name": "ba_set_meseta",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf820",
+    "name": "cmode_stage",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf821",
+    "name": "item_create_unknown",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf822",
+    "name": "get_unknown_mode",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf823",
+    "name": "set_cmode_char_template",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Pheonixmog"
+  },
+  {
+    "op": "0xf824",
+    "name": "set_cmode_diff",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Pheonixmog 0-norm,1-hard,2,vhard,3,ult"
+  },
+  {
+    "op": "0xf825",
+    "name": "exp_multiplication",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "base exp x R1 + ((base exp x R2%) / R3%)"
+  },
+  {
+    "op": "0xf826",
+    "name": "exp_division?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf827",
+    "name": "get_user_is_dead?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf828",
+    "name": "go_floor",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf829",
+    "name": "get_num_kills",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82a",
+    "name": "reset_kills",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82b",
+    "name": "unlock_door2",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82c",
+    "name": "lock_door2",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82d",
+    "name": "if_switch_not_pressed",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82e",
+    "name": "if_switch_pressed",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf82f",
+    "name": "unknownF82F",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "CM"
+  },
+  {
+    "op": "0xf830",
+    "name": "control_dragon",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee q76"
+  },
+  {
+    "op": "0xf831",
+    "name": "release_dragon",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, found q76(dc)"
+  },
+  {
+    "op": "0xf838",
+    "name": "shrink",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf839",
+    "name": "unshrink",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf83a",
+    "name": "set_shrink_cam1",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf83b",
+    "name": "set_shrink_cam2",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf83c",
+    "name": "disp_time_cmode",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "CM only"
+  },
+  {
+    "op": "0xf83d",
+    "name": "set_area_total",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Pheonixmog"
+  },
+  {
+    "op": "0xf83e",
+    "name": "delete_area_title?",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf840",
+    "name": "load_npc_data",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "found in q280 gc, Lee"
+  },
+  {
+    "op": "0xf841",
+    "name": "get_npc_data",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 1,
+    "notes": "fix Gatene, Lee"
+  },
+  {
+    "op": "0xf848",
+    "name": "give_damage_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf849",
+    "name": "take_damage_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84a",
+    "name": "enemy_give_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84b",
+    "name": "enemy_take_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84c",
+    "name": "kill_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84d",
+    "name": "death_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84e",
+    "name": "enemy_kill_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf84f",
+    "name": "enemy_death_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf850",
+    "name": "meseta_score",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf851",
+    "name": "ba_set_trap",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf852",
+    "name": "ba_set_target",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf853",
+    "name": "reverse_warps",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM, Causes level warps to go backwards"
+  },
+  {
+    "op": "0xf854",
+    "name": "unreverse_warps",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM"
+  },
+  {
+    "op": "0xf855",
+    "name": "set_ult_map",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1
+  },
+  {
+    "op": "0xf856",
+    "name": "unset_ult_map",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM"
+  },
+  {
+    "op": "0xf857",
+    "name": "set_area_title",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf858",
+    "name": "ba_show_self_traps",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1
+  },
+  {
+    "op": "0xf859",
+    "name": "ba_hide_self_traps",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1
+  },
+  {
+    "op": "0xf85a",
+    "name": "equip_item_v2",
+    "order": "DC",
+    "args": [
+      "DREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf85a",
+    "name": "equip_item_v3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf85b",
+    "name": "unequip_item_V2",
+    "order": "DC",
+    "args": [
+      "DREG",
+      "DWORD"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf85b",
+    "name": "unequip_item_V3",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf85c",
+    "name": "QuEXIT2",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Hysteria"
+  },
+  {
+    "op": "0xf85d",
+    "name": "allow_weapons",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Hysteria"
+  },
+  {
+    "op": "0xf85e",
+    "name": "ba_enable_sonar",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf85f",
+    "name": "ba_use_sonar",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf860",
+    "name": "clear_score_announce",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf861",
+    "name": "set_score_announce",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf862",
+    "name": "award_srank",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf863",
+    "name": "get_mag_stats",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf864",
+    "name": "cmode_rank",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf865",
+    "name": "award_item_name?",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf866",
+    "name": "award_item_select?",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf867",
+    "name": "award_item_give_to?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf868",
+    "name": "set_cmode_rank",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Pheonixmog"
+  },
+  {
+    "op": "0xf869",
+    "name": "check_rank_time",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Pheonixmog"
+  },
+  {
+    "op": "0xf86a",
+    "name": "item_create_cmode",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf86b",
+    "name": "ba_box_drops",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf86c",
+    "name": "award_item_ok?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q284(debug) gc"
+  },
+  {
+    "op": "0xf86d",
+    "name": "ba_set_trapself",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf86e",
+    "name": "ba_ignoretrap",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf86f",
+    "name": "ba_set_lives",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf870",
+    "name": "ba_set_tech_lvl",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf871",
+    "name": "ba_set_lvl",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf872",
+    "name": "ba_set_time_limit",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf873",
+    "name": "falz_is_dead",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ives, Schthack, name Lee, rename Kayak"
+  },
+  {
+    "op": "0xf874",
+    "name": "unknownF874",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf875",
+    "name": "enable_stealth_suit_effect",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf876",
+    "name": "disable_stealth_suit_effect",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf877",
+    "name": "enable_techs",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q74 dc, name Ives"
+  },
+  {
+    "op": "0xf878",
+    "name": "disable_techs",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q74 dc, name Ives"
+  },
+  {
+    "op": "0xf879",
+    "name": "get_gender",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, q76"
+  },
+  {
+    "op": "0xf87a",
+    "name": "get_chara_class",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf87b",
+    "name": "take_slot_meseta",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q236 gc, fix Lee"
+  },
+  {
+    "op": "0xf87c",
+    "name": "get_encryption_key",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf87d",
+    "name": "kill_player",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf87e",
+    "name": "get_serial_number",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf87f",
+    "name": "read_guildcard_flag",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf880",
+    "name": "ba_set_dmgtrap",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf881",
+    "name": "get_pl_name?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf882",
+    "name": "get_pl_job?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q220"
+  },
+  {
+    "op": "0xf883",
+    "name": "players_in_range",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee q76"
+  },
+  {
+    "op": "0xf884",
+    "name": "write_guild_flagw",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf, fix Ives"
+  },
+  {
+    "op": "0xf885",
+    "name": "write_guild_flagl",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf, fix Ives"
+  },
+  {
+    "op": "0xf886",
+    "name": "ba_get_place",
+    "order": "IMED",
+    "args": [
+      "BREG",
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf887",
+    "name": "ba_get_score",
+    "order": "IMED",
+    "args": [
+      "BREG",
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf888",
+    "name": "enable_win_pfx",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Ives, BA, name Lee, rename Ralf"
+  },
+  {
+    "op": "0xf889",
+    "name": "disable_win_pfx",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf88a",
+    "name": "get_player_status",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf88b",
+    "name": "send_mail",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "STR"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox"
+  },
+  {
+    "op": "0xf88c",
+    "name": "get_game_version",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q284"
+  },
+  {
+    "op": "0xf88d",
+    "name": "chl_set_timerecord?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf88e",
+    "name": "chl_get_timerecord?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf88f",
+    "name": "set_cmode_grave_rates",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Hysteria, Ives, Ralf"
+  },
+  {
+    "op": "0xf890",
+    "name": "clear_area_list",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CH, name Ralf-Ives"
+  },
+  {
+    "op": "0xf891",
+    "name": "load_enemy_data",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox, name Lee & Ives"
+  },
+  {
+    "op": "0xf892",
+    "name": "get_physical_data",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox, name Lee & Ives"
+  },
+  {
+    "op": "0xf893",
+    "name": "get_attack_data",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox, name Lee & Ives"
+  },
+  {
+    "op": "0xf894",
+    "name": "get_resist_data",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox, name Lee & Ives"
+  },
+  {
+    "op": "0xf895",
+    "name": "get_movement_data",
+    "order": "IMED",
+    "args": [
+      "DATA"
+    ],
+    "minVer": 1,
+    "notes": "found in q72 xbox, name Lee & Ives"
+  },
+  {
+    "op": "0xf896",
+    "name": "read_guildflag_16b",
+    "order": "IMED",
+    "args": [
+      "BREG",
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "V2"
+  },
+  {
+    "op": "0xf897",
+    "name": "read_guildflag_32b",
+    "order": "IMED",
+    "args": [
+      "BREG",
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "V2"
+  },
+  {
+    "op": "0xf898",
+    "name": "shift_left",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, q76"
+  },
+  {
+    "op": "0xf899",
+    "name": "shift_right",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "found in q207"
+  },
+  {
+    "op": "0xf89a",
+    "name": "get_random",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf89b",
+    "name": "reset_map",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM use during a floor change"
+  },
+  {
+    "op": "0xf89c",
+    "name": "retry_menu",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, name Ives CM"
+  },
+  {
+    "op": "0xf89d",
+    "name": "chl_enable_retry",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM"
+  },
+  {
+    "op": "0xf89e",
+    "name": "ba_forbid_scape_doll",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf89f",
+    "name": "player_recovery",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, CH, name Ralf-Ives"
+  },
+  {
+    "op": "0xf8a0",
+    "name": "disable_bosswarp_option",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, Hysteria, Kayak CM"
+  },
+  {
+    "op": "0xf8a1",
+    "name": "enable_bosswarp_option",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, Hysteria, Kayak CM"
+  },
+  {
+    "op": "0xf8a2",
+    "name": "get_bosswarp_option",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "Ender CM"
+  },
+  {
+    "op": "0xf8a3",
+    "name": "init_online_key?",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Ralf, name Ralf-Ives"
+  },
+  {
+    "op": "0xf8a4",
+    "name": "encrypt_gc_entry_auto",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf8a5",
+    "name": "chat_detect",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "Ender, Kayak"
+  },
+  {
+    "op": "0xf8a6",
+    "name": "symbol_chat_create",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "Ender"
+  },
+  {
+    "op": "0xf8a7",
+    "name": "set_shrink_size",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf8a8",
+    "name": "death_tech_lvl_up2",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 1,
+    "notes": "Lee, BA"
+  },
+  {
+    "op": "0xf8a9",
+    "name": "volopt_is_dead",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "Lee, CM , Kayak rename"
+  },
+  {
+    "op": "0xf8aa",
+    "name": "is_there_grave_message",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf8ab",
+    "name": "get_ba_record",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "Kayak, Ender"
+  },
+  {
+    "op": "0xf8ac",
+    "name": "get_cmode_prize_rank",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf8ad",
+    "name": "get_number_of_player2",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf8ae",
+    "name": "party_has_name",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf8af",
+    "name": "someone_has_spoken",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf8b0",
+    "name": "read1",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b1",
+    "name": "read2",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b2",
+    "name": "read4",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b3",
+    "name": "write1",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b4",
+    "name": "write2",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b5",
+    "name": "write4",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8b6",
+    "name": "is_mag_hacked",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "does not work"
+  },
+  {
+    "op": "0xf8b7",
+    "name": "unknownF8B7",
+    "order": "IMED",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf8b8",
+    "name": "disable_retry_menu",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CH, name Ralf"
+  },
+  {
+    "op": "0xf8b9",
+    "name": "chl_death_recap",
+    "order": "NONE",
+    "args": [],
+    "minVer": 1,
+    "notes": "Lee, CM"
+  },
+  {
+    "op": "0xf8ba",
+    "name": "encrypt_gc_entry_auto",
+    "order": "IMED",
+    "args": [],
+    "minVer": 1,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf8bb",
+    "name": "unknownF8BB",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1,
+    "notes": "// same functionality as F8A4"
+  },
+  {
+    "op": "0xf8bc",
+    "name": "set_episode",
+    "order": "IMED",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c0",
+    "name": "file_dl_req",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c1",
+    "name": "get_dl_status",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c2",
+    "name": "gba_unknown4?",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf8c3",
+    "name": "get_gba_state?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c4",
+    "name": "congrats_msg_multi_cm",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee, CH, name Ralf"
+  },
+  {
+    "op": "0xf8c5",
+    "name": "stage_end_multi_cm",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee, CH, name Ralf"
+  },
+  {
+    "op": "0xf8c6",
+    "name": "QEXIT",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c7",
+    "name": "use_animation",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c8",
+    "name": "stop_animation",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8c9",
+    "name": "run_to_coord",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "name, Lee"
+  },
+  {
+    "op": "0xf8ca",
+    "name": "set_slot_invincible",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q222:08B4"
+  },
+  {
+    "op": "0xf8cb",
+    "name": "set_slot_targetable?",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q236 gc"
+  },
+  {
+    "op": "0xf8cc",
+    "name": "set_slot_poison",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8cd",
+    "name": "set_slot_paralyse",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8ce",
+    "name": "set_slot_shock",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8cf",
+    "name": "set_slot_freeze",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8d0",
+    "name": "set_slot_slow",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8d1",
+    "name": "set_slot_confuse",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8d2",
+    "name": "set_slot_shifta",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf8d3",
+    "name": "set_slot_deband",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf8d4",
+    "name": "set_slot_jellen",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8d5",
+    "name": "set_slot_zalure",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8d6",
+    "name": "fleti_fixed_camera",
+    "order": "ARGS",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "name Ives, renamed fleti Lee"
+  },
+  {
+    "op": "0xf8d7",
+    "name": "fleti_locked_camera",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "name Lee. Locks to a player"
+  },
+  {
+    "op": "0xf8d8",
+    "name": "default_camera_pos2",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "name Lee & Ives"
+  },
+  {
+    "op": "0xf8d9",
+    "name": "set_motion_blur",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "Loop this, Lee"
+  },
+  {
+    "op": "0xf8da",
+    "name": "set_screen_b&w",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "Loop this, Lee"
+  },
+  {
+    "op": "0xf8db",
+    "name": "get_vector_from_path",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "BREG",
+      "DATA"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8dc",
+    "name": "NPC_action_string",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG",
+      "STRDATA"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8dd",
+    "name": "get_pad_cond",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8de",
+    "name": "get_button_cond",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q220, q284dbg gc"
+  },
+  {
+    "op": "0xf8df",
+    "name": "freeze_enemies",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf8e0",
+    "name": "unfreeze_enemies",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf8e1",
+    "name": "freeze_everything",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q280 gc, Name Lee"
+  },
+  {
+    "op": "0xf8e2",
+    "name": "unfreeze_everything",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q280 gc, Name Lee"
+  },
+  {
+    "op": "0xf8e3",
+    "name": "restore_hp",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q236 gc, Name Lee"
+  },
+  {
+    "op": "0xf8e4",
+    "name": "restore_tp",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q236 gc, Name Lee"
+  },
+  {
+    "op": "0xf8e5",
+    "name": "close_chat_bubble",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf8e6",
+    "name": "move_coords_obj",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf-Ives"
+  },
+  {
+    "op": "0xf8e7",
+    "name": "at_coords_call_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8e8",
+    "name": "at_coords_talk_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8e9",
+    "name": "walk_to_coord_call_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8ea",
+    "name": "col_npcinr_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8eb",
+    "name": "set_obj_param_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8ec",
+    "name": "col_plinaw_ex",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Ralf"
+  },
+  {
+    "op": "0xf8ed",
+    "name": "animation_check",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8ee",
+    "name": "call_image_data",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DATA"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Lee"
+  },
+  {
+    "op": "0xf8ef",
+    "name": "unknownF8EF",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(test) does nothing"
+  },
+  {
+    "op": "0xf8f0",
+    "name": "turn_off_bgm_p2",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "Name, Lee"
+  },
+  {
+    "op": "0xf8f1",
+    "name": "turn_on_bgm_p2",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "Name, Lee"
+  },
+  {
+    "op": "0xf8f2",
+    "name": "compute_bezier_curve_point",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "BREG",
+      "DATA"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf8f3",
+    "name": "particle2",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf901",
+    "name": "dec2float",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf902",
+    "name": "float2dec",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf903",
+    "name": "floatlet",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf904",
+    "name": "floati",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf908",
+    "name": "fadd",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf909",
+    "name": "faddi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90a",
+    "name": "fsub",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90b",
+    "name": "fsubi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90c",
+    "name": "fmul",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90d",
+    "name": "fmuli",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90e",
+    "name": "fdiv",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf90f",
+    "name": "fdivi",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf910",
+    "name": "get_total_deaths",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), name Lee, rename Ralf"
+  },
+  {
+    "op": "0xf911",
+    "name": "get_stackable_item_count",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Ives"
+  },
+  {
+    "op": "0xf912",
+    "name": "freeze_and_hide_equip",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf913",
+    "name": "thaw_and_show_equip",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf914",
+    "name": "set_paletteX_callback",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "FUNC2"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), fix, Lee"
+  },
+  {
+    "op": "0xf915",
+    "name": "activate_paletteX",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), fix, Lee"
+  },
+  {
+    "op": "0xf916",
+    "name": "enable_paletteX",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test), fix, Lee"
+  },
+  {
+    "op": "0xf917",
+    "name": "restore_paletteX",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf918",
+    "name": "disable_paletteX",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf919",
+    "name": "get_paletteX_activated",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf91a",
+    "name": "get_unknown_paletteX_status?",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf91b",
+    "name": "disable_movement2",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "fix and name, Lee"
+  },
+  {
+    "op": "0xf91c",
+    "name": "enable_movement2",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "fix and name, Lee"
+  },
+  {
+    "op": "0xf91d",
+    "name": "get_time_played",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf91e",
+    "name": "get_guildcard_total",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf91f",
+    "name": "get_slot_meseta",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf920",
+    "name": "get_player_level",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf921",
+    "name": "get_section_id",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf922",
+    "name": "get_player_hp",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "fix, Lee"
+  },
+  {
+    "op": "0xf923",
+    "name": "get_floor_number",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "fix, Lee"
+  },
+  {
+    "op": "0xf924",
+    "name": "get_coord_player_detect",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf925",
+    "name": "read_global_flag",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "Fix Lee, Gallons Shop"
+  },
+  {
+    "op": "0xf926",
+    "name": "write_global_flag",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Fix Lee, Gallons  Shop"
+  },
+  {
+    "op": "0xf927",
+    "name": "item_check_bank",
+    "order": "IMED",
+    "args": [
+      "REG",
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf928",
+    "name": "floor_player_detect",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee, Uses Next 4 registers."
+  },
+  {
+    "op": "0xf929",
+    "name": "read_disk_file?",
+    "order": "ARGS",
+    "args": [
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf92a",
+    "name": "open_pack_select",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q207"
+  },
+  {
+    "op": "0xf92b",
+    "name": "item_select",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q207 (Multiple items from pack select)"
+  },
+  {
+    "op": "0xf92c",
+    "name": "get_item_id",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q207"
+  },
+  {
+    "op": "0xf92d",
+    "name": "color_change",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf92e",
+    "name": "send_statistic?",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf92f",
+    "name": "gba_unknown5",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf930",
+    "name": "chat_box",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf931",
+    "name": "chat_bubble",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf932",
+    "name": "set_episode2",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 1
+  },
+  {
+    "op": "0xf933",
+    "name": "item_create_multi_cm",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Lee, CH, name Ralf-Ives"
+  },
+  {
+    "op": "0xf934",
+    "name": "scroll_text",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "FLOAT",
+      "BREG",
+      "STR"
+    ],
+    "minVer": 2,
+    "notes": "found in q86(test)"
+  },
+  {
+    "op": "0xf935",
+    "name": "gba_unknown1",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf936",
+    "name": "gba_unknown2",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf937",
+    "name": "gba_unknown3",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86(gc)"
+  },
+  {
+    "op": "0xf938",
+    "name": "add_damage_to",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf939",
+    "name": "item_delete_slot",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93a",
+    "name": "get_item_info",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93b",
+    "name": "item_packing1",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93c",
+    "name": "item_packing2",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93d",
+    "name": "get_lang_setting?",
+    "order": "ARGS",
+    "args": [
+      "BREG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93e",
+    "name": "prepare_statistic?",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "FUNC",
+      "FUNC"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf93f",
+    "name": "keyword_detect",
+    "order": "NONE",
+    "args": [],
+    "minVer": 2,
+    "notes": "found in q86 gc"
+  },
+  {
+    "op": "0xf940",
+    "name": "Keyword",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD",
+      "STR"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf941",
+    "name": "get_guildcard_num",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "found in q207"
+  },
+  {
+    "op": "0xf942",
+    "name": "symchat_unknown",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "Ralf"
+  },
+  {
+    "op": "0xf943",
+    "name": "unknownF943",
+    "order": "IMED",
+    "args": [],
+    "minVer": 2,
+    "notes": "unknown"
+  },
+  {
+    "op": "0xf944",
+    "name": "get_wrap_status",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf945",
+    "name": "initial_floor",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf946",
+    "name": "sin",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf947",
+    "name": "cos",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf948",
+    "name": "tan",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "DWORD"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf949",
+    "name": "atan",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "FLOAT",
+      "FLOAT"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf94a",
+    "name": "olga_is_dead",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "Kayak, works for Olga only"
+  },
+  {
+    "op": "0xf94b",
+    "name": "particle3",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2
+  },
+  {
+    "op": "0xf94c",
+    "name": "particle3f_id",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 2,
+    "notes": "found in q201, Lee"
+  },
+  {
+    "op": "0xf94d",
+    "name": "unknown_f94d",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG"
+    ],
+    "minVer": 2,
+    "notes": "xbox & ep3?"
+  },
+  {
+    "op": "0xf950",
+    "name": "BB_p2_menu",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q412"
+  },
+  {
+    "op": "0xf951",
+    "name": "BB_Map_Designate",
+    "order": "IMED",
+    "args": [
+      "BYTE",
+      "WORD",
+      "BYTE",
+      "BYTE"
+    ],
+    "minVer": 3
+  },
+  {
+    "op": "0xf952",
+    "name": "BB_get_number_in_pack",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 3,
+    "notes": "Blue Burst, Lee"
+  },
+  {
+    "op": "0xf953",
+    "name": "BB_swap_item",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "DWORD",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "q118bb, Lee"
+  },
+  {
+    "op": "0xf954",
+    "name": "BB_check_wrap",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "BREG"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q240 bb"
+  },
+  {
+    "op": "0xf955",
+    "name": "BB_exchange_PD_item",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "REG",
+      "REG",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "q219, Lee"
+  },
+  {
+    "op": "0xf956",
+    "name": "BB_exchange_PD_srank",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "q219, Lee"
+  },
+  {
+    "op": "0xf957",
+    "name": "BB_exchange_PD_special",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "DWORD",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "q219, Lee"
+  },
+  {
+    "op": "0xf958",
+    "name": "BB_exchange_PD_percent",
+    "order": "ARGS",
+    "args": [
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "REG",
+      "DWORD",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "q219, Lee"
+  },
+  {
+    "op": "0xf959",
+    "name": "BB_set_ep4boss_can_escape",
+    "order": "ARGS",
+    "args": [
+      "DWORD"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q708"
+  },
+  {
+    "op": "0xf95c",
+    "name": "BB_exchange_SLT",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "BREG",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q126"
+  },
+  {
+    "op": "0xf95d",
+    "name": "BB_exchange_PC",
+    "order": "NONE",
+    "args": [],
+    "minVer": 3,
+    "notes": "Lee, q031"
+  },
+  {
+    "op": "0xf95e",
+    "name": "BB_box_create_BP",
+    "order": "ARGS",
+    "args": [
+      "DWORD",
+      "FLOAT",
+      "FLOAT"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q031"
+  },
+  {
+    "op": "0xf95f",
+    "name": "BB_exchage_PT",
+    "order": "ARGS",
+    "args": [
+      "BREG",
+      "BREG",
+      "DWORD",
+      "FUNC2",
+      "FUNC2"
+    ],
+    "minVer": 3,
+    "notes": "Lee, q035"
+  },
+  {
+    "op": "0xf960",
+    "name": "unknownF960",
+    "order": "ARGS",
+    "args": [
+      "REG"
+    ],
+    "minVer": 3,
+    "notes": "Lee, DEFAULT QUEST"
+  },
+  {
+    "op": "0xf961",
+    "name": "unknownF961",
+    "order": "IMED",
+    "args": [
+      "REG"
+    ],
+    "minVer": 3,
+    "notes": "Lee, DEFAULT QUEST"
+  }
+]
