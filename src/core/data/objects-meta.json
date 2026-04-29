@@ -1,0 +1,425 @@
+{
+  "0":   { "name": "Player Set",          "fields": { "rotY": "Rotation Y", "scaleX": "Slot ID", "objId": "Return Flag" } },
+  "1":   { "name": "Particle",            "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "2":   { "name": "Teleporter",          "fields": { "rotY": "Rotation Y", "scaleX": "Area Number", "scaleY": "Colour Blue", "scaleZ": "Colour Red", "objId": "Floor Number", "action": "Disp Number", "unknown13": "Blue =0" } },
+  "3":   { "name": "Warp",                "fields": { "rotY": "Rotation Y", "scaleX": "Destination X", "scaleY": "Destination Y", "scaleZ": "Destination Z", "objId": "Dst Rotation Y", "action": "Test" } },
+  "4":   { "name": "Light Collision",     "fields": { "rotX": "1", "rotY": "Rotation Y", "rotZ": "2", "scaleX": "3", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "5":   { "name": "Item",                "fields": { "rotX": "1", "rotY": "Rotation Y", "rotZ": "2", "scaleX": "3", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "6":   { "name": "Env Sound",           "fields": { "rotX": "1", "rotY": "2", "rotZ": "3", "scaleX": "Radius", "scaleY": "SE", "scaleZ": "Volume", "objId": "6", "action": "7", "unknown13": "8" }, "placement": "radius" },
+  "7":   { "name": "Fog Collision",       "fields": { "rotX": "1", "rotY": "2", "rotZ": "3", "scaleX": "Radius", "scaleY": "4", "scaleZ": "5", "objId": "Fog Index Number", "action": "7", "unknown13": "8" }, "placement": "radius" },
+  "8":   { "name": "Event Collision",     "fields": { "scaleX": "Radius", "objId": "Event Number" }, "placement": "radius" },
+  "9":   { "name": "Chara Collision",     "fields": { "rotX": "1", "rotY": "Rotation Y", "rotZ": "2", "scaleX": "3", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "10":  { "name": "Elemental Trap",      "fields": { "rotY": "Rotation Y", "scaleX": "Trigger Radius", "scaleY": "Blast Radius", "scaleZ": "Trap Link", "objId": "Damage", "action": "Subtype", "unknown13": "Delay" } },
+  "11":  { "name": "Status Trap",         "fields": { "rotY": "Rotation Y", "scaleX": "Trigger Radius", "scaleY": "Blast Radius", "scaleZ": "Trap Link", "action": "Subtype", "unknown13": "Delay" } },
+  "12":  { "name": "Heal Trap",           "fields": { "rotY": "Rotation Y", "scaleX": "Radius", "scaleZ": "Trap Link", "objId": "HP", "action": "Subtype", "unknown13": "Delay" } },
+  "13":  { "name": "Large Elemental Trap","fields": { "rotY": "Rotation Y", "scaleX": "Radius", "scaleZ": "Trap Link", "objId": "Damage", "action": "Subtype", "unknown13": "Delay" } },
+  "14":  { "name": "Obj Room ID",         "fields": { "rotY": "Rotation Y", "scaleX": "SCL_TAMA", "scaleY": "Next Room", "scaleZ": "Previous Room", "objId": "4", "action": "Real Rotation", "unknown13": "Sticky Target (65536)", "unknown14": "7" } },
+  "15":  { "name": "Sensor",              "fields": { "rotX": "Rotation -", "rotY": "Rotation Y", "rotZ": "0", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "16":  { "name": "Unknown (16)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "17":  { "name": "Lensflare",           "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "18":  { "name": "Script Collision",    "fields": { "scaleX": "Radius", "scaleZ": "2", "objId": "Function", "unknown13": "4", "unknown14": "5" }, "placement": "radius" },
+  "19":  { "name": "Heal Ring",           "fields": { "rotY": "Rotation Y" } },
+  "20":  { "name": "Map Collision",       "fields": { "rotX": "1", "rotY": "Rotation Y", "rotZ": "2", "scaleX": "3", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "21":  { "name": "Script Collision A",  "fields": { "rotX": "1", "rotY": "Rotation Y", "rotZ": "2", "scaleX": "3", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "22":  { "name": "Item Light",          "fields": { "rotX": "Rotation X?", "rotY": "Rotation Y", "rotZ": "Rotation Z?", "scaleX": "Subtype", "scaleY": "4", "scaleZ": "5", "objId": "6", "action": "7", "unknown13": "8", "unknown14": "9" } },
+  "23":  { "name": "Radar Collision",     "fields": { "rotY": "Rotation Y", "scaleX": "Radius", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "24":  { "name": "Fog Collision SW",    "fields": { "scaleX": "Radius", "scaleY": "Status", "scaleZ": "Start On (0)", "objId": "Fog Index Number", "action": "Transition", "unknown13": "Switch ID" }, "placement": "radius" },
+  "25":  { "name": "Boss Teleporter",     "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "Unlock ID", "unknown13": "6", "unknown14": "7" } },
+  "26":  { "name": "Image Board",         "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "1", "action": "2", "unknown13": "3", "unknown14": "4" } },
+  "27":  { "name": "Quest Warp",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "28":  { "name": "Epilogue",            "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "29":  { "name": "Unknown (29)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "30":  { "name": "Sun Flare",           "fields": { "rotY": "Rotation Y" } },
+  "31":  { "name": "White Bird",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "32":  { "name": "Box Detect",          "fields": { "scaleX": "Radius", "scaleZ": "2", "objId": "Plate ID", "action": "Item Type", "unknown13": "Amount (0 is 1)" }, "placement": "radius" },
+  "33":  { "name": "Symbol Chat",         "fields": { "scaleX": "Radius", "objId": "Switch ID 1", "action": "SC ID 1", "unknown13": "Switch ID 2", "unknown14": "SC ID 2" }, "placement": "radius" },
+  "34":  { "name": "Touch Plate",         "fields": { "scaleX": "Radius", "objId": "Switch ID", "action": "Stay Active" }, "placement": "radius" },
+  "35":  { "name": "Targetable",          "fields": { "rotY": "Rotation Y", "scaleX": "Active ID", "scaleY": "Target Type", "scaleZ": "Switch ID", "objId": "HP", "action": "5", "unknown13": "6" } },
+  "36":  { "name": "Effect Object",       "fields": { "rotX": "Effect ID", "rotY": "Rotation Y", "scaleX": "Damage Radius", "scaleY": "Damage Multiplier", "scaleZ": "Scale (>0)", "objId": "Switch ID", "action": "Switch-Off ID", "unknown13": "Stay Active" } },
+  "37":  { "name": "Count Down",          "fields": { "rotX": "Multiswitch (0 or 1)", "rotY": "Sound Effect (1)", "rotZ": "Duration (Frames)", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID 1", "action": "Activation Switch", "unknown13": "Switch ID 2", "unknown14": "4" }, "placement": "none" },
+  "38":  { "name": "Unknown Debug (38)",  "fields": { "rotY": "Rotation Y", "scaleX": "Radius", "objId": "Switch Num", "action": "5" } },
+  "39":  { "name": "Door Colour Bar",     "fields": { "rotY": "Rotation Y", "scaleX": "Width Scale", "scaleY": "Depth Scale", "scaleZ": "3", "objId": ">0 = Invisible", "action": "Num Locks", "unknown13": "First Lock ID", "unknown14": "SRGB" } },
+  "40":  { "name": "Unknown SFX (40)",    "fields": { "rotY": "Rotation Y", "scaleY": "Duration?", "scaleZ": "Start State?", "objId": "Sound Effect", "action": "Unk5" } },
+  "41":  { "name": "Map Wide Sound",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Sound", "action": "5", "unknown13": "6" } },
+
+  "64":  { "name": "Menu Activation",     "fields": { "rotY": "Rotation Y", "objId": "Menu ID" } },
+  "65":  { "name": "Telepipe Location",   "fields": { "rotY": "Rotation Y", "objId": "Slot ID" } },
+  "66":  { "name": "BGM Collision",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "67":  { "name": "Main Ragol Tele",     "fields": { "rotY": "Rotation Y" } },
+  "68":  { "name": "Lobby Teleporter",    "fields": { "rotY": "Rotation Y" } },
+  "69":  { "name": "Principal Warp",      "fields": { "rotY": "Rotation Y", "scaleX": "Destination X", "scaleY": "Destination Y", "scaleZ": "Destination Z", "objId": "Dst Rotation Y", "unknown13": "Model" }, "modelVariant": { "field": "unknown13", "max": 1 } },
+  "70":  { "name": "Shop Door",           "fields": { "rotY": "Rotation Y" } },
+  "71":  { "name": "Hunter's Guild Door", "fields": { "rotY": "Rotation Y" } },
+  "72":  { "name": "Teleporter Door",     "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "73":  { "name": "Medical Center Door", "fields": { "rotY": "Rotation Y" } },
+  "74":  { "name": "Elevator",            "fields": { "rotY": "Rotation Y" } },
+  "75":  { "name": "Easter Egg",          "fields": { "rotY": "Rotation Y" } },
+  "76":  { "name": "Valentines Heart",    "fields": { "rotY": "Rotation Y" } },
+  "77":  { "name": "Christmas Tree",      "fields": { "rotY": "Rotation Y" } },
+  "78":  { "name": "Christmas Wreath",    "fields": { "rotY": "Rotation Y" } },
+  "79":  { "name": "Halloween Pumpkin",   "fields": { "rotY": "Rotation Y" } },
+  "80":  { "name": "21st Century",        "fields": { "rotY": "Rotation Y" } },
+  "81":  { "name": "Sonic",               "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Model", "action": "5", "unknown13": "6" }, "modelVariant": { "field": "objId", "max": 3 } },
+  "82":  { "name": "Welcome Board",       "fields": { "rotY": "Rotation Y" } },
+  "83":  { "name": "Firework",            "fields": { "rotY": "Rotation Y", "scaleX": "Mdl IDX", "scaleY": "Area Width", "scaleZ": "Rise Height", "objId": "Area Depth", "action": "Freq" } },
+  "84":  { "name": "Lobby Screen Door",   "fields": { "rotY": "Rotation Y" } },
+  "85":  { "name": "Battle Area Tele",    "fields": { "rotY": "Rotation Y" } },
+  "86":  { "name": "Lab Tele Door",       "fields": { "rotX": "X", "rotY": "Rotation Y", "rotZ": "Z", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Lock", "action": "5", "unknown13": "6" } },
+  "87":  { "name": "Trade Menu",          "fields": { "rotX": "A", "rotY": "B", "rotZ": "C", "scaleX": "Radius", "scaleY": "1", "scaleZ": "2", "objId": "3", "action": "4", "unknown13": "5", "unknown14": "6" }, "placement": "radius" },
+
+  "128": {
+    "name": "Forest Door",
+    "fields": { "rotY": "Rotation Y", "objId": "Icon", "action": "Switch", "unknown13": "5", "unknown14": "6" },
+    "textureSwap": { "field": "objIdHi", "max": 9, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "129": {
+    "name": "Forest Switch",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "unknown13": "Glyph" },
+    "colorSubtype": { "field": "unknown13", "options": [
+      {"value":0,"label":"Glyph 0"},{"value":1,"label":"Glyph 1"},{"value":2,"label":"Glyph 2"},
+      {"value":3,"label":"Glyph 3"},{"value":4,"label":"Glyph 4"},{"value":5,"label":"Glyph 5"},
+      {"value":6,"label":"Glyph 6"},{"value":7,"label":"Glyph 7"},{"value":8,"label":"Glyph 8"},
+      {"value":9,"label":"Glyph 9"}
+    ]},
+    "textureSwap": { "field": "unknown13", "max": 9, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "130": {
+    "name": "Laser Fence",
+    "fields": { "rotY": "Rotation Y", "scaleX": "Colour", "objId": "Switch ID", "unknown13": "Model" },
+    "colorSubtype": { "field": "scaleX", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "scaleX", "max": 3, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "131": {
+    "name": "Laser Square Fence",
+    "fields": { "rotY": "Rotation Y", "scaleX": "Colour", "objId": "Switch ID", "unknown13": "Model" },
+    "colorSubtype": { "field": "scaleX", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "scaleX", "max": 3, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "132": {
+    "name": "Laser Fence Switch",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "unknown13": "Colour" },
+    "colorSubtype": { "field": "unknown13", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "unknown13", "max": 3, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "133": { "name": "Light Rays",           "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z" } },
+  "134": { "name": "Blue Butterfly",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "135": {
+    "name": "Probe",
+    "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Model" },
+    "modelVariant": { "field": "scaleX", "rounded": true, "max": 1 }
+  },
+  "136": { "name": "Random Box 1",         "fields": { "rotY": "Rotation Y" } },
+  "137": { "name": "Weather Station",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "138": { "name": "Battery",              "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "139": {
+    "name": "Forest Console",
+    "fields": { "rotY": "Rotation Y", "objId": "Function", "action": "Model" },
+    "modelVariant": { "field": "action", "max": 1 }
+  },
+  "140": { "name": "Black Sliding Door",   "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Distance", "scaleY": "Speed", "scaleZ": "Switch Number", "objId": "Switch ID", "action": "Disable Effect", "unknown13": "Enable Effect" } },
+  "141": { "name": "Rico Message Pod",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Active", "action": "Message ID", "unknown13": "Function #" } },
+  "142": { "name": "Energy Barrier",       "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "143": { "name": "Forest Bridge",        "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "144": { "name": "Switch",               "fields": { "rotY": "Rotation Y", "objId": "Switch ID" } },
+  "145": { "name": "Enemy Box (Grey)",     "fields": { "rotY": "Rotation Y", "scaleX": "Event Number", "objId": "test" } },
+  "146": { "name": "Fixed Type Box",       "fields": { "rotY": "Rotation Y", "scaleX": "Full Random", "scaleY": "Random Item", "scaleZ": "Fixed Item", "objId": "Item Parameter", "action": "Item Parameter 2", "unknown13": "Item Parameter 3" } },
+  "147": { "name": "Enemy Box (Brown)",    "fields": { "rotY": "Rotation Y", "scaleX": "Event Number", "objId": "test" } },
+  "149": { "name": "Empty Type Box",       "fields": { "rotY": "Rotation Y", "scaleX": "Event Number" } },
+  "150": {
+    "name": "Laser Fence Ex",
+    "fields": { "rotY": "Rotation Y", "scaleX": "Colour", "scaleY": "Collision Width", "scaleZ": "Collision Depth", "objId": "Switch ID", "unknown13": "Model" },
+    "colorSubtype": { "field": "scaleX", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "scaleX", "max": 3, "srcSlot": 0, "dstOffset": 0 }
+  },
+  "151": {
+    "name": "Laser Square Fence Ex",
+    "fields": { "rotY": "Rotation Y", "scaleX": "Colour", "scaleY": "Collision Width", "scaleZ": "Collision Depth", "objId": "Switch ID", "unknown13": "Model" },
+    "colorSubtype": { "field": "scaleX", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "scaleX", "max": 3, "srcSlot": 0, "dstOffset": 0 }
+  },
+
+  "192": { "name": "Floor Panel 1",        "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Switch ID", "action": "Stay Active" } },
+  "193": { "name": "Caves 4-Btn Door",     "fields": { "rotY": "Rotation Y", "objId": "Door ID", "action": "Switch Total", "unknown13": "Stay Active" } },
+  "194": { "name": "Caves Door",           "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "195": { "name": "Smashing Pillar",      "fields": { "rotY": "Rotation Y", "scaleX": "Duration", "scaleY": "2", "scaleZ": "Damage", "objId": "Switch ID", "action": "Global Sync", "unknown13": "Behavior" } },
+  "196": { "name": "Caves Sign 1",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "197": { "name": "Caves Sign 2",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "198": { "name": "Caves Sign 3",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "199": { "name": "Hexagonal Tank",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "200": { "name": "Brown Platform",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "201": { "name": "Warning Light",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "203": { "name": "Rainbow",              "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "4", "action": "5", "unknown13": "6" } },
+  "204": { "name": "Floating Jellyfish",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "205": { "name": "Floating Dragonfly",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "206": { "name": "Caves Switch Door",    "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "207": { "name": "Robot Recharge",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "208": { "name": "Caves Cake Shop",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "209": { "name": "Small Red Rock",       "fields": { "rotY": "Rotation Y" } },
+  "210": { "name": "Med Red Rock",         "fields": { "rotY": "Rotation Y" } },
+  "211": { "name": "Large Red Rock",       "fields": { "rotY": "Rotation Y" } },
+  "212": { "name": "Small Rock 1",         "fields": { "rotY": "Rotation Y" } },
+  "213": { "name": "Med Rock 1",           "fields": { "rotY": "Rotation Y" } },
+  "214": { "name": "Large Rock 1",         "fields": { "rotY": "Rotation Y" } },
+  "215": { "name": "Small Rock 2",         "fields": { "rotY": "Rotation Y" } },
+  "216": { "name": "Med Rock 2",           "fields": { "rotY": "Rotation Y" } },
+  "217": { "name": "Large Rock 2",         "fields": { "rotY": "Rotation Y" } },
+  "218": { "name": "Small Rock 3",         "fields": { "rotY": "Rotation Y" } },
+  "219": { "name": "Med Rock 3",           "fields": { "rotY": "Rotation Y" } },
+  "220": { "name": "Large Rock 3",         "fields": { "rotY": "Rotation Y" } },
+  "222": { "name": "Floor Panel 2",        "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Switch ID", "action": "Sound Delay", "unknown13": "Model", "unknown14": "Sound Mode" } },
+  "223": { "name": "Dest Rock (C1)",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "224": { "name": "Dest Rock (C2)",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "225": { "name": "Dest Rock (C3)",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "256": { "name": "Mines Door",           "fields": { "rotY": "Rotation Y", "objId": "Door ID", "action": "Switch Total", "unknown13": "Stay Active" } },
+  "257": { "name": "Floor Panel 3",        "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Switch ID", "action": "Stay Active" } },
+  "258": { "name": "Mines Switch Door",    "fields": { "rotY": "Rotation Y", "objId": "Door ID", "action": "Switch Total", "unknown13": "Stay Active" } },
+  "259": { "name": "Large Cryo-Tube",      "fields": { "rotY": "Rotation Y" } },
+  "260": { "name": "Computer",             "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "261": { "name": "Green Screen",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "262": { "name": "Floating Robot",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "263": { "name": "Floating Blue Light",  "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "264": { "name": "Self Dest Obj 1",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "265": { "name": "Self Dest Obj 2",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "266": { "name": "Self Dest Obj 3",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "267": { "name": "Spark Machine",        "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z" } },
+  "268": { "name": "Flashing Crate",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "304": { "name": "Ruins Seal",           "fields": { "rotY": "Rotation Y" } },
+  "320": { "name": "Ruins Teleporter",     "fields": { "rotY": "Rotation Y", "scaleX": "Area Number", "scaleY": "Colour Blue", "scaleZ": "Colour Red", "objId": "Floor Number", "action": "Disp Number", "unknown13": "No Disp Number" } },
+  "321": { "name": "Ruins Warp",           "fields": { "rotY": "Rotation Y", "scaleX": "Destination X", "scaleY": "Destination Y", "scaleZ": "Destination Z", "objId": "Dst Rotation Y" } },
+  "322": { "name": "Ruins Switch",         "fields": { "rotY": "Rotation Y", "objId": "Switch ID" } },
+  "323": { "name": "Floor Panel 4",        "fields": { "rotX": "Rotation X", "rotY": "Rotation Y", "rotZ": "Rotation Z", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Plate ID", "action": "Stay Active" } },
+  "324": { "name": "Ruins 1 Door",         "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "325": { "name": "Ruins 3 Door",         "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "326": { "name": "Ruins 2 Door",         "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "327": { "name": "Ruins 1-1 Btn Door",   "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "328": { "name": "Ruins 2-1 Btn Door",   "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "329": { "name": "Ruins 3-1 Btn Door",   "fields": { "rotY": "Rotation Y", "objId": "Door ID" } },
+  "330": { "name": "Ruins 4-Btn Door",     "fields": { "rotY": "Rotation Y", "objId": "Door ID", "action": "5", "unknown13": "Stay Active" } },
+  "331": { "name": "Ruins 2-Btn Door",     "fields": { "rotY": "Rotation Y", "objId": "Door ID", "action": "5", "unknown13": "Stay Active" } },
+  "332": { "name": "Ruins Sensor",         "fields": { "rotY": "Rotation Y", "rotZ": "0", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "333": {
+    "name": "Ruins Fence Switch",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "Colour" },
+    "colorSubtype": { "field": "action", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "action", "max": 3, "srcSlot": 1, "dstOffset": 6 }
+  },
+  "334": {
+    "name": "Ruins Fence 4x2",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "Colour" },
+    "colorSubtype": { "field": "action", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "action", "max": 3, "srcSlot": 0, "dstOffset": 3 }
+  },
+  "335": {
+    "name": "Ruins Fence 6x2",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "Colour" },
+    "colorSubtype": { "field": "action", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "action", "max": 3, "srcSlot": 0, "dstOffset": 3 }
+  },
+  "336": {
+    "name": "Ruins Fence 4x4",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "Colour" },
+    "colorSubtype": { "field": "action", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "action", "max": 3, "srcSlot": 0, "dstOffset": 3 }
+  },
+  "337": {
+    "name": "Ruins Fence 6x4",
+    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "Colour" },
+    "colorSubtype": { "field": "action", "options": [
+      {"value":0,"label":"Red"},{"value":1,"label":"Cyan"},{"value":2,"label":"Green"},{"value":3,"label":"Purple"}
+    ]},
+    "textureSwap": { "field": "action", "max": 3, "srcSlot": 0, "dstOffset": 3 }
+  },
+  "338": { "name": "Ruins Poison Blob",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "339": { "name": "Guom Trap",            "fields": { "rotY": "Rotation Y", "scaleY": "+Pos Y", "scaleZ": "Drop Delay", "objId": "Damage", "action": "5", "unknown13": "Explode Delay" } },
+  "340": { "name": "Popup Trap (No Tech)", "fields": { "scaleX": "Radius", "scaleY": "1", "scaleZ": "2", "objId": "3", "action": "4", "unknown13": "5" }, "placement": "radius" },
+  "341": { "name": "Ruins Crystal",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "342": { "name": "Monument",             "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "345": { "name": "Ruins Rock 1",         "fields": { "rotY": "Rotation Y" } },
+  "346": { "name": "Ruins Rock 2",         "fields": { "rotY": "Rotation Y" } },
+  "347": { "name": "Ruins Rock 3",         "fields": { "rotY": "Rotation Y" } },
+  "348": { "name": "Ruins Rock 4",         "fields": { "rotY": "Rotation Y" } },
+  "349": { "name": "Ruins Rock 5",         "fields": { "rotY": "Rotation Y" } },
+  "350": { "name": "Ruins Rock 6",         "fields": { "rotY": "Rotation Y" } },
+  "351": { "name": "Ruins Rock 7",         "fields": { "rotY": "Rotation Y" } },
+  "352": { "name": "Poison",               "fields": { "scaleX": "Radius", "scaleY": "Power", "scaleZ": "Link", "objId": "Switch Mode", "action": "Fog Index Number", "unknown13": "Switch ID" }, "placement": "radius" },
+  "353": { "name": "Fixed Box (Ruins)",    "fields": { "rotY": "Rotation Y", "scaleX": "Full Random", "scaleY": "Random Item", "scaleZ": "Fixed Item", "objId": "Item Parameter", "action": "Item Parameter 2" } },
+  "354": { "name": "Random Box (Ruins)",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "355": { "name": "Enemy Box (Yellow)",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Event", "action": "5" } },
+  "356": { "name": "Enemy Box (Blue)",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5" } },
+  "357": { "name": "Empty Box (Blue)",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5" } },
+  "358": { "name": "Dest Rock",            "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "359": { "name": "Pop-Up Trap",          "fields": { "rotY": "Rotation Y", "scaleX": "Radius", "scaleY": "HP", "scaleZ": "Tech Level", "objId": "Switch ID", "unknown13": "Tech (0F)(1Giz)(2Gib)(3M)(4Gif)" } },
+
+  "368": { "name": "Flying Bird",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "369": { "name": "Tower",                "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "370": { "name": "Floating Rocks",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "371": { "name": "Floating Soul",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "372": { "name": "Butterfly",            "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "384": { "name": "Lobby Game Menu",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "385": { "name": "Lobby Warp",           "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "386": { "name": "Lobby Event (Tree)",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "387": { "name": "Unknown (387)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "388": { "name": "Unknown (388)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "389": { "name": "Unknown (389)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "390": { "name": "Lobby Pumpkin",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "391": { "name": "Lobby Xmas Windows",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "392": { "name": "Lobby Curtain",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "393": { "name": "Unknown (393)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "394": { "name": "Unknown (394)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "395": { "name": "Lobby Fish Tank",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "396": { "name": "Lobby Butterflies",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "400": { "name": "Ceiling Robots",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "401": { "name": "Grey Wall Low",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "402": { "name": "Spaceship Door",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+  "403": { "name": "Grey Wall High",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Wall Type?", "action": "5", "unknown13": "6" } },
+
+  "416": { "name": "Temple Door",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+  "417": { "name": "Temple Wall",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "418": { "name": "Broken Cylinder",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "419": { "name": "Broken Wall Pieces",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "420": { "name": "Brick Cylinder",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "421": { "name": "Lying Cylinder",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "422": { "name": "Brick Cone",           "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "423": { "name": "Breakable Wall",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "HP (HP + -255)", "action": "5", "unknown13": "6" } },
+  "424": { "name": "Temple Map Detect",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "425": { "name": "Small Rising Bridge",  "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "426": { "name": "Long Rising Bridge",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "Raise Speed", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+  "427": { "name": "4-Switch Temple Door", "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "Switch Total", "unknown13": "Stay Active" } },
+
+  "448": { "name": "4-Btn Spaceship Door", "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "Switch Total", "unknown13": "Stay Active?" } },
+
+  "512": { "name": "Item Box (CCA)",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "513": { "name": "Teleporter (Ep2)",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Floor ID", "action": "5", "unknown13": "Blue?" } },
+  "514": { "name": "CCA Door",             "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Switch ID", "action": "Switch Amount", "unknown13": "Stay Active" } },
+  "515": { "name": "Special Box (CCA)",    "fields": { "rotY": "Rotation Y", "scaleX": "Full Random", "scaleY": "Random Item", "scaleZ": "Fixed Item", "objId": "Item Parameter", "action": "Item Parameter 2", "unknown13": "Item Parameter 3" } },
+  "516": { "name": "Big CCA Door",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "517": { "name": "Big CCA Door Switch",  "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "518": { "name": "Little Rock",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+  "519": { "name": "Little Stone Wall",    "fields": { "rotY": "Rotation Y", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+  "520": { "name": "Med Stone Wall",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Wall Type", "action": "5", "unknown13": "6" } },
+  "521": { "name": "Spider Plant",         "fields": { "rotY": "Rotation", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "522": { "name": "CCA Area Tele",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "Blue=0" } },
+  "523": { "name": "Unknown (523)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "524": { "name": "Orange Creature",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "525": { "name": "Orange Bird",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "527": {
+    "name": "Saw",
+    "fields": { "rotY": "Rotation Y", "scaleY": "Damage", "scaleZ": "Model", "objId": "Switch ID", "action": "Rotation Range", "unknown13": "Angle Increment", "unknown14": "Full Circle" },
+    "modelVariant": { "field": "scaleZ", "rounded": true, "max": 1 }
+  },
+  "528": {
+    "name": "Laser Detect",
+    "fields": { "rotY": "Rotation Y", "scaleY": "2", "scaleZ": "Model", "objId": "Switch ID", "action": "Rotation Range", "unknown13": "Angle Increment", "unknown14": "Full Circle" },
+    "modelVariant": { "field": "scaleZ", "rounded": true, "max": 1 }
+  },
+  "529": { "name": "Dragonfly",            "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "530": { "name": "Seagull",              "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "531": {
+    "name": "Driftwood",
+    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "Model", "unknown13": "6" },
+    "modelVariant": { "field": "action", "max": 2 }
+  },
+
+  "544": { "name": "Fish",                 "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "545": { "name": "Seabed Door (blue)",   "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Switch ID", "action": "Switch Amount", "unknown13": "Stay Active" } },
+  "546": { "name": "Seabed Door (open)",   "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "547": {
+    "name": "Little Cryo-Tube",
+    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Model", "action": "4", "unknown13": "5" },
+    "modelVariant": { "field": "objId", "max": 1 }
+  },
+  "548": { "name": "Glass Wall",           "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "Model", "unknown13": "6" } },
+  "549": { "name": "Blue Float Robot",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "550": { "name": "Red Float Robot",      "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "551": { "name": "Dolphin",              "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "552": { "name": "Capture Trap",         "fields": { "rotY": "Rotation Y", "scaleX": "Speed", "scaleY": "Damage", "scaleZ": "3", "objId": "Duration", "action": "Invisible?", "unknown13": "2:Frz 3:Shk 5:Die" } },
+  "553": { "name": "VR Link",              "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch ID", "action": "5", "unknown13": "6" } },
+
+  "576": { "name": "Seabed Particle",      "fields": { "rotY": "Rotation Y", "rotZ": "Particle Type", "scaleY": "Render Distance?", "scaleZ": "Parent Flags", "objId": "5", "action": "6" } },
+
+  "640": { "name": "Barba Ray Warp",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "672": { "name": "Unknown (672)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "688": { "name": "Gee Nest",             "fields": { "rotX": "?", "rotY": "Rotation Y", "rotZ": "HP", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6", "unknown14": "7" } },
+  "689": { "name": "Lab Console",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "690": { "name": "Lab Console (Green)",  "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "691": { "name": "Chair",                "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "692": { "name": "Orange Wall",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "693": { "name": "Grey Wall w/ Hole",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "694": { "name": "Long Table",           "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "695": { "name": "GBA Station",          "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Function", "action": "5", "unknown13": "6" } },
+  "696": { "name": "Talk",                 "fields": { "rotY": "Rotation Y", "scaleX": "Radius? (20)", "scaleY": "2", "scaleZ": "3", "objId": "Function", "action": "5", "unknown13": "6" } },
+  "697": { "name": "Insta-Warp",           "fields": { "rotY": "Rotation Y", "scaleX": "Dest X", "scaleY": "Dest Y", "scaleZ": "Dest Z", "objId": "Dest Rotation", "action": "Floor #", "unknown13": "Disable Floor Disp (1)" }, "placement": "radius" },
+  "698": { "name": "Lab Script Coll",      "fields": { "rotY": "Rotation Y", "scaleX": "Radius", "scaleY": "2", "scaleZ": "3", "objId": "Function", "action": "Activator 1=Disable", "unknown13": "6", "unknown14": "7" } },
+  "699": { "name": "Lab Glass Door",       "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "700": { "name": "Ep2 Credits Tele",     "fields": { "rotY": "Rotation Y", "objId": "4", "action": "5", "unknown13": "something|is_blue 2b2" } },
+  "701": { "name": "Lab Ceiling Warp",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+
+  "768": { "name": "Ep4 Light Source",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "769": {
+    "name": "Cacti",
+    "fields": { "rotY": "Rotation Y", "scaleX": "Scale X", "scaleY": "Scale Y", "scaleZ": "Scale Z", "objId": "Model", "action": "Damage Power" },
+    "modelVariant": { "field": "objId", "max": 2 }
+  },
+  "770": {
+    "name": "Big Brown Rock",
+    "fields": { "rotY": "Rotation Y", "objId": "Model" },
+    "modelVariant": { "field": "objId", "max": 2 }
+  },
+  "771": { "name": "Breakable Rock",       "fields": { "rotX": "Unk", "rotY": "Rotation Y", "rotZ": "Unk0", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Switch", "action": "Unk5", "unknown13": "Unk6", "unknown14": "Unk7" } },
+  "832": { "name": "Unknown Ep4 (832)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "833": { "name": "Unknown Ep4 (833)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "896": { "name": "Poison Plant",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "897": { "name": "Unknown Ep4 (897)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "898": { "name": "Unknown (898)",        "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "899": { "name": "Oozing Desert Plant",  "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "901": { "name": "Unknown Ep4 (901)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "902": {
+    "name": "Big Black Rocks",
+    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "Model", "action": "4", "unknown13": "5" },
+    "modelVariant": { "field": "objId", "max": 2 }
+  },
+  "903": { "name": "Unknown Ep4 (903)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "904": { "name": "Unknown Ep4 (904)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "905": { "name": "Unknown Ep4 (905)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "906": { "name": "Unknown Ep4 (906)",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "907": { "name": "Falling Rock",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "908": { "name": "Desert Plant",         "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "909": { "name": "Desert Fixed Box",     "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "910": { "name": "Ep4 Test Door",        "fields": { "rotY": "Rotation Y", "objId": "Switch Num", "unknown13": "Unk6" } },
+  "911": {
+    "name": "Bee Hive",
+    "fields": { "rotY": "Rotation Y", "objId": "Model" },
+    "modelVariant": { "field": "objId", "max": 1 }
+  },
+  "912": { "name": "Ep4 Test Particle",    "fields": { "rotY": "Rotation Y", "scaleX": "Z Offset?", "scaleY": "Unk2", "objId": "Num Frames" } },
+  "913": { "name": "Heat",                 "fields": { "scaleX": "Radius", "scaleY": "1", "scaleZ": "2", "objId": "Fog Index Number", "action": "4", "unknown13": "5" }, "placement": "radius" },
+
+  "960": { "name": "Saint Million Egg",    "fields": { "rotY": "Rotation Y", "scaleX": "1", "scaleY": "2", "scaleZ": "3", "objId": "4", "action": "5", "unknown13": "6" } },
+  "961": { "name": "Ep4 Rock Spawner",     "fields": { "rotY": "Rotation Y", "objId": "Cave Rock (set 2)", "action": "5", "unknown13": "6" } },
+
+  "10000": { "name": "[QEdit] Snap Polygon", "placement": "none" },
+  "11000": { "name": "[QEdit] World Marker", "placement": "none" }
+}

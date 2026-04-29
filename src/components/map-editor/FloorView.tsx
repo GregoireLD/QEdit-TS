@@ -6,159 +6,26 @@ import { MapCanvas } from '../map-canvas/MapCanvas';
 import { Viewer3D } from '../viewer-3d/Viewer3D';
 import {
   MONSTER_SCHEMAS, OBJECT_SCHEMAS,
-  MONSTER_NPC_NAMES, OBJECT_NAMES, objectName,
+  OBJECT_NAMES, objectName, monsterName,
   MONSTER_SUBTYPES, OBJECT_COLOR_SUBTYPES, resolveSubtype,
   type MonsterFieldDesc, type ObjectFieldDesc, type SubtypeOption,
 } from '../../core/map/entitySchemas';
+import { AREA_BY_ID } from '../../core/map/areaData';
 import { MONSTER_PRESETS, OBJECT_PRESETS, getPlacementType } from '../../core/data/presets';
 import { toWorldPos, sampleFloorHeight } from '../../core/formats/rel';
 import styles from './FloorView.module.css';
 
-// ─── Monster names ──────────────────────────────────────────────────────────
-const MONSTER_NAMES: Record<number, string> = {
-  ...MONSTER_NPC_NAMES,
-  64:  'Hildebear',
-  65:  'Rag Rappy',
-  66:  'Monest',
-  67:  'Savage Wolf',
-  68:  'Booma',
-  96:  'Grass Assassin',
-  97:  'Poison Lily',
-  98:  'Nano Dragon',
-  99:  'Evil Shark',
-  100: 'Pofuilly Slime',
-  101: 'Pan Arms',
-  128: 'Dubchic',
-  129: 'Garanz',
-  130: 'Sinow Beat',
-  131: 'Canadine',
-  132: 'Canane',
-  133: 'Dubswitch',
-  160: 'Delsaber',
-  161: 'Chaos Sorcerer',
-  162: 'Dark Gunner',
-  163: 'Death Gunner',
-  164: 'Chaos Bringer',
-  165: 'Dark Belra',
-  166: 'Dimenian',
-  167: 'Bulclaw',
-  168: 'Claw',
-  192: 'Dragon',
-  193: 'De Rol Le',
-  194: 'Vol Opt (Parts)',
-  197: 'Vol Opt',
-  200: 'Dark Falz',
-  201: 'Gal Gryphon',
-  202: 'Olga Flow',
-  203: 'Barba Ray',
-  204: 'Gol Dragon',
-  212: 'Sinow Berill',
-  213: 'Merillia',
-  214: 'Mericarol',
-  215: 'Ul Gibbon',
-  216: 'Gibbles',
-  217: 'Gee',
-  218: 'Gi Gue',
-  219: 'Deldepth',
-  220: 'Delbiter',
-  221: 'Dolmolm',
-  222: 'Morfos',
-  223: 'Recobox',
-  224: 'Sinow Zoa',
-  225: 'Ill Gill',
-  65312: 'Epsilon',
-  272: 'Astark',
-  273: 'Satellite Lizard',
-  274: 'Merissa A',
-  275: 'Girtablulu',
-  276: 'Zu',
-  277: 'Boota',
-  278: 'Dorphon',
-  279: 'Goran',
-  281: 'Saint Million',
-};
-
-function monsterName(skin: number): string {
-  return MONSTER_NAMES[skin] ?? `0x${skin.toString(16).toUpperCase().padStart(4, '0')}`;
-}
-
-const AREA_MONSTER_SKINS = new Map<number, number[]>([
-  [0,  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,256]],
-  [1,  [51,65,66,67,68,69]],
-  [2,  [51,64,65,66,67,68,69,70]],
-  [3,  [51,96,97,98,99,101]],
-  [4,  [51,96,97,98,99,100]],
-  [5,  [29,51,97,98,99,100,101]],
-  [6,  [51,128,129,130,131,132,133]],
-  [7,  [51,128,129,130,131,132,133]],
-  [8,  [51,160,161,165,166,167,168]],
-  [9,  [51,160,162,163,164,166,167,168,169]],
-  [10, [51,161,162,163,164,165,166,167,168,169]],
-  [11, [192]],
-  [12, [193]],
-  [13, [51,194,195,196,197,198,199]],
-  [14, [200]],
-  [15, [8]],
-  [16, [51,64,96,99,130,160,164]],
-  [17, [51,64,96,99,130,160,164]],
-  [18, [3,6,9,11,13,14,25,27,28,29,31,32,37,38,39,40,49,51,208,209,210,211,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256]],
-  [19, [51,64,65,66,96,97,165,166]],
-  [20, [64,65,66,96,97,165,166]],
-  [21, [51,67,101,128,129,133,160]],
-  [22, [51,67,101,128,133,160,161]],
-  [23, [51,69,212,213,214,215,216,217,218,246,253]],
-  [24, [51,69,212,213,214,215,216,217,218,246,253]],
-  [25, [51,69,212,213,214,215,216,217,218,246,253]],
-  [26, [51,69,212,213,214,215,216,217,218,246,253]],
-  [27, [51,69,212,213,214,215,216,217,218,246,253]],
-  [28, [51,219,220,221,222,223,224,244]],
-  [29, [51,219,220,221,222,223,224,244]],
-  [30, [192]],
-  [31, [202,246]],
-  [32, [203]],
-  [33, [204]],
-  [34, [51,69,213,215,217,221,223,253]],
-  [35, [51,97,214,216,218,220,223,224,225,246]],
-  [36, [25,65,69,211,243,244,272,273,276,277,278,280]],
-  [37, [25,65,69,211,243,244,272,273,276,277,278,280]],
-  [38, [25,65,69,211,243,244,272,273,276,277,278,280]],
-  [39, [25,65,69,211,243,244,272,273,276,277,278,280]],
-  [40, [25,65,69,243,244,272,273,276,277,278,280]],
-  [41, [25,65,69,243,244,273,274,275,276,279,280]],
-  [42, [25,41,50,65,69,243,244,273,274,275,276,279,280]],
-  [43, [25,41,50,65,69,243,244,273,274,275,276,279,280]],
-  [44, [25,41,243,244,280,281]],
-  [45, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,243,244,256,280]],
-  [46, [65,272,273,274,275,276,277,278,279,280]],
-]);
-
 function getMonsterSkinOptions(areaId: number): SubtypeOption[] {
-  const skins = AREA_MONSTER_SKINS.get(areaId) ?? [];
+  const skins = AREA_BY_ID[areaId]?.monsterSkins ?? [];
   return skins
-    .map(v => ({ value: v, label: MONSTER_NAMES[v] ?? `0x${v.toString(16).toUpperCase().padStart(4,'0')}` }))
+    .map(v => ({ value: v, label: monsterName(v) }))
     .sort((a, b) => a.value - b.value);
 }
 
-function getObjectSkinRanges(areaId: number): [number, number][] {
-  const r: [number, number][] = [[0, 87], [384, 396]];
-  if      (areaId >= 1  && areaId <= 2)   r.push([128, 151]);
-  else if (areaId >= 3  && areaId <= 5)   r.push([192, 225]);
-  else if (areaId >= 6  && areaId <= 7)   r.push([256, 268]);
-  else if (areaId >= 8  && areaId <= 10)  r.push([304, 372]);
-  else if (areaId >= 11 && areaId <= 17)  r.push([128, 372]);
-  else if (areaId === 18)                 r.push([400, 403], [640, 701]);
-  else if (areaId >= 19 && areaId <= 20)  r.push([128, 151], [304, 372], [416, 448]);
-  else if (areaId >= 21 && areaId <= 22)  r.push([192, 268], [400, 403], [640, 701]);
-  else if (areaId >= 23 && areaId <= 35)  r.push([512, 576], [640, 701]);
-  else if (areaId >= 36 && areaId <= 43)  r.push([768, 913]);
-  else if (areaId === 44)                 r.push([768, 913], [960, 961]);
-  return r;
-}
-
 function getObjectSkinOptions(areaId: number): SubtypeOption[] {
-  const r = getObjectSkinRanges(areaId);
+  const ranges = AREA_BY_ID[areaId]?.objectRanges ?? [];
   return Array.from(OBJECT_NAMES.entries())
-    .filter(([k]) => k < 10000 && r.some(([lo, hi]) => k >= lo && k <= hi))
+    .filter(([k]) => k < 10000 && ranges.some(([lo, hi]) => k >= lo && k <= hi))
     .map(([k, v]) => ({ value: k, label: v }))
     .sort((a, b) => a.value - b.value);
 }
@@ -509,12 +376,12 @@ function AddPanel({ kind, floorId, areaId, episode: _episode, onDone }: AddPanel
   // Filter presets to the skins relevant for this area
   const presets = useMemo(() => {
     if (kind === 'monster') {
-      const allowed = new Set(AREA_MONSTER_SKINS.get(areaId) ?? []);
+      const allowed = new Set(AREA_BY_ID[areaId]?.monsterSkins ?? []);
       return allowed.size > 0
         ? MONSTER_PRESETS.filter(p => allowed.has(p.skin))
         : MONSTER_PRESETS;
     } else {
-      const ranges = getObjectSkinRanges(areaId);
+      const ranges = AREA_BY_ID[areaId]?.objectRanges ?? [];
       return OBJECT_PRESETS.filter(p =>
         ranges.some(([lo, hi]) => p.skin >= lo && p.skin <= hi)
       );

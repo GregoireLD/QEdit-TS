@@ -6,22 +6,27 @@
  *   python3 tools/convert_presets.py
  */
 import type { Monster, QuestObject } from '../model/types';
-import monstersRaw from './monsters.json';
-import objectsRaw  from './objects.json';
+import monstersRaw   from './monsters.json';
+import objectsRaw    from './objects.json';
+import objectMetaRaw from './objects-meta.json';
 
 export type PlacementType = 'rotation' | 'radius' | 'none';
 
 // JSON entries are flat: all Monster/QuestObject fields at the top level + name.
-// Objects also carry a "placement" field stamped by tools/stamp_placements.ts.
 export type MonsterPreset = { name: string } & Monster;
-export type ObjectPreset  = { name: string; placement: PlacementType } & QuestObject;
+export type ObjectPreset  = { name: string } & QuestObject;
 
 export const MONSTER_PRESETS: MonsterPreset[] = monstersRaw as unknown as MonsterPreset[];
 export const OBJECT_PRESETS:  ObjectPreset[]  = objectsRaw  as unknown as ObjectPreset[];
 
-// Skin → placement lookup, built once from the JSON data.
+// Skin → placement lookup, derived from per-skin object metadata.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SKIN_PLACEMENT = new Map<number, PlacementType>(
-  OBJECT_PRESETS.map(p => [p.skin, p.placement])
+  Object.entries(objectMetaRaw)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter(([, e]) => (e as any).placement)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map(([k, e]) => [Number(k), (e as any).placement as PlacementType])
 );
 
 /** True when this object's drag gesture should set scaleX (radius) rather than rotY. */

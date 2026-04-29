@@ -13,24 +13,42 @@ export interface AreaVariant {
 }
 
 export interface AreaDef {
-  id:       number;
-  name:     string;
-  episode:  1 | 2 | 4;
-  variants: AreaVariant[];
+  id:           number;
+  name:         string;
+  episode:      1 | 2 | 4;
+  variants:     AreaVariant[];
   /** Sky dome PNG filename (in map/xvm/ folder), or '' for no sky. Matches Delphi MapSkyDome[]. */
-  sky:      string;
+  sky:          string;
+  /** Monster skin IDs that can be placed in this area. */
+  monsterSkins: number[];
+  /** Object skin ID ranges (inclusive) that can be placed in this area. Always includes [0,87] and [384,396]. */
+  objectRanges: [number, number][];
 }
 
 function v(label: string, file: string, xvm: string): AreaVariant { return { label, file, xvm }; }
 
+// ─── Shared object range sets ─────────────────────────────────────────────────
+const OBJ_COMMON:    [number, number][] = [[0, 87], [384, 396]];
+const OBJ_FOREST:    [number, number][] = [...OBJ_COMMON, [128, 151]];
+const OBJ_CAVES:     [number, number][] = [...OBJ_COMMON, [192, 225]];
+const OBJ_MINES:     [number, number][] = [...OBJ_COMMON, [256, 268]];
+const OBJ_RUINS:     [number, number][] = [...OBJ_COMMON, [304, 372]];
+const OBJ_ALL_EP1:   [number, number][] = [...OBJ_COMMON, [128, 372]];
+const OBJ_LAB:       [number, number][] = [...OBJ_COMMON, [400, 403], [640, 701]];
+const OBJ_TEMPLE:    [number, number][] = [...OBJ_FOREST, [304, 372], [416, 448]];
+const OBJ_SPACESHIP: [number, number][] = [...OBJ_CAVES,  [400, 403], [640, 701]];
+const OBJ_CCA:       [number, number][] = [...OBJ_COMMON, [512, 576], [640, 701]];
+const OBJ_EP4:       [number, number][] = [...OBJ_COMMON, [768, 913]];
+const OBJ_EP4_BOSS:  [number, number][] = [...OBJ_COMMON, [768, 913], [960, 961]];
+
 export const AREA_DEFS: readonly AreaDef[] = [
   // ── Episode 1 (areas 0–17) ──────────────────────────────────────────────
   // sky from Delphi MapSkyDome[0..17]
-  { id:  0, episode: 1, name: 'Pioneer II',    sky: '',                  variants: [v('Pioneer II',   'map_city00_00c.rel',      'map_city00.xvm')] },
-  { id:  1, episode: 1, name: 'Forest 1',      sky: 'Forest1.png',       variants: [v('Forest 1',     'map_forest01c.rel',       'map_forest01.xvm')] },
-  { id:  2, episode: 1, name: 'Forest 2',      sky: 'Forest2.png',       variants: [v('Forest 2',     'map_forest02c.rel',       'map_forest02.xvm')] },
+  { id:  0, episode: 1, name: 'Pioneer II',    sky: '',                  objectRanges: OBJ_COMMON,  monsterSkins: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,256], variants: [v('Pioneer II',   'map_city00_00c.rel',      'map_city00.xvm')] },
+  { id:  1, episode: 1, name: 'Forest 1',      sky: 'Forest1.png',       objectRanges: OBJ_FOREST,  monsterSkins: [51,65,66,67,68,69],                                                                                                     variants: [v('Forest 1',     'map_forest01c.rel',       'map_forest01.xvm')] },
+  { id:  2, episode: 1, name: 'Forest 2',      sky: 'Forest2.png',       objectRanges: OBJ_FOREST,  monsterSkins: [51,64,65,66,67,68,69,70],                                                                                               variants: [v('Forest 2',     'map_forest02c.rel',       'map_forest02.xvm')] },
   {
-    id:  3, episode: 1, name: 'Cave 1', sky: '',
+    id:  3, episode: 1, name: 'Cave 1', sky: '', objectRanges: OBJ_CAVES, monsterSkins: [51,96,97,98,99,101],
     variants: [
       v('Room 00', 'map_cave01_00c.rel', 'map_cave01.xvm'),
       v('Room 01', 'map_cave01_01c.rel', 'map_cave01.xvm'),
@@ -41,7 +59,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  4, episode: 1, name: 'Cave 2', sky: '',
+    id:  4, episode: 1, name: 'Cave 2', sky: '', objectRanges: OBJ_CAVES, monsterSkins: [51,96,97,98,99,100],
     variants: [
       v('Room 00', 'map_cave02_00c.rel', 'map_cave02.xvm'),
       v('Room 01', 'map_cave02_01c.rel', 'map_cave02.xvm'),
@@ -51,7 +69,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  5, episode: 1, name: 'Cave 3', sky: '',
+    id:  5, episode: 1, name: 'Cave 3', sky: '', objectRanges: OBJ_CAVES, monsterSkins: [29,51,97,98,99,100,101],
     variants: [
       v('Room 00', 'map_cave03_00c.rel', 'map_cave03.xvm'),
       v('Room 01', 'map_cave03_01c.rel', 'map_cave03.xvm'),
@@ -62,7 +80,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  6, episode: 1, name: 'Mine 1', sky: '',
+    id:  6, episode: 1, name: 'Mine 1', sky: '', objectRanges: OBJ_MINES, monsterSkins: [51,128,129,130,131,132,133],
     variants: [
       v('Room 00', 'map_machine01_00c.rel', 'map_machine01.xvm'),
       v('Room 01', 'map_machine01_01c.rel', 'map_machine01.xvm'),
@@ -73,7 +91,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  7, episode: 1, name: 'Mine 2', sky: '',
+    id:  7, episode: 1, name: 'Mine 2', sky: '', objectRanges: OBJ_MINES, monsterSkins: [51,128,129,130,131,132,133],
     variants: [
       v('Room 00', 'map_machine02_00c.rel', 'map_machine02.xvm'),
       v('Room 01', 'map_machine02_01c.rel', 'map_machine02.xvm'),
@@ -84,7 +102,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  8, episode: 1, name: 'Ruins 1', sky: '',
+    id:  8, episode: 1, name: 'Ruins 1', sky: '', objectRanges: OBJ_RUINS, monsterSkins: [51,160,161,165,166,167,168],
     variants: [
       v('Room 00', 'map_ancient01_00c.rel', 'map_ancient01.xvm'),
       v('Room 01', 'map_ancient01_01c.rel', 'map_ancient01.xvm'),
@@ -94,7 +112,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id:  9, episode: 1, name: 'Ruins 2', sky: 'ruins02VS2.png',
+    id:  9, episode: 1, name: 'Ruins 2', sky: 'ruins02VS2.png', objectRanges: OBJ_RUINS, monsterSkins: [51,160,162,163,164,166,167,168,169],
     variants: [
       v('Room 00', 'map_ancient02_00c.rel', 'map_ancient02.xvm'),
       v('Room 01', 'map_ancient02_01c.rel', 'map_ancient02.xvm'),
@@ -104,7 +122,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 10, episode: 1, name: 'Ruins 3', sky: '',
+    id: 10, episode: 1, name: 'Ruins 3', sky: '', objectRanges: OBJ_RUINS, monsterSkins: [51,161,162,163,164,165,166,167,168,169],
     variants: [
       v('Room 00', 'map_ancient03_00c.rel', 'map_ancient03.xvm'),
       v('Room 01', 'map_ancient03_01c.rel', 'map_ancient03.xvm'),
@@ -114,12 +132,12 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
 
-  { id: 11, episode: 1, name: 'Dragon',        sky: '',                   variants: [v('Dragon',          'map_boss01c.rel',             'map_boss01.xvm')] },
-  { id: 12, episode: 1, name: 'De Rol Le',     sky: '',                   variants: [v('De Rol Le',       'map_boss02c.rel',             'map_boss02.xvm')] },
-  { id: 13, episode: 1, name: 'Vol Opt',       sky: '',                   variants: [v('Vol Opt',         'map_boss03c.rel',             'map_boss03.xvm')] },
-  { id: 14, episode: 1, name: 'Dark Falz',     sky: '',                   variants: [v('Dark Falz',       'map_darkfalz00c.rel',         'map_darkfalz00.xvm')] },
+  { id: 11, episode: 1, name: 'Dragon',        sky: '',                objectRanges: OBJ_ALL_EP1, monsterSkins: [192],                                                                          variants: [v('Dragon',          'map_boss01c.rel',             'map_boss01.xvm')] },
+  { id: 12, episode: 1, name: 'De Rol Le',     sky: '',                objectRanges: OBJ_ALL_EP1, monsterSkins: [193],                                                                          variants: [v('De Rol Le',       'map_boss02c.rel',             'map_boss02.xvm')] },
+  { id: 13, episode: 1, name: 'Vol Opt',       sky: '',                objectRanges: OBJ_ALL_EP1, monsterSkins: [51,194,195,196,197,198,199],                                                   variants: [v('Vol Opt',         'map_boss03c.rel',             'map_boss03.xvm')] },
+  { id: 14, episode: 1, name: 'Dark Falz',     sky: '',                objectRanges: OBJ_ALL_EP1, monsterSkins: [200],                                                                          variants: [v('Dark Falz',       'map_darkfalz00c.rel',         'map_darkfalz00.xvm')] },
   {
-    id: 15, episode: 1, name: 'Lobby', sky: '',
+    id: 15, episode: 1, name: 'Lobby', sky: '', objectRanges: OBJ_ALL_EP1, monsterSkins: [8],
     variants: [
       v('Default',       'map_lobby_00c.rel',          'map_lobby_01.xvm'),
       v('Green Battle',  'map_lobby_green_be00c.rel',  'map_lobby_green_be00.xvm'),
@@ -128,7 +146,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 16, episode: 1, name: 'Space Battle', sky: 'space02boss8.png',
+    id: 16, episode: 1, name: 'Space Battle', sky: 'space02boss8.png', objectRanges: OBJ_ALL_EP1, monsterSkins: [51,64,96,99,130,160,164],
     variants: [
       v('Room 00', 'map_vs01_00c.rel', 'map_vs01.xvm'),
       v('Room 01', 'map_vs01_01c.rel', 'map_vs01.xvm'),
@@ -136,7 +154,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 17, episode: 1, name: 'Temple Battle', sky: 'ruins02VS2.png',
+    id: 17, episode: 1, name: 'Temple Battle', sky: 'ruins02VS2.png', objectRanges: OBJ_ALL_EP1, monsterSkins: [51,64,96,99,130,160,164],
     variants: [
       v('Room 00', 'map_vs02_00c.rel', 'map_vs02.xvm'),
       v('Room 01', 'map_vs02_01c.rel', 'map_vs02.xvm'),
@@ -146,9 +164,9 @@ export const AREA_DEFS: readonly AreaDef[] = [
 
   // ── Episode 2 (areas 18–35) ─────────────────────────────────────────────
   // sky from Delphi MapSkyDome[18..35]
-  { id: 18, episode: 2, name: 'Lab',           sky: '',                   variants: [v('Lab', 'map_labo00_00c.rel', 'map_labo00.xvm')] },
+  { id: 18, episode: 2, name: 'Lab',           sky: '',               objectRanges: OBJ_LAB,       monsterSkins: [3,6,9,11,13,14,25,27,28,29,31,32,37,38,39,40,49,51,208,209,210,211,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256], variants: [v('Lab', 'map_labo00_00c.rel', 'map_labo00.xvm')] },
   {
-    id: 19, episode: 2, name: 'VR Temple α', sky: 'space01VS1.png',
+    id: 19, episode: 2, name: 'VR Temple α', sky: 'space01VS1.png', objectRanges: OBJ_TEMPLE, monsterSkins: [51,64,65,66,96,97,165,166],
     variants: [
       v('Room 00', 'map_ruins01_00c.rel', 'map_ruins01.xvm'),
       v('Room 01', 'map_ruins01_01c.rel', 'map_ruins01.xvm'),
@@ -156,7 +174,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 20, episode: 2, name: 'VR Temple β', sky: 'ruins02VS2.png',
+    id: 20, episode: 2, name: 'VR Temple β', sky: 'ruins02VS2.png', objectRanges: OBJ_TEMPLE, monsterSkins: [64,65,66,96,97,165,166],
     variants: [
       v('Room 00', 'map_ruins02_00c.rel', 'map_ruins02.xvm'),
       v('Room 01', 'map_ruins02_01c.rel', 'map_ruins02.xvm'),
@@ -164,7 +182,7 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 21, episode: 2, name: 'VR Spaceship α', sky: 'space01VS1.png',
+    id: 21, episode: 2, name: 'VR Spaceship α', sky: 'space01VS1.png', objectRanges: OBJ_SPACESHIP, monsterSkins: [51,67,101,128,129,133,160],
     variants: [
       v('Room 00', 'map_space01_00c.rel', 'map_space01.xvm'),
       v('Room 01', 'map_space01_01c.rel', 'map_space01.xvm'),
@@ -172,27 +190,27 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 22, episode: 2, name: 'VR Spaceship β', sky: 'space02boss8.png',
+    id: 22, episode: 2, name: 'VR Spaceship β', sky: 'space02boss8.png', objectRanges: OBJ_SPACESHIP, monsterSkins: [51,67,101,128,133,160,161],
     variants: [
       v('Room 00', 'map_space02_00c.rel', 'map_space02.xvm'),
       v('Room 01', 'map_space02_01c.rel', 'map_space02.xvm'),
       v('Room 02', 'map_space02_02c.rel', 'map_space02.xvm'),
     ],
   },
-  { id: 23, episode: 2, name: 'CCA 1',         sky: 'jungle01.png',       variants: [v('CCA 1', 'map_jungle01_00c.rel', 'map_jungle01.xvm')] },
-  { id: 24, episode: 2, name: 'CCA 2',         sky: 'jungle02.png',       variants: [v('CCA 2', 'map_jungle02_00c.rel', 'map_jungle02.xvm')] },
-  { id: 25, episode: 2, name: 'CCA 3',         sky: 'jungle03.png',       variants: [v('CCA 3', 'map_jungle03_00c.rel', 'map_jungle03.xvm')] },
+  { id: 23, episode: 2, name: 'CCA 1',         sky: 'jungle01.png',    objectRanges: OBJ_CCA, monsterSkins: [51,69,212,213,214,215,216,217,218,246,253], variants: [v('CCA 1', 'map_jungle01_00c.rel', 'map_jungle01.xvm')] },
+  { id: 24, episode: 2, name: 'CCA 2',         sky: 'jungle02.png',    objectRanges: OBJ_CCA, monsterSkins: [51,69,212,213,214,215,216,217,218,246,253], variants: [v('CCA 2', 'map_jungle02_00c.rel', 'map_jungle02.xvm')] },
+  { id: 25, episode: 2, name: 'CCA 3',         sky: 'jungle03.png',    objectRanges: OBJ_CCA, monsterSkins: [51,69,212,213,214,215,216,217,218,246,253], variants: [v('CCA 3', 'map_jungle03_00c.rel', 'map_jungle03.xvm')] },
   {
-    id: 26, episode: 2, name: 'CCA 4', sky: 'jungle04.png',
+    id: 26, episode: 2, name: 'CCA 4', sky: 'jungle04.png', objectRanges: OBJ_CCA, monsterSkins: [51,69,212,213,214,215,216,217,218,246,253],
     variants: [
       v('Room 00', 'map_jungle04_00c.rel', 'map_jungle04.xvm'),
       v('Room 01', 'map_jungle04_01c.rel', 'map_jungle04.xvm'),
       v('Room 02', 'map_jungle04_02c.rel', 'map_jungle04.xvm'),
     ],
   },
-  { id: 27, episode: 2, name: 'CCA 5',         sky: 'jungle05.png',       variants: [v('CCA 5', 'map_jungle05_00c.rel', 'map_jungle05.xvm')] },
+  { id: 27, episode: 2, name: 'CCA 5',         sky: 'jungle05.png',    objectRanges: OBJ_CCA, monsterSkins: [51,69,212,213,214,215,216,217,218,246,253], variants: [v('CCA 5', 'map_jungle05_00c.rel', 'map_jungle05.xvm')] },
   {
-    id: 28, episode: 2, name: 'Seabed Upper', sky: 'seabed01.png',
+    id: 28, episode: 2, name: 'Seabed Upper', sky: 'seabed01.png', objectRanges: OBJ_CCA, monsterSkins: [51,219,220,221,222,223,224,244],
     variants: [
       v('Room 00', 'map_seabed01_00c.rel', 'map_seabed01.xvm'),
       v('Room 01', 'map_seabed01_01c.rel', 'map_seabed01.xvm'),
@@ -200,19 +218,19 @@ export const AREA_DEFS: readonly AreaDef[] = [
     ],
   },
   {
-    id: 29, episode: 2, name: 'Seabed Lower', sky: 'seabed02.png',
+    id: 29, episode: 2, name: 'Seabed Lower', sky: 'seabed02.png', objectRanges: OBJ_CCA, monsterSkins: [51,219,220,221,222,223,224,244],
     variants: [
       v('Room 00', 'map_seabed02_00c.rel', 'map_seabed02.xvm'),
       v('Room 01', 'map_seabed02_01c.rel', 'map_seabed02.xvm'),
       v('Room 02', 'map_seabed02_02c.rel', 'map_seabed02.xvm'),
     ],
   },
-  { id: 30, episode: 2, name: 'Gal Gryphon',   sky: 'boss5.png',          variants: [v('Gal Gryphon', 'map_boss05c.rel',     'map_boss05.xvm')] },
-  { id: 31, episode: 2, name: 'Olga Flow',     sky: '',                   variants: [v('Olga Flow',   'map_boss06c.rel',     'map_boss06.xvm')] },
-  { id: 32, episode: 2, name: 'Barba Ray',     sky: '',                   variants: [v('Barba Ray',   'map_boss07c.rel',     'map_boss07.xvm')] },
-  { id: 33, episode: 2, name: 'Gol Dragon',    sky: 'space02boss8.png',   variants: [v('Gol Dragon',  'map_boss08c.rel',     'map_boss08.xvm')] },
+  { id: 30, episode: 2, name: 'Gal Gryphon',   sky: 'boss5.png',       objectRanges: OBJ_CCA, monsterSkins: [192],                                 variants: [v('Gal Gryphon', 'map_boss05c.rel',     'map_boss05.xvm')] },
+  { id: 31, episode: 2, name: 'Olga Flow',     sky: '',                objectRanges: OBJ_CCA, monsterSkins: [202,246],                              variants: [v('Olga Flow',   'map_boss06c.rel',     'map_boss06.xvm')] },
+  { id: 32, episode: 2, name: 'Barba Ray',     sky: '',                objectRanges: OBJ_CCA, monsterSkins: [203],                                  variants: [v('Barba Ray',   'map_boss07c.rel',     'map_boss07.xvm')] },
+  { id: 33, episode: 2, name: 'Gol Dragon',    sky: 'space02boss8.png',objectRanges: OBJ_CCA, monsterSkins: [204],                                  variants: [v('Gol Dragon',  'map_boss08c.rel',     'map_boss08.xvm')] },
   {
-    id: 34, episode: 2, name: 'Jungle South', sky: 'jungle06.png',
+    id: 34, episode: 2, name: 'Jungle South', sky: 'jungle06.png', objectRanges: OBJ_CCA, monsterSkins: [51,69,213,215,217,221,223,253],
     variants: [
       v('Jungle North', 'map_jungle06_00c.rel', 'map_jungle06.xvm'),
       v('Room 00',      'map_jungle07_00c.rel', 'map_jungle07.xvm'),
@@ -222,35 +240,35 @@ export const AREA_DEFS: readonly AreaDef[] = [
       v('Room 04',      'map_jungle07_04c.rel', 'map_jungle07.xvm'),
     ],
   },
-  { id: 35, episode: 2, name: 'Tower',         sky: '',                   variants: [v('Tower', 'map_boss09_00c.rel', 'map_boss09.xvm')] },
+  { id: 35, episode: 2, name: 'Tower',         sky: '',                objectRanges: OBJ_CCA, monsterSkins: [51,97,214,216,218,220,223,224,225,246], variants: [v('Tower', 'map_boss09_00c.rel', 'map_boss09.xvm')] },
 
   // ── Episode 4 (areas 36–46) ─────────────────────────────────────────────
   // sky from Delphi MapSkyDome[36..45]; area 46 (Test Map) is outside the array
-  { id: 36, episode: 4, name: 'Crater 1',      sky: 'craterwild.png',     variants: [v('Crater 1',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
-  { id: 37, episode: 4, name: 'Crater 2',      sky: 'craterwild.png',     variants: [v('Crater 2',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
-  { id: 38, episode: 4, name: 'Crater 3',      sky: 'craterwild.png',     variants: [v('Crater 3',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
-  { id: 39, episode: 4, name: 'Crater 4',      sky: 'craterwild.png',     variants: [v('Crater 4',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
-  { id: 40, episode: 4, name: 'Crater Center', sky: 'craterwild.png',     variants: [v('Crater Center', 'map_crater01_00c.rel', 'map_crater01.xvm')] },
+  { id: 36, episode: 4, name: 'Crater 1',      sky: 'craterwild.png',  objectRanges: OBJ_EP4, monsterSkins: [25,65,69,211,243,244,272,273,276,277,278,280],     variants: [v('Crater 1',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
+  { id: 37, episode: 4, name: 'Crater 2',      sky: 'craterwild.png',  objectRanges: OBJ_EP4, monsterSkins: [25,65,69,211,243,244,272,273,276,277,278,280],     variants: [v('Crater 2',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
+  { id: 38, episode: 4, name: 'Crater 3',      sky: 'craterwild.png',  objectRanges: OBJ_EP4, monsterSkins: [25,65,69,211,243,244,272,273,276,277,278,280],     variants: [v('Crater 3',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
+  { id: 39, episode: 4, name: 'Crater 4',      sky: 'craterwild.png',  objectRanges: OBJ_EP4, monsterSkins: [25,65,69,211,243,244,272,273,276,277,278,280],     variants: [v('Crater 4',      'map_crater01_00c.rel', 'map_crater01.xvm')] },
+  { id: 40, episode: 4, name: 'Crater Center', sky: 'craterwild.png',  objectRanges: OBJ_EP4, monsterSkins: [25,65,69,243,244,272,273,276,277,278,280],         variants: [v('Crater Center', 'map_crater01_00c.rel', 'map_crater01.xvm')] },
   {
-    id: 41, episode: 4, name: 'Desert 1', sky: '',
+    id: 41, episode: 4, name: 'Desert 1', sky: '', objectRanges: OBJ_EP4, monsterSkins: [25,65,69,243,244,273,274,275,276,279,280],
     variants: [
       v('Room 00', 'map_desert01_00c.rel', 'map_desert01.xvm'),
       v('Room 01', 'map_desert01_01c.rel', 'map_desert01.xvm'),
       v('Room 02', 'map_desert01_02c.rel', 'map_desert01.xvm'),
     ],
   },
-  { id: 42, episode: 4, name: 'Desert 2',      sky: '',                   variants: [v('Desert 2', 'map_desert02_00c.rel', 'map_desert02.xvm')] },
+  { id: 42, episode: 4, name: 'Desert 2',      sky: '',                objectRanges: OBJ_EP4, monsterSkins: [25,65,69,243,244,273,274,275,276,279,280],         variants: [v('Desert 2', 'map_desert02_00c.rel', 'map_desert02.xvm')] },
   {
-    id: 43, episode: 4, name: 'Desert 3', sky: '',
+    id: 43, episode: 4, name: 'Desert 3', sky: '', objectRanges: OBJ_EP4, monsterSkins: [25,41,50,65,69,243,244,273,274,275,276,279,280],
     variants: [
       v('Room 00', 'map_desert03_00c.rel', 'map_desert03.xvm'),
       v('Room 01', 'map_desert03_01c.rel', 'map_desert03.xvm'),
       v('Room 02', 'map_desert03_02c.rel', 'map_desert03.xvm'),
     ],
   },
-  { id: 44, episode: 4, name: 'Saint-Milion',  sky: '',                   variants: [v('Saint-Milion',    'map_boss09_00c.rel', 'map_boss09.xvm')] },
-  { id: 45, episode: 4, name: 'Pioneer II',    sky: '',                   variants: [v('Pioneer II (EP4)', 'map_city02_00c.rel', 'map_city02.xvm')] },
-  { id: 46, episode: 4, name: 'Test Map',      sky: '',                   variants: [v('Test Map',         'map_test01_00c.rel', 'map_test01.xvm')] },
+  { id: 44, episode: 4, name: 'Saint-Milion',  sky: '',                objectRanges: OBJ_EP4_BOSS, monsterSkins: [25,41,243,244,280,281],                       variants: [v('Saint-Milion',    'map_boss09_00c.rel', 'map_boss09.xvm')] },
+  { id: 45, episode: 4, name: 'Pioneer II',    sky: '',                objectRanges: OBJ_COMMON,   monsterSkins: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,43,44,45,48,49,50,51,208,209,243,244,256,280], variants: [v('Pioneer II (EP4)', 'map_city02_00c.rel', 'map_city02.xvm')] },
+  { id: 46, episode: 4, name: 'Test Map',      sky: '',                objectRanges: OBJ_EP4,      monsterSkins: [65,272,273,274,275,276,277,278,279,280],       variants: [v('Test Map',         'map_test01_00c.rel', 'map_test01.xvm')] },
 ];
 
 /** Keyed by area/floor ID for O(1) lookup */

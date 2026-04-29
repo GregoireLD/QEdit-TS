@@ -31,6 +31,7 @@ import { toNRelName } from '../../core/map/mapFileNames';
 import { parseNj, parseXj } from '../../core/formats/nj';
 import type { NjResult } from '../../core/formats/nj';
 import { checkMonsterType, monsterFilename, npc51FileIndex } from '../../core/map/monsterSkins';
+import { getObjectMeta } from '../../core/map/entitySchemas';
 import type { Monster, QuestObject, Floor } from '../../core/model/types';
 import type { RelSection } from '../../core/formats/rel';
 import css from './Viewer3D.module.css';
@@ -41,38 +42,6 @@ const SPEED            = 80;
 const MOUSE_SENS       = 0.002;
 const HALF_PI          = Math.PI / 2 - 0.01;
 
-// Objects that have variant model files (e.g. "135-0.nj" vs "135-1.nj").
-// Ported from main.pas: subtypeditem[], subtypeditemV[], subtypeditemMax[].
-// v=1: Math.round(scaleX), v=2: objId, v=3: unknown13, v=4: action, v=5: Math.round(scaleZ)
-const SUBTYPED_ITEMS: ReadonlyArray<{ skin: number; v: number; max: number }> = [
-  { skin: 135, v: 1, max: 1 }, { skin: 769, v: 2, max: 2 }, { skin: 770, v: 2, max: 2 },
-  { skin:  81, v: 2, max: 3 }, { skin: 527, v: 5, max: 1 }, { skin: 528, v: 5, max: 1 },
-  { skin: 547, v: 2, max: 1 }, { skin: 902, v: 2, max: 2 }, { skin: 139, v: 4, max: 1 },
-  { skin:  69, v: 3, max: 1 }, { skin: 911, v: 2, max: 1 }, { skin: 531, v: 4, max: 2 },
-];
-
-// Objects whose XVM contains multiple colour variants accessed via texture-slot remapping.
-// Ported from main.pas: ColorItem[], ColorPos[], ColorMax[] + SetTextureSwap logic.
-//
-// field:     which QuestObject field drives the colour (matches binary layout in dat.ts)
-// max:       colour index is clamped to [0..max]; 0 means "base / no swap"
-// srcSlot:   the texture slot the model's geometry references (what we intercept)
-// dstOffset: actual destination slot = paramValue + dstOffset
-//            (skins 334-337 pack colour variants starting at slot 3; skin 333 at slot 7+)
-const TEXTURE_SWAP_ITEMS = [
-  { skin: 128, field: 'objIdHi'   as const, max:  9, srcSlot: 0, dstOffset: 0 },
-  { skin: 129, field: 'unknown13' as const, max:  9, srcSlot: 0, dstOffset: 0 },
-  { skin: 130, field: 'scaleX'    as const, max:  3, srcSlot: 0, dstOffset: 0 },
-  { skin: 131, field: 'scaleX'    as const, max:  3, srcSlot: 0, dstOffset: 0 },
-  { skin: 132, field: 'unknown13' as const, max:  3, srcSlot: 0, dstOffset: 0 },
-  { skin: 150, field: 'scaleX'    as const, max:  3, srcSlot: 0, dstOffset: 0 },
-  { skin: 151, field: 'scaleX'    as const, max:  3, srcSlot: 0, dstOffset: 0 },
-  { skin: 333, field: 'action'    as const, max:  3, srcSlot: 1, dstOffset: 6 },
-  { skin: 334, field: 'action'    as const, max:  3, srcSlot: 0, dstOffset: 3 },
-  { skin: 335, field: 'action'    as const, max:  3, srcSlot: 0, dstOffset: 3 },
-  { skin: 336, field: 'action'    as const, max:  3, srcSlot: 0, dstOffset: 3 },
-  { skin: 337, field: 'action'    as const, max:  3, srcSlot: 0, dstOffset: 3 },
-] as const;
 
 // ─── Visual mesh builder (n.rel) ─────────────────────────────────────────────
 
@@ -595,17 +564,15 @@ function computeObjEntry(
   else if (skin === 131 || skin === 151) skin = o.unknown13 === 0 ? 151 : 131;
   const baseStem = String(skin);
   let suffix = '';
-  for (const { skin: s, v, max } of SUBTYPED_ITEMS) {
-    if (s === skin) {
-      let val = v === 1 ? Math.round(o.scaleX)
-              : v === 2 ? o.objId
-              : v === 4 ? o.action
-              : v === 5 ? Math.round(o.scaleZ)
-              : o.unknown13;
-      val = Math.min(Math.max(val, 0), max);
-      suffix = `-${val}`;
-      break;
-    }
+  const mv = getObjectMeta(skin).modelVariant;
+  if (mv) {
+    const f   = mv.field;
+    const raw = f === 'objId'     ? o.objId
+              : f === 'action'    ? o.action
+              : f === 'unknown13' ? o.unknown13
+              : f === 'scaleZ'    ? (mv.rounded ? Math.round(o.scaleZ) : o.scaleZ)
+              : (mv.rounded ? Math.round(o.scaleX) : o.scaleX);
+    suffix = `-${Math.min(Math.max(raw, 0), mv.max)}`;
   }
   const stem = `${skin}${suffix}`;
   return {
@@ -767,16 +734,15 @@ function buildEntityMarkersCore(
     let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
 
     let texRemap: Map<number, number> | undefined;
-    for (const sw of TEXTURE_SWAP_ITEMS) {
-      if (sw.skin !== o.skin) continue;
-      const raw =
-        sw.field === 'scaleX'    ? Math.round(o.scaleX) :
-        sw.field === 'objIdHi'   ? Math.floor(o.objId / 256) :
-        sw.field === 'action'    ? o.action :
-        o.unknown13;
+    const sw = getObjectMeta(o.skin).textureSwap;
+    if (sw) {
+      const f   = sw.field;
+      const raw = f === 'scaleX'  ? Math.round(o.scaleX)
+                : f === 'objIdHi' ? Math.floor(o.objId / 256)
+                : f === 'action'  ? o.action
+                : o.unknown13;
       const val = Math.min(Math.max(raw, 0), sw.max);
       if (val !== 0) texRemap = new Map([[sw.srcSlot, val + sw.dstOffset]]);
-      break;
     }
 
     if (model?.nj && model.nj.subMeshes.length > 0) {
@@ -1752,15 +1718,15 @@ export function Viewer3D() {
       let meshes: THREE.Mesh[];
       let mats: Array<THREE.MeshBasicMaterial | THREE.MeshLambertMaterial>;
       let texRemap: Map<number, number> | undefined;
-      for (const sw of TEXTURE_SWAP_ITEMS) {
-        if (sw.skin !== no.skin) continue;
-        const raw =
-          sw.field === 'scaleX'  ? Math.round(no.scaleX) :
-          sw.field === 'objIdHi' ? Math.floor(no.objId / 256) :
-          sw.field === 'action'  ? no.action : no.unknown13;
-        const val = Math.min(Math.max(raw, 0), sw.max);
-        if (val !== 0) texRemap = new Map([[sw.srcSlot, val + sw.dstOffset]]);
-        break;
+      const sw2 = getObjectMeta(no.skin).textureSwap;
+      if (sw2) {
+        const f   = sw2.field;
+        const raw = f === 'scaleX'  ? Math.round(no.scaleX)
+                  : f === 'objIdHi' ? Math.floor(no.objId / 256)
+                  : f === 'action'  ? no.action
+                  : no.unknown13;
+        const val = Math.min(Math.max(raw, 0), sw2.max);
+        if (val !== 0) texRemap = new Map([[sw2.srcSlot, val + sw2.dstOffset]]);
       }
       if (model?.nj && model.nj.subMeshes.length > 0) {
         const { group: njg, lambertMats } = buildNjGroup(model.nj, model.textures, texRemap);

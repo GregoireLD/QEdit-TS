@@ -1,0 +1,350 @@
+{
+  "comment": "Per-skin monster metadata. 'template' applies a named set of suffix field labels before 'fields' overrides. BASE14 labels (unknown2/Child Count, unknown3/Floor number, mapSection/Map Section, unknown5/Wave Number 1, unknown6/Wave Number 2, direction/Rotation Y) are always applied by the loader.",
+
+  "1":  { "name": "Female Base",          "template": "npc" },
+  "2":  { "name": "Female Child",         "template": "npc" },
+  "3":  { "name": "Female Dwarf",         "template": "npc" },
+  "4":  { "name": "Female Fat",           "template": "npc" },
+  "5":  { "name": "Female Macho",         "template": "npc" },
+  "6":  { "name": "Female Old",           "template": "npc" },
+  "7":  { "name": "Female Tall",          "template": "npc" },
+  "8":  { "name": "Male Base",            "template": "npc" },
+  "9":  { "name": "Male Child",           "template": "npc" },
+  "10": { "name": "Male Dwarf",           "template": "npc" },
+  "11": { "name": "Male Fat",             "template": "npc" },
+  "12": { "name": "Male Macho",           "template": "npc" },
+  "13": { "name": "Male Old",             "template": "npc" },
+  "14": { "name": "Male Tall",            "template": "npc" },
+  "25": { "name": "Blue Soldier",         "template": "npc" },
+  "26": { "name": "Red Soldier",          "template": "npc" },
+  "27": { "name": "Principle",            "template": "npc" },
+  "28": { "name": "Tekker",               "template": "npc" },
+  "29": { "name": "Guild Lady",           "template": "npc" },
+  "30": { "name": "Scientist",            "template": "npc" },
+  "31": { "name": "Nurse",               "template": "npc" },
+  "32": { "name": "Irene",               "template": "npc" },
+  "33": { "name": "Ash (Humar)",          "template": "npc" },
+  "34": { "name": "Sue (Hunewearl)",      "template": "npc" },
+  "36": { "name": "Bernie (Ramar)",       "template": "npc" },
+  "37": { "name": "Gilingham (Racast)",   "template": "npc" },
+  "38": { "name": "Elenor (Racaseal)",    "template": "npc" },
+  "39": { "name": "Alisha (Fomarl)",      "template": "npc" },
+  "40": { "name": "Montaque (Fomewm)",    "template": "npc" },
+  "41": { "name": "Rupika (Fomewearl)",   "template": "npc" },
+  "42": { "name": "NPC 42",               "template": "npc" },
+  "43": { "name": "NPC 43",               "template": "npc" },
+  "44": { "name": "NPC 44",               "template": "npc" },
+  "45": { "name": "Dacci",               "template": "npc" },
+  "46": { "name": "Hopkins",             "template": "npc" },
+  "47": { "name": "NPC 47",               "template": "npc" },
+  "48": { "name": "HMN FRC W 01",         "template": "npc" },
+  "49": { "name": "NMN FRC M 01",         "template": "npc" },
+  "50": { "name": "NMN FRC W 01",         "template": "npc" },
+
+  "51": {
+    "name": "Stage NPC",
+    "fields": {
+      "unknown1": "1",
+      "unknown4": "3",
+      "unknown7": "Subtype",
+      "unknown8": "4",
+      "movementData": "Movement Distance",
+      "unknown10": "5",
+      "unknown11": "Hide Register",
+      "charId": "Character ID",
+      "action": "Function",
+      "movementFlag": "Movement Flag",
+      "unknownFlag": "6"
+    },
+    "subtype": { "field": "unknown7", "condition": "nonzero", "matchLabel": "Type $" }
+  },
+
+  "64": {
+    "name": "Hildebear",
+    "template": "enum",
+    "fields": { "movementFlag": "Subtype" },
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Hildebear" },
+      { "value": 1, "label": "Hildeblue" }
+    ]}
+  },
+  "65": {
+    "name": "Rag Rappy",
+    "template": "enum",
+    "fields": { "movementFlag": "Subtype" },
+    "subtype": { "field": "movementFlag", "options": {
+      "ep1": [{ "value": 0, "label": "Rag Rappy" },  { "value": 1, "label": "Al Rappy" }],
+      "ep2": [{ "value": 0, "label": "Rag Rappy" },  { "value": 1, "label": "Al Rappy" }],
+      "ep4": [{ "value": 0, "label": "Sand Rappy" }, { "value": 1, "label": "Del Rappy" }]
+    }}
+  },
+  "66": {
+    "name": "Monest",
+    "fields": { "movementData": "State", "unknown10": "Start Number", "unknown11": "Total Number" }
+  },
+  "67": {
+    "name": "Savage Wolf",
+    "fields": { "movementData": "Group ID", "unknown10": "Leader flag" },
+    "subtype": { "field": "unknown10", "condition": "roundedGte", "value": 1, "matchLabel": "Barbarous Wolf" }
+  },
+  "68": {
+    "name": "Booma",
+    "template": "enum",
+    "fields": { "unknown10": "Idle Distance", "movementFlag": "Subtype" },
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Booma" },
+      { "value": 1, "label": "Gobooma" },
+      { "value": 2, "label": "Gigobooma" }
+    ]}
+  },
+
+  "69": { "name": "Rappy NPC",             "template": "npc" },
+  "70": { "name": "Small Hildebear NPC",   "template": "npc" },
+
+  "96":  { "name": "Grass Assassin",   "template": "enum" },
+  "97":  {
+    "name": "Poison Lily",
+    "subtype": [
+      { "field": "unknown3", "condition": "eq", "value": 17, "matchLabel": "Del Lily" }
+    ]
+  },
+  "98":  {
+    "name": "Nano Dragon",
+    "template": "enum",
+    "fields": { "movementFlag": "Spawn Flag" }
+  },
+  "99":  {
+    "name": "Evil Shark",
+    "template": "enum",
+    "fields": { "unknown10": "Idle Distance", "movementFlag": "Subtype" },
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Evil Shark" },
+      { "value": 1, "label": "Pal Shark" },
+      { "value": 2, "label": "Guil Shark" }
+    ]}
+  },
+  "100": { "name": "Pofuilly Slime",   "template": "enum" },
+  "101": { "name": "Pan Arms",         "template": "enum" },
+
+  "128": {
+    "name": "Dubchic",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Dubchic" },
+      { "value": 1, "label": "Gilchic" }
+    ]}
+  },
+  "129": { "name": "Garanz",       "template": "enum" },
+  "130": {
+    "name": "Sinow Beat",
+    "template": "enum",
+    "subtype": { "field": "unknown10", "condition": "roundedEq", "value": 1, "matchLabel": "Sinow Gold" }
+  },
+  "131": { "name": "Canadine",     "template": "enum" },
+  "132": { "name": "Canane",       "template": "enum" },
+  "133": { "name": "Dubswitch",    "template": "enum" },
+
+  "160": {
+    "name": "Delsaber",
+    "fields": { "movementData": "Jump Distance", "unknown10": "Block HP" }
+  },
+  "161": { "name": "Chaos Sorcerer", "template": "enum" },
+  "162": { "name": "Dark Gunner",    "template": "enum" },
+  "163": { "name": "Death Gunner",   "template": "enum" },
+  "164": { "name": "Chaos Bringer",  "template": "enum" },
+  "165": { "name": "Dark Belra",     "template": "enum" },
+  "166": {
+    "name": "Dimenian",
+    "template": "enum",
+    "fields": { "unknown10": "Idle Distance", "movementFlag": "Subtype" },
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Dimenian" },
+      { "value": 1, "label": "La Dimenian" },
+      { "value": 2, "label": "So Dimenian" }
+    ]}
+  },
+  "167": { "name": "Bulclaw",        "template": "enum" },
+  "168": { "name": "Claw",           "template": "enum" },
+  "169": { "name": "NPC Bringer",    "template": "enum" },
+
+  "192": {
+    "name": "Dragon",
+    "template": "enum",
+    "subtype": { "episodeAlias": { "2": "Gal Gryphon" } }
+  },
+  "193": { "name": "De Rol Le",         "template": "enum" },
+  "194": { "name": "Vol Opt (Parts)",   "template": "enum" },
+  "195": { "name": "Vol Opt (part 1)",  "template": "enum" },
+  "196": { "name": "Vol Opt (core)",    "template": "enum" },
+  "197": { "name": "Vol Opt",           "template": "enum" },
+  "198": { "name": "Vol Opt (monitor)", "template": "enum" },
+  "199": { "name": "Vol Opt (Hiraisan)","template": "enum" },
+  "200": { "name": "Dark Falz",         "template": "enum" },
+  "201": { "name": "Gal Gryphon",       "template": "enum" },
+  "202": { "name": "Olga Flow",         "template": "enum" },
+  "203": { "name": "Barba Ray",         "template": "enum" },
+  "204": { "name": "Gol Dragon",        "template": "enum" },
+
+  "208": { "name": "NPC 208",       "template": "npc" },
+  "209": { "name": "Natasha",       "template": "npc" },
+  "210": { "name": "Dan",           "template": "npc" },
+  "211": { "name": "NPC 211",       "template": "npc" },
+
+  "212": {
+    "name": "Sinow Berill",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Sinow Berill" },
+      { "value": 1, "label": "Sinow Spigell" }
+    ]}
+  },
+  "213": {
+    "name": "Merillia",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Merillia" },
+      { "value": 1, "label": "Meriltas" }
+    ]}
+  },
+  "214": {
+    "name": "Mericarol",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Mericarol" },
+      { "value": 1, "label": "Merikle" },
+      { "value": 2, "label": "Mericus" }
+    ]}
+  },
+  "215": {
+    "name": "Ul Gibbon",
+    "fields": {
+      "movementData": "Spot Appear",
+      "unknown10":    "Jump Appear",
+      "unknown11":    "Back Jump",
+      "charId":       "Run Tech",
+      "action":       "Back Tech",
+      "movementFlag": "Subtype"
+    },
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Ul Gibbon" },
+      { "value": 1, "label": "Zol Gibbon" }
+    ]}
+  },
+  "216": { "name": "Gibbles",   "template": "enum" },
+  "217": { "name": "Gee",       "template": "enum" },
+  "218": { "name": "Gi Gue",    "template": "enum" },
+  "219": { "name": "Deldepth",  "template": "enum" },
+  "220": {
+    "name": "Delbiter",
+    "fields": {
+      "movementData": "Howl Percent",
+      "unknown10":    "Confuse Percent",
+      "unknown11":    "Confuse Distance",
+      "charId":       "Laser Percent",
+      "action":       "Charge Percent",
+      "movementFlag": "Type"
+    }
+  },
+  "221": {
+    "name": "Dolmolm",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Dolmolm" },
+      { "value": 1, "label": "Dolmdarl" }
+    ]}
+  },
+  "222": { "name": "Morfos",  "template": "enum" },
+  "223": { "name": "Recobox", "template": "enum" },
+  "224": {
+    "name": "Sinow Zoa",
+    "template": "enum",
+    "subtype": [
+      { "field": "unknown3", "condition": "eq", "value": 17, "matchLabel": "Epsilon" },
+      { "field": "movementFlag", "options": [
+        { "value": 0, "label": "Sinow Zoa" },
+        { "value": 1, "label": "Sinow Zele" }
+      ]}
+    ]
+  },
+  "225": { "name": "Ill Gill", "template": "enum" },
+
+  "240": { "name": "Armor Shop",         "template": "npc" },
+  "241": { "name": "Item Shop",          "template": "npc" },
+  "242": { "name": "Fomar (default)",    "template": "npc" },
+  "243": { "name": "Karen (Ramarl)",     "template": "npc" },
+  "244": { "name": "Leo",                "template": "npc" },
+  "245": { "name": "Pagini",             "template": "npc" },
+  "246": { "name": "NPC 246",            "template": "npc" },
+  "247": { "name": "Nol",                "template": "npc" },
+  "248": { "name": "Elly",               "template": "npc" },
+  "249": { "name": "NPC 249",            "template": "npc" },
+  "250": { "name": "Ep2 Item Shop",      "template": "npc" },
+  "251": { "name": "Ep2 Weapon Shop",    "template": "npc" },
+  "252": { "name": "Security Guard",     "template": "npc" },
+  "253": { "name": "Ep2 Hunters Guild",  "template": "npc" },
+  "254": { "name": "Ep2 Nurse",          "template": "npc" },
+  "255": { "name": "NPC 255",            "template": "npc" },
+  "256": { "name": "Momoka",             "template": "npc" },
+
+  "272": { "name": "Astark",           "template": "enum" },
+  "273": {
+    "name": "Satellite Lizard",
+    "template": "enum",
+    "subtype": { "field": "unknown10", "condition": "roundedEq", "value": 1, "matchLabel": "Yowie" }
+  },
+  "274": {
+    "name": "Merissa A",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Merissa A" },
+      { "value": 1, "label": "Merissa AA" }
+    ]}
+  },
+  "275": { "name": "Girtablulu", "template": "enum" },
+  "276": {
+    "name": "Zu",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Zu" },
+      { "value": 1, "label": "Pazuzu" }
+    ]}
+  },
+  "277": {
+    "name": "Boota",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Boota" },
+      { "value": 1, "label": "Ze Boota" },
+      { "value": 2, "label": "Ba Boota" }
+    ]}
+  },
+  "278": {
+    "name": "Dorphon",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Dorphon" },
+      { "value": 1, "label": "Dorphon Eclair" }
+    ]}
+  },
+  "279": {
+    "name": "Goran",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Goran" },
+      { "value": 1, "label": "Goran Detonator" },
+      { "value": 2, "label": "Pyro Goran" }
+    ]}
+  },
+  "280": { "name": "Rupika", "template": "npc" },
+  "281": {
+    "name": "Saint Million",
+    "template": "enum",
+    "subtype": { "field": "movementFlag", "options": [
+      { "value": 0, "label": "Saint Million" },
+      { "value": 1, "label": "Shambertin" },
+      { "value": 2, "label": "Kondrieu" }
+    ]}
+  },
+
+  "65312": { "name": "Epsilon", "template": "enum" }
+}
