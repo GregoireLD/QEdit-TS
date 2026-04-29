@@ -88,6 +88,17 @@ describe('GC quest parsing (Custom_Quests)', () => {
       expect(quest.bin.bytecode.length).toBeGreaterThan(0);
       expect(quest.floors.length).toBeGreaterThan(0);
     });
+
+    it(`round-trips ${name}`, () => {
+      const buf    = loadBuf(filepath);
+      const quest1 = parseQst(buf);
+      const out    = serialiseQst(quest1);
+      const quest2 = parseQst(out);
+
+      expect(quest2.bin.questNumber).toBe(quest1.bin.questNumber);
+      expect(quest2.bin.bytecode.length).toBe(quest1.bin.bytecode.length);
+      expect(quest2.floors.length).toBe(quest1.floors.length);
+    });
   }
 });
 

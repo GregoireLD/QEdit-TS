@@ -250,8 +250,8 @@ export function serialiseDat(floors: Floor[]): Uint8Array {
     if (f.d05.length)     writeGroup(5, f.id, f.d05);
   }
 
-  // End marker: all zeros
-  off += HEADER_SIZE;
+  // End marker: all-zero header
+  writeHeader(view, off, { flag: 0, totalSize: 0, floorId: 0, dataLength: 0 });
 
   return buf;
 }

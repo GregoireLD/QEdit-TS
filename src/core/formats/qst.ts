@@ -209,16 +209,18 @@ export function serialiseQst(quest: Quest): Uint8Array {
   const binName  = binEntry?.name ?? 'quest.bin';
   const datName  = datEntry?.name ?? 'quest.dat';
 
-  const files: Array<{ name: string; compressed: Uint8Array; uncompressedSize: number }> = [
-    { name: datName, compressed: newDat, uncompressedSize: serialiseDat(quest.floors).length },
-    { name: binName, compressed: newBin, uncompressedSize: serialiseBin(quest.bin).length   },
+  // PSO protocol: the create-packet size field carries the *compressed* size so
+  // the receiver knows exactly how many bytes of chunk data to expect.
+  const files: Array<{ name: string; compressed: Uint8Array }> = [
+    { name: datName, compressed: newDat },
+    { name: binName, compressed: newBin },
   ];
 
   const CHUNK_SIZE = 1024;
   const packets: Uint8Array[] = [];
 
   for (const file of files) {
-    packets.push(buildCreatePacket(file.name, file.uncompressedSize, isBB));
+    packets.push(buildCreatePacket(file.name, file.compressed.length, isBB));
 
     let offset = 0;
     while (offset < file.compressed.length) {

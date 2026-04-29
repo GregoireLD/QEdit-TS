@@ -104,35 +104,33 @@ export function parseBin(buf: Uint8Array, isBBFormat = false): QuestBin {
   let bbData: Uint8Array | undefined;
 
   if (version === BinVersion.DC) {
-    // ASCII, offsets within txt:
+    // ASCII, offsets within txt (size = seg0-0x14 = 0x1C0):
     //   0x00..0x1F  title  (32 bytes)
     //   0x20..0x9F  info   (128 bytes)
-    //   0xA0..0x1D3 desc   (304 bytes from file start 0x14+0xA0=0xB4)
+    //   0xA0..0x1BF desc   (288 bytes = 0x120)
     title = readNullTerminatedAscii(txt, 0x00, 0x20);
     info  = normaliseCRLF(readNullTerminatedAscii(txt, 0x20, 0x80));
-    desc  = normaliseCRLF(readNullTerminatedAscii(txt, 0xA0, 0x130));
+    desc  = normaliseCRLF(readNullTerminatedAscii(txt, 0xA0, 0x120));
   } else if (version === BinVersion.BB) {
     // UTF-16LE, offsets from txt (which starts at metaStart=0x18):
-    // The Delphi code reads from data[y] where y=24=0x18 for BB.
-    // txt[0..] corresponds to data[0x18..]
-    // Title  at txt[0x00]  → data[0x18] (same as PC but shifted by 4 due to extra word)
-    // Info   at txt[0x40]  → data[0x58]
-    // Desc   at txt[0x140] → data[0x158]
-    // BBData at txt[0x384] → data[0x39C], 0xE90 bytes
+    //   0x00..0x3F  title  (64 bytes  = 32 wchars)
+    //   0x40..0x13F info   (256 bytes = 128 wchars)
+    //   0x140..0x37F desc  (576 bytes = 288 wchars)
+    //   0x384..0x1213 BBData (0xE90 bytes)
     title  = readNullTerminatedUtf16(txt, 0x00, 0x40);
     info   = normaliseCRLF(readNullTerminatedUtf16(txt, 0x40, 0x100));
-    desc   = normaliseCRLF(readNullTerminatedUtf16(txt, 0x140, 0x280));
+    desc   = normaliseCRLF(readNullTerminatedUtf16(txt, 0x140, 0x240));
     if (txt.length >= 0x384 + 0xE90) {
       bbData = txt.slice(0x384, 0x384 + 0xE90);
     }
   } else {
-    // PC: UTF-16LE
-    // Title  at txt[0x00]  (64 bytes = 32 wchars)
-    // Info   at txt[0x40]  (128 bytes = 64 wchars)
-    // Desc   at txt[0x140] (512 bytes = 256 wchars)
+    // PC: UTF-16LE, offsets from txt (size = seg0-0x14 = 0x380):
+    //   0x00..0x3F  title  (64 bytes  = 32 wchars)
+    //   0x40..0x13F info   (256 bytes = 128 wchars)
+    //   0x140..0x37F desc  (576 bytes = 288 wchars)
     title = readNullTerminatedUtf16(txt, 0x00, 0x40);
     info  = normaliseCRLF(readNullTerminatedUtf16(txt, 0x40, 0x100));
-    desc  = normaliseCRLF(readNullTerminatedUtf16(txt, 0x140, 0x280));
+    desc  = normaliseCRLF(readNullTerminatedUtf16(txt, 0x140, 0x240));
   }
 
   // Bytecode
@@ -235,11 +233,15 @@ export function serialiseBin(q: QuestBin): Uint8Array {
   if (version === BinVersion.DC) {
     txt.set(encodeAscii(title,       0x20),  0x00);
     txt.set(encodeAscii(info,        0x80),  0x20);
-    txt.set(encodeAscii(description, 0x130), 0xA0);
+    txt.set(encodeAscii(description, 0x120), 0xA0); // 288 bytes, fills 0xA0..0x1BF
   } else {
-    txt.set(encodeUtf16le(title,       32),   0x00);
-    txt.set(encodeUtf16le(info,        64),   0x40);
-    txt.set(encodeUtf16le(description, 256),  0x140);
+    txt.set(encodeUtf16le(title, 32), 0x00); // 64 bytes,  fills 0x00..0x3F
+    txt.set(encodeUtf16le(info, 128), 0x40); // 256 bytes, fills 0x40..0x13F
+    // Desc fills remaining space up to 288 wchars (576 bytes).
+    // PC-in-BB-container quests have 4 fewer bytes due to the extra BB header word,
+    // so clamp to the available space rather than assuming exactly 288 chars fit.
+    const descChars = Math.min(288, Math.floor((txt.length - 0x140) / 2));
+    txt.set(encodeUtf16le(description, descChars), 0x140);
     if (version === BinVersion.BB && bbData) {
       txt.set(bbData.slice(0, 0xE90), 0x384);
     }
