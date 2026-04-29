@@ -4,21 +4,24 @@
     "name": "nop",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "No operation."
   },
   {
     "op": "0x01",
     "name": "ret",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Return from the current function."
   },
   {
     "op": "0x02",
     "name": "sync",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Synchronize execution (yield to game engine)."
   },
   {
     "op": "0x03",
@@ -27,7 +30,8 @@
     "args": [
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Exit the quest script."
   },
   {
     "op": "0x04",
@@ -37,7 +41,8 @@
       "FUNC"
     ],
     "minVer": 0,
-    "notes": "found in q236 gc, Fix Lee"
+    "notes": "found in q236 gc, Fix Lee",
+    "description": "Create a new execution thread at the given function label."
   },
   {
     "op": "0x05",
@@ -71,7 +76,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Copy register value: `let Rdest, Rsrc`"
   },
   {
     "op": "0x09",
@@ -81,7 +87,8 @@
       "REG",
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Load immediate dword into register: `leti Rdest, VALUE`"
   },
   {
     "op": "0x0a",
@@ -91,7 +98,8 @@
       "REG",
       "BYTE"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Load immediate byte into register: `letb Rdest, VALUE`"
   },
   {
     "op": "0x0b",
@@ -101,7 +109,8 @@
       "REG",
       "WORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Load immediate word into register: `letw Rdest, VALUE`"
   },
   {
     "op": "0x0c",
@@ -206,7 +215,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Add registers: `add Rdest, Rsrc`"
   },
   {
     "op": "0x19",
@@ -216,7 +226,8 @@
       "REG",
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Add immediate: `addi Rdest, VALUE`"
   },
   {
     "op": "0x1a",
@@ -226,7 +237,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Subtract registers."
   },
   {
     "op": "0x1b",
@@ -246,7 +258,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Multiply registers."
   },
   {
     "op": "0x1d",
@@ -266,7 +279,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Divide registers."
   },
   {
     "op": "0x1f",
@@ -286,7 +300,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Bitwise AND."
   },
   {
     "op": "0x21",
@@ -306,7 +321,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Bitwise OR."
   },
   {
     "op": "0x23",
@@ -326,7 +342,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Bitwise XOR."
   },
   {
     "op": "0x25",
@@ -365,7 +382,8 @@
     "args": [
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Unconditional jump to label: `jmp LABEL`"
   },
   {
     "op": "0x29",
@@ -374,7 +392,8 @@
     "args": [
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Call function at label: `call LABEL`"
   },
   {
     "op": "0x2a",
@@ -405,7 +424,8 @@
       "REG",
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Jump if Rn == Rm: `jmp_= Rn, Rm, LABEL`"
   },
   {
     "op": "0x2d",
@@ -416,7 +436,8 @@
       "DWORD",
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Jump if Rn == immediate: `jmpi_= Rn, VALUE, LABEL`"
   },
   {
     "op": "0x2e",
@@ -428,7 +449,8 @@
       "FUNC"
     ],
     "minVer": 0,
-    "notes": "name, Lee"
+    "notes": "name, Lee",
+    "description": "Jump if Rn != Rm."
   },
   {
     "op": "0x2f",
@@ -475,7 +497,8 @@
       "REG",
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Jump if Rn > Rm (signed)."
   },
   {
     "op": "0x33",
@@ -521,7 +544,8 @@
       "REG",
       "FUNC"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Jump if Rn < Rm (signed)."
   },
   {
     "op": "0x37",
@@ -759,7 +783,8 @@
       "DWORD",
       "STR"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Display NPC message: `message NPC_ID, 'text'`"
   },
   {
     "op": "0x51",
@@ -776,14 +801,16 @@
     "name": "fadein",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Fade screen in."
   },
   {
     "op": "0x53",
     "name": "fadeout",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Fade screen out."
   },
   {
     "op": "0x54",
@@ -801,7 +828,8 @@
     "args": [
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Play background music track: `bgm TRACK_ID`"
   },
   {
     "op": "0x58",
@@ -828,7 +856,8 @@
     "args": [
       "STR"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Display window message: `window_msg 'text'`"
   },
   {
     "op": "0x5b",
@@ -837,14 +866,16 @@
     "args": [
       "STR"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Append to current message: `add_msg 'text'`"
   },
   {
     "op": "0x5c",
     "name": "mesend",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "End current message display."
   },
   {
     "op": "0x5d",
@@ -1420,7 +1451,8 @@
       "DWORD"
     ],
     "minVer": 0,
-    "notes": "found in q201, name Lee"
+    "notes": "found in q201, name Lee",
+    "description": "Activate a switch object."
   },
   {
     "op": "0x91",
@@ -1430,7 +1462,8 @@
       "DWORD"
     ],
     "minVer": 0,
-    "notes": "found in q72 xbox, name Lee"
+    "notes": "found in q72 xbox, name Lee",
+    "description": "Deactivate a switch object."
   },
   {
     "op": "0x92",
@@ -1449,7 +1482,8 @@
     "args": [
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Set the main warp destination."
   },
   {
     "op": "0x94",
@@ -1470,7 +1504,8 @@
       "FUNC2"
     ],
     "minVer": 0,
-    "notes": "GC"
+    "notes": "GC",
+    "description": "Register a function to call when entering a floor: `set_floor_handler FLOOR_ID, LABEL`"
   },
   {
     "op": "0x96",
@@ -1479,7 +1514,8 @@
     "args": [
       "DWORD"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Remove the floor handler for a floor."
   },
   {
     "op": "0x97",
@@ -1496,14 +1532,16 @@
     "name": "hud_hide",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Hide the HUD."
   },
   {
     "op": "0x99",
     "name": "hud_show",
     "order": "NONE",
     "args": [],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Show the HUD."
   },
   {
     "op": "0x9a",
@@ -1576,7 +1614,8 @@
     "args": [
       "FUNC2"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Mark quest as failed."
   },
   {
     "op": "0xa2",
@@ -1585,7 +1624,8 @@
     "args": [
       "FUNC2"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Mark quest as succeeded."
   },
   {
     "op": "0xa3",
@@ -1609,7 +1649,8 @@
       "FUNC2"
     ],
     "minVer": 0,
-    "notes": "name Lee"
+    "notes": "name Lee",
+    "description": "Mark quest as cancelled."
   },
   {
     "op": "0xa6",
@@ -1685,7 +1726,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Create an item: `item_create Rtype, Rparams`"
   },
   {
     "op": "0xb4",
@@ -1706,7 +1748,8 @@
       "REG"
     ],
     "minVer": 0,
-    "notes": "found in q280 gc"
+    "notes": "found in q280 gc",
+    "description": "Delete an item."
   },
   {
     "op": "0xb6",
@@ -1727,7 +1770,8 @@
       "REG"
     ],
     "minVer": 0,
-    "notes": "name, Lee q3"
+    "notes": "name, Lee q3",
+    "description": "Check if player has an item."
   },
   {
     "op": "0xb8",
@@ -1746,7 +1790,8 @@
     "args": [
       "REG"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Get current difficulty level into register: `get_difflvl Rdest`"
   },
   {
     "op": "0xba",
@@ -1755,7 +1800,8 @@
     "args": [
       "FUNC2"
     ],
-    "minVer": 0
+    "minVer": 0,
+    "description": "Set the function to call on quest exit."
   },
   {
     "op": "0xbb",
@@ -1892,6 +1938,21 @@
       "FUNC2",
       "STR"
     ],
+    "params": [
+      {
+        "name": "boardIndex",
+        "doc": "Quest board slot (0–4)",
+        "values": ["0x00000000", "0x00000001", "0x00000002", "0x00000003", "0x00000004"]
+      },
+      {
+        "name": "handler",
+        "doc": "Label to call when the board entry is selected"
+      },
+      {
+        "name": "message",
+        "doc": "Text displayed on the quest board entry"
+      }
+    ],
     "minVer": 0
   },
   {
@@ -1900,6 +1961,13 @@
     "order": "ARGS",
     "args": [
       "DWORD"
+    ],
+    "params": [
+      {
+        "name": "boardIndex",
+        "doc": "Quest board slot to clear (0–4)",
+        "values": ["0x00000000", "0x00000001", "0x00000002", "0x00000003", "0x00000004"]
+      }
     ],
     "minVer": 0
   },
@@ -2294,7 +2362,8 @@
       "DWORD"
     ],
     "minVer": 2,
-    "notes": "Ives & Lee"
+    "notes": "Ives & Lee",
+    "description": "Sync register value across all players: `sync_register Rdest, Rsrc`"
   },
   {
     "op": "0xef",
@@ -2714,7 +2783,8 @@
       "REG"
     ],
     "minVer": 1,
-    "notes": "base exp x R1 + ((base exp x R2%) / R3%)"
+    "notes": "base exp x R1 + ((base exp x R2%) / R3%)",
+    "description": "Set experience multiplier."
   },
   {
     "op": "0xf826",
@@ -2742,7 +2812,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 1
+    "minVer": 1,
+    "description": "Warp all players to a floor."
   },
   {
     "op": "0xf829",
@@ -3445,7 +3516,8 @@
     "args": [
       "BREG"
     ],
-    "minVer": 1
+    "minVer": 1,
+    "description": "Kill a player."
   },
   {
     "op": "0xf87e",
@@ -4360,7 +4432,8 @@
     "order": "NONE",
     "args": [],
     "minVer": 2,
-    "notes": "found in q86(gc)"
+    "notes": "found in q86(gc)",
+    "description": "Freeze all enemies on the floor."
   },
   {
     "op": "0xf8e0",
@@ -4368,7 +4441,8 @@
     "order": "NONE",
     "args": [],
     "minVer": 2,
-    "notes": "found in q86(gc)"
+    "notes": "found in q86(gc)",
+    "description": "Unfreeze all enemies."
   },
   {
     "op": "0xf8e1",
@@ -4571,7 +4645,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Convert integer register to float."
   },
   {
     "op": "0xf902",
@@ -4581,7 +4656,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Convert float register to integer."
   },
   {
     "op": "0xf903",
@@ -4611,7 +4687,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Add float registers."
   },
   {
     "op": "0xf909",
@@ -4651,7 +4728,8 @@
       "REG",
       "REG"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Multiply float registers."
   },
   {
     "op": "0xf90d",
@@ -4852,7 +4930,8 @@
       "DWORD",
       "BREG"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Get player level into register."
   },
   {
     "op": "0xf921",
@@ -4874,7 +4953,8 @@
       "BREG"
     ],
     "minVer": 2,
-    "notes": "fix, Lee"
+    "notes": "fix, Lee",
+    "description": "Get player HP into register."
   },
   {
     "op": "0xf923",
@@ -5244,7 +5324,8 @@
       "BREG",
       "DWORD"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Compute sine of register value."
   },
   {
     "op": "0xf947",
@@ -5254,7 +5335,8 @@
       "BREG",
       "DWORD"
     ],
-    "minVer": 2
+    "minVer": 2,
+    "description": "Compute cosine of register value."
   },
   {
     "op": "0xf948",

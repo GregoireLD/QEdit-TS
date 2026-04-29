@@ -1,6 +1,6 @@
 [package]
 name = "qedit"
-version = "3.0.44"
+version = "3.0.45"
 description = "QEdit - Phantasy Star Online Quest Editor"
 authors = []
 edition = "2021"
