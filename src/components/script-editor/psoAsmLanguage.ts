@@ -17,6 +17,14 @@ import psoTheme from '../../core/data/pso-dark-theme.json';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type AsmArg = {
+  name: string;
+  type: string;
+  desc?: string;
+  values?: string[];
+  enum?: string;
+};
+
 type AsmParam = {
   name: string;
   doc?: string;
@@ -25,9 +33,8 @@ type AsmParam = {
 
 type AsmJsonEntry = {
   name: string;
-  args: string[];
+  args: AsmArg[];
   description?: string;
-  params?: AsmParam[];
 };
 
 // ─── Opcode index built from asm.json ─────────────────────────────────────────
@@ -46,24 +53,12 @@ for (const e of _entries) {
   }
   if (!(e.name in OPCODE_ARGS)) {
     const args = e.args ?? [];
-    OPCODE_ARGS[e.name] = args;
-
-    if (e.params) {
-      OPCODE_PARAMS[e.name] = e.params;
-    } else {
-      // Auto-generate param names from type labels, numbering duplicates.
-      const occur: Record<string, number> = {};
-      for (const t of args) {
-        const b = t.toLowerCase();
-        occur[b] = (occur[b] ?? 0) + 1;
-      }
-      const cnt: Record<string, number> = {};
-      OPCODE_PARAMS[e.name] = args.map(t => {
-        const b = t.toLowerCase();
-        cnt[b] = (cnt[b] ?? 0) + 1;
-        return { name: occur[b] > 1 ? `${b}${cnt[b]}` : b };
-      });
-    }
+    OPCODE_ARGS[e.name] = args.map(a => a.type);
+    OPCODE_PARAMS[e.name] = args.map(a => ({
+      name: a.name,
+      doc: a.desc,
+      values: a.values,
+    }));
   }
 }
 
@@ -263,6 +258,7 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
               label: name ? { label: lbl, detail: ` — ${name}` } : lbl,
               kind: monaco.languages.CompletionItemKind.Reference,
               insertText: lbl,
+              sortText: lbl.padStart(6, '0'),
               range,
             });
           }
@@ -278,6 +274,7 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
               label: name ? { label: lbl, detail: ` (${name})` } : lbl,
               kind: monaco.languages.CompletionItemKind.Variable,
               insertText: lbl,
+              sortText: String(i).padStart(3, '0'),
               range,
             });
           }
@@ -319,6 +316,7 @@ export function registerPsoAsm(monaco: typeof Monaco): void {
             label: name ? { label: lbl, detail: ` (${name})` } : lbl,
             kind: monaco.languages.CompletionItemKind.Variable,
             insertText: lbl,
+            sortText: String(i).padStart(3, '0'),
             range,
           };
         },

@@ -68,7 +68,9 @@ function buildAsmTable(): AsmEntry[] {
   for (const raw of asmJson) {
     const fnc   = parseInt(raw.op, 16);
     const order = ORDER_MAP[raw.order] ?? T_NONE;
-    const args  = (raw.args as string[]).map(a => ARG_MAP[a] ?? T_NONE);
+    const args  = (raw.args as Array<string | { type: string }>).map(a =>
+      ARG_MAP[typeof a === 'string' ? a : a.type] ?? T_NONE
+    );
     const ver   = raw.minVer;
     let name = raw.name;
     if (seen.has(name)) {

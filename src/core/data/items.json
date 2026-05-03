@@ -1,0 +1,4881 @@
+{
+  "specials": [
+    {
+      "hex": "01",
+      "name": "Jellen",
+      "desc": "Weakens Enemy Attack"
+    },
+    {
+      "hex": "02",
+      "name": "Zalure",
+      "desc": "Weakens Enemy Defense"
+    },
+    {
+      "hex": "05",
+      "name": "Burning",
+      "desc": "Fire Attribute"
+    },
+    {
+      "hex": "06",
+      "name": "Tempest",
+      "desc": "Thunder Attribute"
+    },
+    {
+      "hex": "07",
+      "name": "Blizzard",
+      "desc": "Ice Attribute"
+    },
+    {
+      "hex": "08",
+      "name": "Arrest",
+      "desc": "Paralysis"
+    },
+    {
+      "hex": "09",
+      "name": "Chaos",
+      "desc": "Confusion"
+    },
+    {
+      "hex": "10",
+      "name": "Kings",
+      "desc": "Drains Enemy XP"
+    },
+    {
+      "hex": "0A",
+      "name": "Hell",
+      "desc": "1 Hit Kill"
+    },
+    {
+      "hex": "0B",
+      "name": "Spirit",
+      "desc": "Drains 10% of Total TP for Double Damage"
+    },
+    {
+      "hex": "0C",
+      "name": "Berserk",
+      "desc": "Drains 10% of Total HP for Double Damage"
+    },
+    {
+      "hex": "0D",
+      "name": "Demon's",
+      "desc": "Reduces HP to 1/4"
+    },
+    {
+      "hex": "0E",
+      "name": "Gush",
+      "desc": "Steals Enemy HP"
+    },
+    {
+      "hex": "0F",
+      "name": "Geist",
+      "desc": "Steals Enemy TP"
+    }
+  ],
+  "armorSlots": [
+    {
+      "hex": "1",
+      "name": "One Slot"
+    },
+    {
+      "hex": "2",
+      "name": "Two Slots"
+    },
+    {
+      "hex": "3",
+      "name": "Three Slots"
+    },
+    {
+      "hex": "4",
+      "name": "Four Slots"
+    }
+  ],
+  "techniques": [
+    {
+      "hex": "00",
+      "dec": 0,
+      "name": "Foie"
+    },
+    {
+      "hex": "01",
+      "dec": 1,
+      "name": "Gifoie"
+    },
+    {
+      "hex": "02",
+      "dec": 2,
+      "name": "Rafoie"
+    },
+    {
+      "hex": "03",
+      "dec": 3,
+      "name": "Barta"
+    },
+    {
+      "hex": "04",
+      "dec": 4,
+      "name": "Gibarta"
+    },
+    {
+      "hex": "05",
+      "dec": 5,
+      "name": "Rabarta"
+    },
+    {
+      "hex": "06",
+      "dec": 6,
+      "name": "Zonde"
+    },
+    {
+      "hex": "07",
+      "dec": 7,
+      "name": "Gizonde"
+    },
+    {
+      "hex": "08",
+      "dec": 8,
+      "name": "Razonde"
+    },
+    {
+      "hex": "09",
+      "dec": 9,
+      "name": "Grants"
+    },
+    {
+      "hex": "0A",
+      "dec": 10,
+      "name": "Deband"
+    },
+    {
+      "hex": "0B",
+      "dec": 11,
+      "name": "Jellen"
+    },
+    {
+      "hex": "0C",
+      "dec": 12,
+      "name": "Zalure"
+    },
+    {
+      "hex": "0D",
+      "dec": 13,
+      "name": "Shifta"
+    },
+    {
+      "hex": "0E",
+      "dec": 14,
+      "name": "Ryuker"
+    },
+    {
+      "hex": "0F",
+      "dec": 15,
+      "name": "Resta"
+    },
+    {
+      "hex": "10",
+      "dec": 16,
+      "name": "Anti"
+    },
+    {
+      "hex": "11",
+      "dec": 17,
+      "name": "Reverser"
+    },
+    {
+      "hex": "12",
+      "dec": 18,
+      "name": "Megid"
+    }
+  ],
+  "categories": [
+    {
+      "id": "weapon",
+      "byte0": "00",
+      "label": "Weapons",
+      "subcategories": [
+        {
+          "byte1": "01",
+          "label": "Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Saber"
+            },
+            {
+              "byte2": "01",
+              "name": "Brand"
+            },
+            {
+              "byte2": "02",
+              "name": "Buster"
+            },
+            {
+              "byte2": "03",
+              "name": "Pallasch"
+            },
+            {
+              "byte2": "04",
+              "name": "Gladius"
+            },
+            {
+              "byte2": "05",
+              "name": "DB's SABER"
+            },
+            {
+              "byte2": "06",
+              "name": "KALADGOLG"
+            },
+            {
+              "byte2": "07",
+              "name": "DURANDAL"
+            },
+            {
+              "byte2": "08",
+              "name": "GALATINE"
+            }
+          ]
+        },
+        {
+          "byte1": "02",
+          "label": "Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Sword"
+            },
+            {
+              "byte2": "01",
+              "name": "Gigush"
+            },
+            {
+              "byte2": "02",
+              "name": "Breaker"
+            },
+            {
+              "byte2": "03",
+              "name": "Claymore"
+            },
+            {
+              "byte2": "04",
+              "name": "Calibur"
+            },
+            {
+              "byte2": "05",
+              "name": "FLOWEN'S SWORD"
+            },
+            {
+              "byte2": "06",
+              "name": "LAST SURVIVOR"
+            },
+            {
+              "byte2": "07",
+              "name": "DRAGON SLAYER"
+            }
+          ]
+        },
+        {
+          "byte1": "03",
+          "label": "Dagger",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Dagger"
+            },
+            {
+              "byte2": "01",
+              "name": "Knife"
+            },
+            {
+              "byte2": "02",
+              "name": "Blade"
+            },
+            {
+              "byte2": "03",
+              "name": "Edge"
+            },
+            {
+              "byte2": "04",
+              "name": "Ripper"
+            },
+            {
+              "byte2": "05",
+              "name": "BLADE DANCE"
+            },
+            {
+              "byte2": "06",
+              "name": "BLOODY ART"
+            },
+            {
+              "byte2": "07",
+              "name": "CROSS SCAR"
+            },
+            {
+              "byte2": "08",
+              "name": "ZERO DIVIDE"
+            },
+            {
+              "byte2": "09",
+              "name": "TWIN KAMUI"
+            }
+          ]
+        },
+        {
+          "byte1": "04",
+          "label": "Partisan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Partisan"
+            },
+            {
+              "byte2": "01",
+              "name": "Halbert"
+            },
+            {
+              "byte2": "02",
+              "name": "Glaive"
+            },
+            {
+              "byte2": "03",
+              "name": "Berdys"
+            },
+            {
+              "byte2": "04",
+              "name": "Gungnir"
+            },
+            {
+              "byte2": "05",
+              "name": "BRIONAC"
+            },
+            {
+              "byte2": "06",
+              "name": "VJAYA"
+            },
+            {
+              "byte2": "07",
+              "name": "GAE BOLG"
+            },
+            {
+              "byte2": "08",
+              "name": "ASTERON BELT"
+            }
+          ]
+        },
+        {
+          "byte1": "05",
+          "label": "Slicer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Slicer"
+            },
+            {
+              "byte2": "01",
+              "name": "Spinner"
+            },
+            {
+              "byte2": "02",
+              "name": "Cutter"
+            },
+            {
+              "byte2": "03",
+              "name": "Sawcer"
+            },
+            {
+              "byte2": "04",
+              "name": "Diska"
+            },
+            {
+              "byte2": "05",
+              "name": "SLICER OF ASSASSIN"
+            },
+            {
+              "byte2": "06",
+              "name": "DISKA OF LIBERATOR"
+            },
+            {
+              "byte2": "07",
+              "name": "DISKA OF BRAVEMEN"
+            },
+            {
+              "byte2": "08",
+              "name": "IZMAELA"
+            }
+          ]
+        },
+        {
+          "byte1": "06",
+          "label": "Handgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Handgun"
+            },
+            {
+              "byte2": "01",
+              "name": "Autogun"
+            },
+            {
+              "byte2": "02",
+              "name": "Lockgun"
+            },
+            {
+              "byte2": "03",
+              "name": "Railgun"
+            },
+            {
+              "byte2": "04",
+              "name": "Raygun"
+            },
+            {
+              "byte2": "05",
+              "name": "VARISTA"
+            },
+            {
+              "byte2": "06",
+              "name": "CUSTOM RAY Ver.00"
+            },
+            {
+              "byte2": "07",
+              "name": "BRAVACE"
+            },
+            {
+              "byte2": "08",
+              "name": "TENSION BLASTER"
+            }
+          ]
+        },
+        {
+          "byte1": "07",
+          "label": "Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Rifle"
+            },
+            {
+              "byte2": "01",
+              "name": "Sniper"
+            },
+            {
+              "byte2": "02",
+              "name": "Blaster"
+            },
+            {
+              "byte2": "03",
+              "name": "Beam"
+            },
+            {
+              "byte2": "04",
+              "name": "Laser"
+            },
+            {
+              "byte2": "05",
+              "name": "VISK'235W"
+            },
+            {
+              "byte2": "06",
+              "name": "WALS'MK2"
+            },
+            {
+              "byte2": "07",
+              "name": "JUSTY'23ST"
+            },
+            {
+              "byte2": "08",
+              "name": "RIANOV 303SNR"
+            },
+            {
+              "byte2": "09",
+              "name": "RIANOV 303SNR-1"
+            },
+            {
+              "byte2": "0A",
+              "name": "RIANOV 303SNR-2"
+            },
+            {
+              "byte2": "0B",
+              "name": "RIANOV 303SNR-3"
+            },
+            {
+              "byte2": "0C",
+              "name": "RIANOV 303SNR-4"
+            },
+            {
+              "byte2": "0D",
+              "name": "RIANOV 303SNR-5"
+            }
+          ]
+        },
+        {
+          "byte1": "08",
+          "label": "Mechgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Mechgun"
+            },
+            {
+              "byte2": "01",
+              "name": "Assault"
+            },
+            {
+              "byte2": "02",
+              "name": "Repeater"
+            },
+            {
+              "byte2": "03",
+              "name": "Gatling"
+            },
+            {
+              "byte2": "04",
+              "name": "Vulcan"
+            },
+            {
+              "byte2": "05",
+              "name": "M&A60 VISE"
+            },
+            {
+              "byte2": "06",
+              "name": "H&S25 JUSTICE"
+            },
+            {
+              "byte2": "07",
+              "name": "L&K14 COMBAT"
+            }
+          ]
+        },
+        {
+          "byte1": "09",
+          "label": "Shot",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Shot"
+            },
+            {
+              "byte2": "01",
+              "name": "Spread"
+            },
+            {
+              "byte2": "02",
+              "name": "Cannon"
+            },
+            {
+              "byte2": "03",
+              "name": "Launcher"
+            },
+            {
+              "byte2": "04",
+              "name": "Arms"
+            },
+            {
+              "byte2": "05",
+              "name": "CRUSH BULLET"
+            },
+            {
+              "byte2": "06",
+              "name": "METEOR SMASH"
+            },
+            {
+              "byte2": "07",
+              "name": "FINAL IMPACT"
+            }
+          ]
+        },
+        {
+          "byte1": "0A",
+          "label": "Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Cane"
+            },
+            {
+              "byte2": "01",
+              "name": "Stick"
+            },
+            {
+              "byte2": "02",
+              "name": "Mace"
+            },
+            {
+              "byte2": "03",
+              "name": "Club"
+            },
+            {
+              "byte2": "04",
+              "name": "CLUB OF LACONIUM"
+            },
+            {
+              "byte2": "05",
+              "name": "MACE OF ADAMAN"
+            },
+            {
+              "byte2": "06",
+              "name": "CLUB OF ZUMIURAN"
+            },
+            {
+              "byte2": "07",
+              "name": "LOLIPOP"
+            }
+          ]
+        },
+        {
+          "byte1": "0B",
+          "label": "Rod",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Rod"
+            },
+            {
+              "byte2": "01",
+              "name": "Pole"
+            },
+            {
+              "byte2": "02",
+              "name": "Pillar"
+            },
+            {
+              "byte2": "03",
+              "name": "Striker"
+            },
+            {
+              "byte2": "04",
+              "name": "BATTLE VERGE"
+            },
+            {
+              "byte2": "05",
+              "name": "BRAVE HAMMER"
+            },
+            {
+              "byte2": "06",
+              "name": "ALIVE AQHU"
+            },
+            {
+              "byte2": "07",
+              "name": "VALKYRIE"
+            }
+          ]
+        },
+        {
+          "byte1": "0C",
+          "label": "Wand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Wand"
+            },
+            {
+              "byte2": "01",
+              "name": "Staff"
+            },
+            {
+              "byte2": "02",
+              "name": "Baton"
+            },
+            {
+              "byte2": "03",
+              "name": "Scepter"
+            },
+            {
+              "byte2": "04",
+              "name": "FIRE SCEPTER:AGNI"
+            },
+            {
+              "byte2": "05",
+              "name": "ICE STAFF:DAGON"
+            },
+            {
+              "byte2": "06",
+              "name": "STORM VAND:INDRA"
+            },
+            {
+              "byte2": "07",
+              "name": "EARTH WAND BROWNIE"
+            }
+          ]
+        },
+        {
+          "byte1": "0D",
+          "label": "Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PHOTON CLAW"
+            },
+            {
+              "byte2": "01",
+              "name": "SILENCE CLAW"
+            },
+            {
+              "byte2": "02",
+              "name": "NEI'S CLAW"
+            },
+            {
+              "byte2": "03",
+              "name": "PHOENIX CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "0E",
+          "label": "Double Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DOUBLE SABER"
+            },
+            {
+              "byte2": "01",
+              "name": "STAG CUTLERY"
+            },
+            {
+              "byte2": "02",
+              "name": "TWIN BRAND"
+            }
+          ]
+        },
+        {
+          "byte1": "0F",
+          "label": "Knuckle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BRAVE KNUCKLE"
+            },
+            {
+              "byte2": "01",
+              "name": "ANGRY FIST"
+            },
+            {
+              "byte2": "02",
+              "name": "GOD HAND"
+            },
+            {
+              "byte2": "03",
+              "name": "SONIC KNUCKLE"
+            }
+          ]
+        },
+        {
+          "byte1": "10",
+          "label": "Katana (Agito)",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "OROTIAGITO"
+            },
+            {
+              "byte2": "01",
+              "name": "AGITO (1975)"
+            },
+            {
+              "byte2": "02",
+              "name": "AGITO (1983)"
+            },
+            {
+              "byte2": "03",
+              "name": "AGITO (2001)"
+            },
+            {
+              "byte2": "04",
+              "name": "AGITO (1991)"
+            },
+            {
+              "byte2": "05",
+              "name": "AGITO (1977)"
+            },
+            {
+              "byte2": "06",
+              "name": "AGITO (1980)"
+            },
+            {
+              "byte2": "07",
+              "name": "RAIKIRI"
+            }
+          ]
+        },
+        {
+          "byte1": "11",
+          "label": "Soul Eater",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SOUL EATER"
+            },
+            {
+              "byte2": "01",
+              "name": "SOUL BANISH"
+            }
+          ]
+        },
+        {
+          "byte1": "12",
+          "label": "Spread Needle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SPREAD NEEDLE"
+            }
+          ]
+        },
+        {
+          "byte1": "13",
+          "label": "Holy Ray",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HOLY RAY"
+            }
+          ]
+        },
+        {
+          "byte1": "14",
+          "label": "Bazooka",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "INFERNO BAZOOKA"
+            },
+            {
+              "byte2": "01",
+              "name": "RAMBLING MAY"
+            },
+            {
+              "byte2": "02",
+              "name": "L&K38 COMBAT"
+            }
+          ]
+        },
+        {
+          "byte1": "15",
+          "label": "Flame Visit",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLAME VISIT"
+            },
+            {
+              "byte2": "01",
+              "name": "BURNING VISIT"
+            }
+          ]
+        },
+        {
+          "byte1": "16",
+          "label": "Frying Pan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "AKIKO'S FRYING PAN"
+            }
+          ]
+        },
+        {
+          "byte1": "17",
+          "label": "Sorcerer's Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SORCERER'S CANE"
+            }
+          ]
+        },
+        {
+          "byte1": "18",
+          "label": "S-BEAT's Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "S-BEAT'S BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "19",
+          "label": "P-ARMS's Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "P-ARMS'S BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "1A",
+          "label": "Delsaber's Buster",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DELSABER'S BUSTER"
+            }
+          ]
+        },
+        {
+          "byte1": "1B",
+          "label": "Bringer's Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BRINGER'S RIFLE"
+            }
+          ]
+        },
+        {
+          "byte1": "1C",
+          "label": "Egg Blaster",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "EGG BLASTER"
+            }
+          ]
+        },
+        {
+          "byte1": "1D",
+          "label": "Psycho Wand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PSYCHO WAND"
+            }
+          ]
+        },
+        {
+          "byte1": "1E",
+          "label": "Heaven Punisher",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HEAVEN PUNISHER"
+            }
+          ]
+        },
+        {
+          "byte1": "1F",
+          "label": "Lavis Cannon",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "LAVIS CANNON"
+            }
+          ]
+        },
+        {
+          "byte1": "20",
+          "label": "Axe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "VICTOR AXE"
+            },
+            {
+              "byte2": "01",
+              "name": "LACONIUM AXE"
+            }
+          ]
+        },
+        {
+          "byte1": "21",
+          "label": "Chain Sawd",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CHAIN SAWD"
+            }
+          ]
+        },
+        {
+          "byte1": "22",
+          "label": "Caduceus",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CADUCEUS"
+            },
+            {
+              "byte2": "01",
+              "name": "MERCURIUS ROD"
+            }
+          ]
+        },
+        {
+          "byte1": "23",
+          "label": "Sting Tip",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "STING TIP"
+            }
+          ]
+        },
+        {
+          "byte1": "24",
+          "label": "Magical Piece",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MAGICAL PIECE"
+            }
+          ]
+        },
+        {
+          "byte1": "25",
+          "label": "Technical Crozier",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TECHNICAL CROZIER"
+            }
+          ]
+        },
+        {
+          "byte1": "26",
+          "label": "Suppressed Gun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SUPPRESSED GUN"
+            }
+          ]
+        },
+        {
+          "byte1": "27",
+          "label": "Ancient Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ANCIENT SABER"
+            }
+          ]
+        },
+        {
+          "byte1": "28",
+          "label": "Harisen Battle Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HARISEN BATTLE FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "29",
+          "label": "Yamigarasu",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YAMIGARASU"
+            }
+          ]
+        },
+        {
+          "byte1": "2A",
+          "label": "Akiko's Wok",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "AKIKO'S WOK"
+            }
+          ]
+        },
+        {
+          "byte1": "2B",
+          "label": "Toy Hammer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TOY HAMMER"
+            }
+          ]
+        },
+        {
+          "byte1": "2C",
+          "label": "Elysion",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ELYSION"
+            }
+          ]
+        },
+        {
+          "byte1": "2D",
+          "label": "Red Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED SABER"
+            }
+          ]
+        },
+        {
+          "byte1": "2E",
+          "label": "Meteor Cudgel",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "METEOR CUDGEL"
+            }
+          ]
+        },
+        {
+          "byte1": "2F",
+          "label": "Monkey King Bar",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MONKEY KING BAR"
+            },
+            {
+              "byte2": "01",
+              "name": "BLACK KING BAR"
+            }
+          ]
+        },
+        {
+          "byte1": "30",
+          "label": "Double Cannon",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DOUBLE CANNON"
+            },
+            {
+              "byte2": "01",
+              "name": "GIRASOLE"
+            }
+          ]
+        },
+        {
+          "byte1": "31",
+          "label": "Huge Battle Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HUGE BATTLE FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "32",
+          "label": "Tsumikiri J-Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TSUMIKIRI J-SWORD"
+            }
+          ]
+        },
+        {
+          "byte1": "33",
+          "label": "Sealed J-Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SEALED J-SWORD"
+            }
+          ]
+        },
+        {
+          "byte1": "34",
+          "label": "Red Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED SWORD"
+            }
+          ]
+        },
+        {
+          "byte1": "35",
+          "label": "Crazy Tune",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CRAZY TUNE"
+            }
+          ]
+        },
+        {
+          "byte1": "36",
+          "label": "Twin Chakram",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TWIN CHAKRAM"
+            }
+          ]
+        },
+        {
+          "byte1": "37",
+          "label": "Wok of Akiko's Shop",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "WOK OF AKIKO'S SHOP"
+            }
+          ]
+        },
+        {
+          "byte1": "38",
+          "label": "Lavis Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "LAVIS BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "39",
+          "label": "Red Dagger",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED DAGGER"
+            }
+          ]
+        },
+        {
+          "byte1": "3A",
+          "label": "Madam's Parasol",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MADAM'S PARASOL"
+            }
+          ]
+        },
+        {
+          "byte1": "3B",
+          "label": "Madam's Umbrella",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MADAM'S UMBRELLA"
+            }
+          ]
+        },
+        {
+          "byte1": "3C",
+          "label": "Imperial Pick",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "IMPERIAL PICK"
+            }
+          ]
+        },
+        {
+          "byte1": "3D",
+          "label": "Berdysh",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BERDYSH"
+            }
+          ]
+        },
+        {
+          "byte1": "3E",
+          "label": "Red Partisan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED PARTISAN"
+            }
+          ]
+        },
+        {
+          "byte1": "3F",
+          "label": "Flight Cutter",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLIGHT CUTTER"
+            }
+          ]
+        },
+        {
+          "byte1": "40",
+          "label": "Flight Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLIGHT FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "41",
+          "label": "Red Slicer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED SLICER"
+            }
+          ]
+        },
+        {
+          "byte1": "42",
+          "label": "Handgun: Guld",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HANDGUN:GULD"
+            },
+            {
+              "byte2": "01",
+              "name": "MASTER RAVEN"
+            }
+          ]
+        },
+        {
+          "byte1": "43",
+          "label": "Handgun: Milla",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HANDGUN:MILLA"
+            },
+            {
+              "byte2": "01",
+              "name": "LAST SWAN"
+            }
+          ]
+        },
+        {
+          "byte1": "44",
+          "label": "Red Handgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED HANDGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "45",
+          "label": "Frozen Shooter",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FROZEN SHOOTER"
+            },
+            {
+              "byte2": "01",
+              "name": "SNOW QUEEN"
+            }
+          ]
+        },
+        {
+          "byte1": "46",
+          "label": "Anti Android Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ANTI ANDROID RIFLE"
+            }
+          ]
+        },
+        {
+          "byte1": "47",
+          "label": "Rocket Punch",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ROCKET PUNCH"
+            }
+          ]
+        },
+        {
+          "byte1": "48",
+          "label": "Samba Maracas",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SAMBA MARACAS"
+            }
+          ]
+        },
+        {
+          "byte1": "49",
+          "label": "Twin Psychogun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TWIN PSYCHOGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "4A",
+          "label": "Drill Launcher",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DRILL LAUNCHER"
+            }
+          ]
+        },
+        {
+          "byte1": "4B",
+          "label": "Guld Milla",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GULD MILLA"
+            },
+            {
+              "byte2": "01",
+              "name": "DUAL BIRD"
+            }
+          ]
+        },
+        {
+          "byte1": "4C",
+          "label": "Red Mechgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RED MECHGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "4D",
+          "label": "Belra Cannon",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BELRA CANNON"
+            }
+          ]
+        },
+        {
+          "byte1": "4E",
+          "label": "Panzer Faust",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PANZER FAUST"
+            },
+            {
+              "byte2": "01",
+              "name": "IRON FAUST"
+            }
+          ]
+        },
+        {
+          "byte1": "4F",
+          "label": "Summit Moon",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SUMMIT MOON"
+            }
+          ]
+        },
+        {
+          "byte1": "50",
+          "label": "Windmill",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "WINDMILL"
+            }
+          ]
+        },
+        {
+          "byte1": "51",
+          "label": "Evil Curst",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "EVIL CURST"
+            }
+          ]
+        },
+        {
+          "byte1": "52",
+          "label": "Flower Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLOWER CANE"
+            }
+          ]
+        },
+        {
+          "byte1": "53",
+          "label": "Hildebear's Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HILDEBEAR'S CANE"
+            }
+          ]
+        },
+        {
+          "byte1": "54",
+          "label": "Hildeblue's Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HILDEBLUE'S CANE"
+            }
+          ]
+        },
+        {
+          "byte1": "55",
+          "label": "Rabbit Wand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RABBIT WAND"
+            }
+          ]
+        },
+        {
+          "byte1": "56",
+          "label": "Plantain Leaf",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PLANTAIN LEAF"
+            },
+            {
+              "byte2": "01",
+              "name": "FATSIA"
+            }
+          ]
+        },
+        {
+          "byte1": "57",
+          "label": "Demonic Fork",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DEMONIC FORK"
+            }
+          ]
+        },
+        {
+          "byte1": "58",
+          "label": "Striker of Chao",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "STRIKER OF CHAO"
+            }
+          ]
+        },
+        {
+          "byte1": "59",
+          "label": "Broom",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BROOM"
+            }
+          ]
+        },
+        {
+          "byte1": "5A",
+          "label": "Prophets of Motav",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PROPHETS OF MOTAV"
+            }
+          ]
+        },
+        {
+          "byte1": "5B",
+          "label": "The Sigh of a God",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "THE SIGH OF A GOD"
+            }
+          ]
+        },
+        {
+          "byte1": "5C",
+          "label": "Twinkle Star",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TWINKLE STAR"
+            }
+          ]
+        },
+        {
+          "byte1": "5D",
+          "label": "Plantain Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PLANTAIN FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "5E",
+          "label": "Twin Blaze",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TWIN BLAZE"
+            }
+          ]
+        },
+        {
+          "byte1": "5F",
+          "label": "Marina's Bag",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MARINA'S BAG"
+            }
+          ]
+        },
+        {
+          "byte1": "60",
+          "label": "Dragon's Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DRAGON'S CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "61",
+          "label": "Panther's Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PANTHER'S CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "62",
+          "label": "S-Red's Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "S-RED'S BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "63",
+          "label": "Plantain Huge Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PLANTAIN HUGE FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "64",
+          "label": "Chameleon Scythe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CHAMELEON SCYTHE"
+            }
+          ]
+        },
+        {
+          "byte1": "65",
+          "label": "Yasminkov 3000R",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YASMINKOV 3000R"
+            }
+          ]
+        },
+        {
+          "byte1": "66",
+          "label": "Ano Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ANO RIFLE"
+            }
+          ]
+        },
+        {
+          "byte1": "67",
+          "label": "Baranz Launcher",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BARANZ LAUNCHER"
+            }
+          ]
+        },
+        {
+          "byte1": "68",
+          "label": "Branch of Pakupaku",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BRANCH OF PAKUPAKU"
+            }
+          ]
+        },
+        {
+          "byte1": "69",
+          "label": "Heart of Poumn",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HEART OF POUMN"
+            }
+          ]
+        },
+        {
+          "byte1": "6A",
+          "label": "Yasminkov 2000H",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YASMINKOV 2000H"
+            }
+          ]
+        },
+        {
+          "byte1": "6B",
+          "label": "Yasminkov 7000V",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YASMINKOV 7000V"
+            }
+          ]
+        },
+        {
+          "byte1": "6C",
+          "label": "Yasminkov 9000M",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YASMINKOV 9000M"
+            }
+          ]
+        },
+        {
+          "byte1": "6D",
+          "label": "Maser Beam",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MASER BEAM"
+            },
+            {
+              "byte2": "01",
+              "name": "POWER MASER"
+            }
+          ]
+        },
+        {
+          "byte1": "6F",
+          "label": "Flower Bouquet",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLOWER BOUQUET"
+            }
+          ]
+        },
+        {
+          "byte1": "70",
+          "label": "S-Rank Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SABER"
+            }
+          ]
+        },
+        {
+          "byte1": "71",
+          "label": "S-Rank Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SWORD"
+            }
+          ]
+        },
+        {
+          "byte1": "72",
+          "label": "S-Rank Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "73",
+          "label": "S-Rank Partisan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) PARTISAN"
+            }
+          ]
+        },
+        {
+          "byte1": "74",
+          "label": "S-Rank Slicer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SLICER"
+            }
+          ]
+        },
+        {
+          "byte1": "75",
+          "label": "S-Rank Gun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) GUN"
+            }
+          ]
+        },
+        {
+          "byte1": "76",
+          "label": "S-Rank Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) RIFLE"
+            }
+          ]
+        },
+        {
+          "byte1": "77",
+          "label": "S-Rank Mechgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) MECHGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "78",
+          "label": "S-Rank Shot",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SHOT"
+            }
+          ]
+        },
+        {
+          "byte1": "79",
+          "label": "S-Rank Cane",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) CANE"
+            }
+          ]
+        },
+        {
+          "byte1": "7A",
+          "label": "S-Rank Rod",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) ROD"
+            }
+          ]
+        },
+        {
+          "byte1": "7B",
+          "label": "S-Rank Wand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) WAND"
+            }
+          ]
+        },
+        {
+          "byte1": "7C",
+          "label": "S-Rank Twin",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) TWIN"
+            }
+          ]
+        },
+        {
+          "byte1": "7D",
+          "label": "S-Rank Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "7E",
+          "label": "S-Rank Bazooka",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) BAZOOKA"
+            }
+          ]
+        },
+        {
+          "byte1": "7F",
+          "label": "S-Rank Needle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) NEEDLE"
+            }
+          ]
+        },
+        {
+          "byte1": "80",
+          "label": "S-Rank Scythe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SCYTHE"
+            }
+          ]
+        },
+        {
+          "byte1": "81",
+          "label": "S-Rank Hammer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) HAMMER"
+            }
+          ]
+        },
+        {
+          "byte1": "82",
+          "label": "S-Rank Moon",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) MOON"
+            }
+          ]
+        },
+        {
+          "byte1": "83",
+          "label": "S-Rank Psychogun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) PSYCHOGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "84",
+          "label": "S-Rank Punch",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) PUNCH"
+            }
+          ]
+        },
+        {
+          "byte1": "85",
+          "label": "S-Rank Windmill",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) WINDMILL"
+            }
+          ]
+        },
+        {
+          "byte1": "86",
+          "label": "S-Rank Harisen",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) HARISEN"
+            }
+          ]
+        },
+        {
+          "byte1": "87",
+          "label": "S-Rank Katana",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) KATANA"
+            }
+          ]
+        },
+        {
+          "byte1": "88",
+          "label": "S-Rank J-Cutter",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) J-CUTTER"
+            }
+          ]
+        },
+        {
+          "byte1": "89",
+          "label": "Musashi",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MUSASHI"
+            },
+            {
+              "byte2": "01",
+              "name": "YAMATO"
+            },
+            {
+              "byte2": "02",
+              "name": "ASUKA"
+            },
+            {
+              "byte2": "03",
+              "name": "SANGE & YASHA"
+            }
+          ]
+        },
+        {
+          "byte1": "8A",
+          "label": "Sange",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SANGE"
+            },
+            {
+              "byte2": "01",
+              "name": "YASHA"
+            },
+            {
+              "byte2": "02",
+              "name": "KAMUI"
+            }
+          ]
+        },
+        {
+          "byte1": "8B",
+          "label": "Photon Launcher",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PHOTON LAUNCHER"
+            },
+            {
+              "byte2": "01",
+              "name": "GUILTY LIGHT"
+            },
+            {
+              "byte2": "02",
+              "name": "RED SCORPIO"
+            },
+            {
+              "byte2": "03",
+              "name": "PHONON MASER"
+            }
+          ]
+        },
+        {
+          "byte1": "8C",
+          "label": "Talis",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TALIS"
+            },
+            {
+              "byte2": "01",
+              "name": "MAHU"
+            },
+            {
+              "byte2": "02",
+              "name": "HITOGATA"
+            },
+            {
+              "byte2": "03",
+              "name": "DANCING HITOGATA"
+            },
+            {
+              "byte2": "04",
+              "name": "KUNAI"
+            }
+          ]
+        },
+        {
+          "byte1": "8D",
+          "label": "NUG-2000 Bazooka",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "NUG-2000 BAZOOKA"
+            }
+          ]
+        },
+        {
+          "byte1": "8E",
+          "label": "S-BERILL's Hand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "S-BERILL'S HAND #0"
+            },
+            {
+              "byte2": "01",
+              "name": "S-BERILL'S HAND #1"
+            }
+          ]
+        },
+        {
+          "byte1": "8F",
+          "label": "Flowen's Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLOWEN'S SWORD AUW 3060"
+            },
+            {
+              "byte2": "01",
+              "name": "FLOWEN'S SWORD AUW 3064"
+            },
+            {
+              "byte2": "02",
+              "name": "FLOWEN'S SWORD AUW 3067"
+            },
+            {
+              "byte2": "03",
+              "name": "FLOWEN'S SWORD AUW 3073"
+            },
+            {
+              "byte2": "04",
+              "name": "FLOWEN'S SWORD AUW 3077"
+            },
+            {
+              "byte2": "05",
+              "name": "FLOWEN'S SWORD AUW 3082"
+            },
+            {
+              "byte2": "06",
+              "name": "FLOWEN'S SWORD AUW 3083"
+            },
+            {
+              "byte2": "07",
+              "name": "FLOWEN'S SWORD AUW 3084"
+            },
+            {
+              "byte2": "08",
+              "name": "FLOWEN'S SWORD AUW 3079"
+            }
+          ]
+        },
+        {
+          "byte1": "90",
+          "label": "DB's Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DB'S SWORD AUW 3062"
+            },
+            {
+              "byte2": "01",
+              "name": "DB'S SWORD AUW 3067"
+            },
+            {
+              "byte2": "02",
+              "name": "DB'S SWORD AUW 3069"
+            },
+            {
+              "byte2": "03",
+              "name": "DB'S SWORD AUW 3064"
+            },
+            {
+              "byte2": "04",
+              "name": "DB'S SWORD AUW 3069"
+            },
+            {
+              "byte2": "05",
+              "name": "DB'S SWORD AUW 3073"
+            },
+            {
+              "byte2": "06",
+              "name": "DB'S SWORD AUW 3070"
+            },
+            {
+              "byte2": "07",
+              "name": "DB'S SWORD AUW 3075"
+            },
+            {
+              "byte2": "08",
+              "name": "DB'S SWORD AUW 3077"
+            }
+          ]
+        },
+        {
+          "byte1": "91",
+          "label": "Gigue Bazooka",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GIGUE BAZOOKA"
+            }
+          ]
+        },
+        {
+          "byte1": "92",
+          "label": "Guardianna",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GUARDIANNA"
+            }
+          ]
+        },
+        {
+          "byte1": "93",
+          "label": "Section ID Cards",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "VIRIDIA CARD"
+            },
+            {
+              "byte2": "01",
+              "name": "GREENILL CARD"
+            },
+            {
+              "byte2": "02",
+              "name": "SKYLY CARD"
+            },
+            {
+              "byte2": "03",
+              "name": "BLUEFULL CARD"
+            },
+            {
+              "byte2": "04",
+              "name": "PURPLENUM CARD"
+            },
+            {
+              "byte2": "05",
+              "name": "PINKAL CARD"
+            },
+            {
+              "byte2": "06",
+              "name": "REDRIA CARD"
+            },
+            {
+              "byte2": "07",
+              "name": "ORAN CARD"
+            },
+            {
+              "byte2": "08",
+              "name": "YELLOWBOZE CARD"
+            },
+            {
+              "byte2": "09",
+              "name": "WHITILL CARD"
+            }
+          ]
+        },
+        {
+          "byte1": "94",
+          "label": "Morning Glory",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MORNING GLORY"
+            }
+          ]
+        },
+        {
+          "byte1": "95",
+          "label": "Partisan of Lighting",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PARTISAN OF LIGHTING"
+            }
+          ]
+        },
+        {
+          "byte1": "96",
+          "label": "Gal Wind",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GAL WIND"
+            }
+          ]
+        },
+        {
+          "byte1": "97",
+          "label": "Zanba",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ZANBA"
+            }
+          ]
+        },
+        {
+          "byte1": "98",
+          "label": "Rika's Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RIKA'S CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "99",
+          "label": "Angel Harp",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ANGEL HARP"
+            }
+          ]
+        },
+        {
+          "byte1": "9A",
+          "label": "Demolition Comet",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DEMOLITION COMET"
+            }
+          ]
+        },
+        {
+          "byte1": "9B",
+          "label": "Nei's Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "NEI'S CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "9C",
+          "label": "Rainbow Baton",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RAINBOW BATON"
+            }
+          ]
+        },
+        {
+          "byte1": "9D",
+          "label": "Dark Flow",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DARK FLOW"
+            }
+          ]
+        },
+        {
+          "byte1": "9E",
+          "label": "Dark Meteor",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DARK METEOR"
+            }
+          ]
+        },
+        {
+          "byte1": "9F",
+          "label": "Dark Bridge",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DARK BRIDGE"
+            }
+          ]
+        },
+        {
+          "byte1": "A0",
+          "label": "G-Assasin's Sabers",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "G-ASSASIN'S SABERS"
+            }
+          ]
+        },
+        {
+          "byte1": "A1",
+          "label": "Rappy's Fan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RAPPY'S FAN"
+            }
+          ]
+        },
+        {
+          "byte1": "A2",
+          "label": "Booma's Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BOOMA'S CLAW"
+            },
+            {
+              "byte2": "01",
+              "name": "GOBOOMA'S CLAW"
+            },
+            {
+              "byte2": "02",
+              "name": "GIGOBOOMA'S CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "A3",
+          "label": "Ruby Bullet",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RUBY BULLET"
+            }
+          ]
+        },
+        {
+          "byte1": "A4",
+          "label": "Amore Rose",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "AMORE ROSE"
+            }
+          ]
+        },
+        {
+          "byte1": "A5",
+          "label": "S-Rank Swords",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) SWORDS"
+            }
+          ]
+        },
+        {
+          "byte1": "A6",
+          "label": "S-Rank Launcher",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) LAUNCHER"
+            }
+          ]
+        },
+        {
+          "byte1": "A7",
+          "label": "S-Rank Card",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) CARD"
+            }
+          ]
+        },
+        {
+          "byte1": "A8",
+          "label": "S-Rank Knuckle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) KNUCKLE"
+            }
+          ]
+        },
+        {
+          "byte1": "A9",
+          "label": "S-Rank Axe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "(S Rank) AXE"
+            }
+          ]
+        },
+        {
+          "byte1": "AA",
+          "label": "Slicer of Fanatic",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SLICER OF FANATIC"
+            }
+          ]
+        },
+        {
+          "byte1": "AB",
+          "label": "Lame D'argent",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "LAME D'ARGENT"
+            }
+          ]
+        },
+        {
+          "byte1": "AC",
+          "label": "Excalibur",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "EXCALIBUR"
+            }
+          ]
+        },
+        {
+          "byte1": "AD",
+          "label": "Rage de Feu",
+          "items": [
+            {
+              "byte2": "03",
+              "name": "RAGE DE FEU"
+            }
+          ]
+        },
+        {
+          "byte1": "AE",
+          "label": "Daisy Chain",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DAISY CHAIN"
+            }
+          ]
+        },
+        {
+          "byte1": "AF",
+          "label": "Ophelie Seize",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "OPHELIE SEIZE"
+            }
+          ]
+        },
+        {
+          "byte1": "B0",
+          "label": "Mille Marteaux",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MILLE MARTEAUX"
+            }
+          ]
+        },
+        {
+          "byte1": "B1",
+          "label": "Le Cogneur",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "LE COGNEUR"
+            }
+          ]
+        },
+        {
+          "byte1": "B2",
+          "label": "Commander Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "COMMANDER BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "B3",
+          "label": "Vivienne",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "VIVIENNE"
+            }
+          ]
+        },
+        {
+          "byte1": "B4",
+          "label": "Kusanagi",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "KUSANAGI"
+            }
+          ]
+        },
+        {
+          "byte1": "B5",
+          "label": "Sacred Duster",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SACRED DUSTER"
+            }
+          ]
+        },
+        {
+          "byte1": "B6",
+          "label": "Guren",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GUREN"
+            }
+          ]
+        },
+        {
+          "byte1": "B7",
+          "label": "Shouren",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SHOUREN"
+            }
+          ]
+        },
+        {
+          "byte1": "B8",
+          "label": "Jizai",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "JIZAI"
+            }
+          ]
+        },
+        {
+          "byte1": "B9",
+          "label": "Flamberge",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLAMBERGE"
+            }
+          ]
+        },
+        {
+          "byte1": "BA",
+          "label": "Yunchang",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "YUNCHANG"
+            }
+          ]
+        },
+        {
+          "byte1": "BB",
+          "label": "Snake Spire",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SNAKE SPIRE"
+            }
+          ]
+        },
+        {
+          "byte1": "BC",
+          "label": "Flapjack Flapper",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "FLAPJACK FLAPPER"
+            }
+          ]
+        },
+        {
+          "byte1": "BD",
+          "label": "Getsugasan",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GETSUGASAN"
+            }
+          ]
+        },
+        {
+          "byte1": "BE",
+          "label": "Maguwa",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MAGUWA"
+            }
+          ]
+        },
+        {
+          "byte1": "BF",
+          "label": "Heaven Striker",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HEAVEN STRIKER"
+            }
+          ]
+        },
+        {
+          "byte1": "C0",
+          "label": "Cannon Rouge",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CANNON ROUGE"
+            }
+          ]
+        },
+        {
+          "byte1": "C1",
+          "label": "Meteor Rouge",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "METEOR ROUGE"
+            }
+          ]
+        },
+        {
+          "byte1": "C2",
+          "label": "Solferino",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SOLFERINO"
+            }
+          ]
+        },
+        {
+          "byte1": "C3",
+          "label": "Clio",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "CLIO"
+            }
+          ]
+        },
+        {
+          "byte1": "C4",
+          "label": "Siren Glass Hammer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SIREN GLASS HAMMER"
+            }
+          ]
+        },
+        {
+          "byte1": "C5",
+          "label": "Glide Divine",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GLIDE DIVINE"
+            }
+          ]
+        },
+        {
+          "byte1": "C6",
+          "label": "Shichishito",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SHICHISHITO"
+            }
+          ]
+        },
+        {
+          "byte1": "C7",
+          "label": "Murasame",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "MURASAME"
+            }
+          ]
+        },
+        {
+          "byte1": "C8",
+          "label": "Daylight Scar",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DAYLIGHT SCAR"
+            }
+          ]
+        },
+        {
+          "byte1": "C9",
+          "label": "Decalog",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "DECALOG"
+            }
+          ]
+        },
+        {
+          "byte1": "CA",
+          "label": "5th Anniversary Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "5TH ANNIV. BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "CB",
+          "label": "Principal's Gift Parasol",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PRINCIPAL'S GIFT PARASOL"
+            }
+          ]
+        },
+        {
+          "byte1": "CC",
+          "label": "Akiko's Cleaver",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "AKIKO'S CLEAVER"
+            }
+          ]
+        },
+        {
+          "byte1": "CD",
+          "label": "Tanegashima",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TANEGASHIMA"
+            }
+          ]
+        },
+        {
+          "byte1": "CE",
+          "label": "Tree Clippers",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TREE CLIPPERS"
+            }
+          ]
+        },
+        {
+          "byte1": "CF",
+          "label": "Nice Shot",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "NICE SHOT"
+            }
+          ]
+        },
+        {
+          "byte1": "D2",
+          "label": "Ano Bazooka",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "ANO BAZOOKA"
+            }
+          ]
+        },
+        {
+          "byte1": "D3",
+          "label": "Synthesizer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SYNTHESIZER"
+            }
+          ]
+        },
+        {
+          "byte1": "D4",
+          "label": "Bamboo Spear",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BAMBOO SPEAR"
+            }
+          ]
+        },
+        {
+          "byte1": "D5",
+          "label": "Kan'ei Tsuho",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "KAN'EI TSUHO"
+            }
+          ]
+        },
+        {
+          "byte1": "D6",
+          "label": "Jitte",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "JITTE"
+            }
+          ]
+        },
+        {
+          "byte1": "D7",
+          "label": "Butterfly Net",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BUTTERFLY NET"
+            }
+          ]
+        },
+        {
+          "byte1": "D8",
+          "label": "Syringe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "SYRINGE"
+            }
+          ]
+        },
+        {
+          "byte1": "D9",
+          "label": "Battledore",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BATTLEDORE"
+            }
+          ]
+        },
+        {
+          "byte1": "DA",
+          "label": "Racket",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "RACKET"
+            }
+          ]
+        },
+        {
+          "byte1": "DB",
+          "label": "Hammer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "HAMMER"
+            }
+          ]
+        },
+        {
+          "byte1": "DC",
+          "label": "Great Bouquet",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "GREAT BOUQUET"
+            }
+          ]
+        },
+        {
+          "byte1": "DD",
+          "label": "TypeSA/Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeSA/Saber"
+            }
+          ]
+        },
+        {
+          "byte1": "DE",
+          "label": "TypeSL/Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeSL/Saber"
+            }
+          ]
+        },
+        {
+          "byte1": "DF",
+          "label": "TypeJS/Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeJS/Saber"
+            }
+          ]
+        },
+        {
+          "byte1": "E0",
+          "label": "TypeSW/Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeSW/Sword"
+            }
+          ]
+        },
+        {
+          "byte1": "E1",
+          "label": "TypeRO/Sword",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeRO/Sword"
+            }
+          ]
+        },
+        {
+          "byte1": "E2",
+          "label": "TypeBL/Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeBL/BLADE"
+            }
+          ]
+        },
+        {
+          "byte1": "E3",
+          "label": "TypeKN/Blade",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeKN/Blade"
+            }
+          ]
+        },
+        {
+          "byte1": "E4",
+          "label": "TypeHA/Halbert",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeHA/HALBERT"
+            }
+          ]
+        },
+        {
+          "byte1": "E5",
+          "label": "TypeDS/D.Saber",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeDS/D.SABER"
+            }
+          ]
+        },
+        {
+          "byte1": "E6",
+          "label": "TypeCL/Claw",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeCL/CLAW"
+            }
+          ]
+        },
+        {
+          "byte1": "E7",
+          "label": "TypeSS/Swords",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeSS/SWORDS"
+            }
+          ]
+        },
+        {
+          "byte1": "E8",
+          "label": "TypeGU/Handgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeGU/HANDGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "E9",
+          "label": "TypeRI/Rifle",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeRI/RIFLE"
+            }
+          ]
+        },
+        {
+          "byte1": "EA",
+          "label": "TypeME/Mechgun",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeME/MECHGUN"
+            }
+          ]
+        },
+        {
+          "byte1": "EB",
+          "label": "TypeSH/Shot",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeSH/SHOT"
+            }
+          ]
+        },
+        {
+          "byte1": "EC",
+          "label": "TypeWA/Wand",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "TypeWA/WAND"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "armor",
+      "byte0": "01",
+      "byte1": "01",
+      "label": "Armor / Frames",
+      "items": [
+        {
+          "byte2": "00",
+          "name": "Frame"
+        },
+        {
+          "byte2": "01",
+          "name": "Armor"
+        },
+        {
+          "byte2": "02",
+          "name": "Psy Armor"
+        },
+        {
+          "byte2": "03",
+          "name": "Giga Frame"
+        },
+        {
+          "byte2": "04",
+          "name": "Soul Frame"
+        },
+        {
+          "byte2": "05",
+          "name": "Cross Armor"
+        },
+        {
+          "byte2": "06",
+          "name": "Solid Frame"
+        },
+        {
+          "byte2": "07",
+          "name": "Brave Armor"
+        },
+        {
+          "byte2": "08",
+          "name": "Hyper Frame"
+        },
+        {
+          "byte2": "09",
+          "name": "Grand Armor"
+        },
+        {
+          "byte2": "0A",
+          "name": "Shock Frame"
+        },
+        {
+          "byte2": "0B",
+          "name": "King's Frame"
+        },
+        {
+          "byte2": "0C",
+          "name": "Dragon Frame"
+        },
+        {
+          "byte2": "0D",
+          "name": "Absorb Armor"
+        },
+        {
+          "byte2": "0E",
+          "name": "Protect Frame"
+        },
+        {
+          "byte2": "0F",
+          "name": "General Armor"
+        },
+        {
+          "byte2": "10",
+          "name": "Perfect Frame"
+        },
+        {
+          "byte2": "11",
+          "name": "Valiant Frame"
+        },
+        {
+          "byte2": "12",
+          "name": "Imperial Armor"
+        },
+        {
+          "byte2": "13",
+          "name": "Holiness Armor"
+        },
+        {
+          "byte2": "14",
+          "name": "Guardian Armor"
+        },
+        {
+          "byte2": "15",
+          "name": "Divinity Armor"
+        },
+        {
+          "byte2": "16",
+          "name": "Ultimate Frame"
+        },
+        {
+          "byte2": "17",
+          "name": "Celestial Armor"
+        },
+        {
+          "byte2": "18",
+          "name": "HUNTER FIELD"
+        },
+        {
+          "byte2": "19",
+          "name": "RANGER FIELD"
+        },
+        {
+          "byte2": "1A",
+          "name": "FORCE FIELD"
+        },
+        {
+          "byte2": "1B",
+          "name": "REVIVAL GARMENT"
+        },
+        {
+          "byte2": "1C",
+          "name": "SPIRIT GARMENT"
+        },
+        {
+          "byte2": "1D",
+          "name": "STINK FRAME"
+        },
+        {
+          "byte2": "1E",
+          "name": "D-PARTS Ver1.01"
+        },
+        {
+          "byte2": "1F",
+          "name": "D-PARTS Ver2.10"
+        },
+        {
+          "byte2": "20",
+          "name": "PARASITE WEAR:De Rol"
+        },
+        {
+          "byte2": "21",
+          "name": "PARASITE WEAR:Nelgal"
+        },
+        {
+          "byte2": "22",
+          "name": "PARASITE WEAR:Vajulla"
+        },
+        {
+          "byte2": "23",
+          "name": "SENSE PLATE"
+        },
+        {
+          "byte2": "24",
+          "name": "GRAVITON PLATE"
+        },
+        {
+          "byte2": "25",
+          "name": "ATTRIBUTE PLATE"
+        },
+        {
+          "byte2": "26",
+          "name": "FLOWEN'S FRAME"
+        },
+        {
+          "byte2": "27",
+          "name": "CUSTOM FRAME Ver.00"
+        },
+        {
+          "byte2": "28",
+          "name": "DB's ARMOR"
+        },
+        {
+          "byte2": "29",
+          "name": "GUARD WAVE"
+        },
+        {
+          "byte2": "2A",
+          "name": "DF FIELD"
+        },
+        {
+          "byte2": "2B",
+          "name": "LUMINOUS FIELD"
+        },
+        {
+          "byte2": "2C",
+          "name": "CHU CHU FEVER"
+        },
+        {
+          "byte2": "2D",
+          "name": "LOVE HEART"
+        },
+        {
+          "byte2": "2E",
+          "name": "FLAME GARMENT"
+        },
+        {
+          "byte2": "2F",
+          "name": "VIRUS ARMOR:Lafuteria"
+        },
+        {
+          "byte2": "30",
+          "name": "BRIGHTNESS CIRCLE"
+        },
+        {
+          "byte2": "31",
+          "name": "AURA FIELD"
+        },
+        {
+          "byte2": "32",
+          "name": "ELECTRO FRAME"
+        },
+        {
+          "byte2": "33",
+          "name": "SACRED CLOTH"
+        },
+        {
+          "byte2": "34",
+          "name": "SMOKING PLATE"
+        },
+        {
+          "byte2": "35",
+          "name": "STAR CUIRASS"
+        },
+        {
+          "byte2": "36",
+          "name": "BLACK HOUND CUIRASS"
+        },
+        {
+          "byte2": "37",
+          "name": "MORNING PRAYER"
+        },
+        {
+          "byte2": "38",
+          "name": "BLACK ODOSHI DOMARU"
+        },
+        {
+          "byte2": "39",
+          "name": "RED ODOSHI DOMARU"
+        },
+        {
+          "byte2": "3A",
+          "name": "BLACK ODOSHI RED NIMAIDOU"
+        },
+        {
+          "byte2": "3B",
+          "name": "BLUE ODOSHI VIOLET NIMAIDOU"
+        },
+        {
+          "byte2": "3C",
+          "name": "DIRTY LIFE JACKET"
+        },
+        {
+          "byte2": "3E",
+          "name": "WEDDING DRESS"
+        },
+        {
+          "byte2": "40",
+          "name": "RED COAT"
+        },
+        {
+          "byte2": "41",
+          "name": "THIRTEEN"
+        },
+        {
+          "byte2": "42",
+          "name": "MOTHER GARB"
+        },
+        {
+          "byte2": "43",
+          "name": "MOTHER GARB+"
+        },
+        {
+          "byte2": "44",
+          "name": "DRESS PLATE"
+        },
+        {
+          "byte2": "45",
+          "name": "SWEETHEART"
+        },
+        {
+          "byte2": "46",
+          "name": "IGNITION CLOAK"
+        },
+        {
+          "byte2": "47",
+          "name": "CONGEAL CLOAK"
+        },
+        {
+          "byte2": "48",
+          "name": "TEMPEST CLOAK"
+        },
+        {
+          "byte2": "49",
+          "name": "CURSED CLOAK"
+        },
+        {
+          "byte2": "4A",
+          "name": "SELECT CLOAK"
+        },
+        {
+          "byte2": "4B",
+          "name": "SPIRIT CUIRASS"
+        },
+        {
+          "byte2": "4C",
+          "name": "REVIVAL CUIRASS"
+        },
+        {
+          "byte2": "4D",
+          "name": "ALLIANCE UNIFORM"
+        },
+        {
+          "byte2": "4E",
+          "name": "OFFICER UNIFORM"
+        },
+        {
+          "byte2": "4F",
+          "name": "COMMANDER UNIFORM"
+        },
+        {
+          "byte2": "50",
+          "name": "CRIMSON COAT"
+        },
+        {
+          "byte2": "51",
+          "name": "INFANTRY GEAR"
+        },
+        {
+          "byte2": "52",
+          "name": "LIEUTENANT GEAR"
+        },
+        {
+          "byte2": "53",
+          "name": "INFANTRY MANTLE"
+        },
+        {
+          "byte2": "54",
+          "name": "LIEUTENANT MANTLE"
+        },
+        {
+          "byte2": "55",
+          "name": "UNION FIELD"
+        },
+        {
+          "byte2": "56",
+          "name": "SAMURAI ARMOR"
+        },
+        {
+          "byte2": "57",
+          "name": "STEALTH SUIT"
+        }
+      ]
+    },
+    {
+      "id": "barrier",
+      "byte0": "01",
+      "byte1": "02",
+      "label": "Barriers / Shields",
+      "items": [
+        {
+          "byte2": "00",
+          "name": "Barrier"
+        },
+        {
+          "byte2": "01",
+          "name": "Shield"
+        },
+        {
+          "byte2": "02",
+          "name": "Core Shield"
+        },
+        {
+          "byte2": "03",
+          "name": "Giga Shield"
+        },
+        {
+          "byte2": "04",
+          "name": "Soul Barrier"
+        },
+        {
+          "byte2": "05",
+          "name": "Hard Shield"
+        },
+        {
+          "byte2": "06",
+          "name": "Brave Barrier"
+        },
+        {
+          "byte2": "07",
+          "name": "Solid Shield"
+        },
+        {
+          "byte2": "08",
+          "name": "Flame Barrier"
+        },
+        {
+          "byte2": "09",
+          "name": "Plasma Barrier"
+        },
+        {
+          "byte2": "0A",
+          "name": "Freeze Barrier"
+        },
+        {
+          "byte2": "0B",
+          "name": "Psychic Barrier"
+        },
+        {
+          "byte2": "0C",
+          "name": "General Shield"
+        },
+        {
+          "byte2": "0D",
+          "name": "Protect Barrier"
+        },
+        {
+          "byte2": "0E",
+          "name": "Glorious Shield"
+        },
+        {
+          "byte2": "0F",
+          "name": "Imperial Barrier"
+        },
+        {
+          "byte2": "10",
+          "name": "Guardian Shield"
+        },
+        {
+          "byte2": "11",
+          "name": "Divinity Barrier"
+        },
+        {
+          "byte2": "12",
+          "name": "Ultimate Shield"
+        },
+        {
+          "byte2": "13",
+          "name": "Spiritual Shield"
+        },
+        {
+          "byte2": "14",
+          "name": "Celestial Shield"
+        },
+        {
+          "byte2": "15",
+          "name": "INVISIBLE GUARD"
+        },
+        {
+          "byte2": "16",
+          "name": "SACRED GUARD"
+        },
+        {
+          "byte2": "17",
+          "name": "S-PARTS Ver1.16"
+        },
+        {
+          "byte2": "18",
+          "name": "S-PARTS Ver2.01"
+        },
+        {
+          "byte2": "19",
+          "name": "LIGHT RELIEF"
+        },
+        {
+          "byte2": "1A",
+          "name": "SHIELD OF DELSABER"
+        },
+        {
+          "byte2": "1B",
+          "name": "FORCE WALL"
+        },
+        {
+          "byte2": "1C",
+          "name": "RANGER WALL"
+        },
+        {
+          "byte2": "1D",
+          "name": "HUNTER WALL"
+        },
+        {
+          "byte2": "1E",
+          "name": "ATTRIBUTE WALL"
+        },
+        {
+          "byte2": "1F",
+          "name": "SECRET GEAR"
+        },
+        {
+          "byte2": "20",
+          "name": "COMBAT GEAR"
+        },
+        {
+          "byte2": "21",
+          "name": "PROTO REGENE GEAR"
+        },
+        {
+          "byte2": "22",
+          "name": "REGENERATE GEAR"
+        },
+        {
+          "byte2": "23",
+          "name": "REGENE GEAR ADV."
+        },
+        {
+          "byte2": "24",
+          "name": "FLOWEN'S SHIELD"
+        },
+        {
+          "byte2": "25",
+          "name": "CUSTOM BARRIER Ver.00"
+        },
+        {
+          "byte2": "26",
+          "name": "DB'S SHIELD"
+        },
+        {
+          "byte2": "27",
+          "name": "RED RING"
+        },
+        {
+          "byte2": "28",
+          "name": "TRIPOLIC SHIELD"
+        },
+        {
+          "byte2": "29",
+          "name": "STANDSTILL SHIELD"
+        },
+        {
+          "byte2": "2A",
+          "name": "SAFETY HEART"
+        },
+        {
+          "byte2": "2B",
+          "name": "KASAMI BRACER"
+        },
+        {
+          "byte2": "2C",
+          "name": "GODS SHIELD SUZAKU"
+        },
+        {
+          "byte2": "2D",
+          "name": "GODS SHIELD GENBU"
+        },
+        {
+          "byte2": "2E",
+          "name": "GODS SHIELD BYAKKO"
+        },
+        {
+          "byte2": "2F",
+          "name": "GODS SHIELD SEIRYU"
+        },
+        {
+          "byte2": "30",
+          "name": "HUNTER'S SHELL"
+        },
+        {
+          "byte2": "31",
+          "name": "RIKO'S GLASSES"
+        },
+        {
+          "byte2": "32",
+          "name": "RIKO'S EARRING"
+        },
+        {
+          "byte2": "35",
+          "name": "SECURE FEET"
+        },
+        {
+          "byte2": "3A",
+          "name": "RESTA MERGE"
+        },
+        {
+          "byte2": "3B",
+          "name": "ANTI MERGE"
+        },
+        {
+          "byte2": "3C",
+          "name": "SHIFTA MERGE"
+        },
+        {
+          "byte2": "3D",
+          "name": "DEBAND MERGE"
+        },
+        {
+          "byte2": "3E",
+          "name": "FOIE MERGE"
+        },
+        {
+          "byte2": "3F",
+          "name": "GIFOIE MERGE"
+        },
+        {
+          "byte2": "40",
+          "name": "RAFOIE MERGE"
+        },
+        {
+          "byte2": "41",
+          "name": "RED MERGE"
+        },
+        {
+          "byte2": "42",
+          "name": "BARTA MERGE"
+        },
+        {
+          "byte2": "43",
+          "name": "GIBARTA MERGE"
+        },
+        {
+          "byte2": "44",
+          "name": "RABARTA MERGE"
+        },
+        {
+          "byte2": "45",
+          "name": "BLUE MERGE"
+        },
+        {
+          "byte2": "46",
+          "name": "ZONDE MERGE"
+        },
+        {
+          "byte2": "47",
+          "name": "GIZONDE MERGE"
+        },
+        {
+          "byte2": "48",
+          "name": "RAZONDE MERGE"
+        },
+        {
+          "byte2": "49",
+          "name": "YELLOW MERGE"
+        },
+        {
+          "byte2": "4A",
+          "name": "RECOVERY BARRIER"
+        },
+        {
+          "byte2": "4B",
+          "name": "ASSIST BARRIER"
+        },
+        {
+          "byte2": "4C",
+          "name": "RED BARRIER"
+        },
+        {
+          "byte2": "4D",
+          "name": "BLUE BARRIER"
+        },
+        {
+          "byte2": "4E",
+          "name": "YELLOW BARRIER"
+        },
+        {
+          "byte2": "4F",
+          "name": "WEAPONS GOLD SHIELD"
+        },
+        {
+          "byte2": "50",
+          "name": "BLACK GEAR"
+        },
+        {
+          "byte2": "51",
+          "name": "WORKS GUARD"
+        },
+        {
+          "byte2": "52",
+          "name": "RAGOL RING"
+        },
+        {
+          "byte2": "83",
+          "name": "WEAPONS SILVER SHIELD"
+        },
+        {
+          "byte2": "84",
+          "name": "WEAPONS COPPER SHIELD"
+        },
+        {
+          "byte2": "85",
+          "name": "GRATIA"
+        },
+        {
+          "byte2": "86",
+          "name": "TRIPOLIC REFLECTOR"
+        },
+        {
+          "byte2": "87",
+          "name": "STRIKER PLUS"
+        },
+        {
+          "byte2": "88",
+          "name": "REGENERATE GEAR B.P."
+        },
+        {
+          "byte2": "89",
+          "name": "RUPIKA"
+        },
+        {
+          "byte2": "8A",
+          "name": "YATA MIRROR"
+        },
+        {
+          "byte2": "8B",
+          "name": "BUNNY EARS"
+        },
+        {
+          "byte2": "8C",
+          "name": "CAT EARS"
+        },
+        {
+          "byte2": "8D",
+          "name": "THREE SEALS"
+        },
+        {
+          "byte2": "8F",
+          "name": "DF SHIELD"
+        },
+        {
+          "byte2": "90",
+          "name": "FROM THE DEPTHS"
+        },
+        {
+          "byte2": "91",
+          "name": "DE ROL LE SHIELD"
+        },
+        {
+          "byte2": "92",
+          "name": "HONEYCOMB REFLECTOR"
+        },
+        {
+          "byte2": "93",
+          "name": "EPSIGUARD"
+        },
+        {
+          "byte2": "94",
+          "name": "ANGEL RING"
+        },
+        {
+          "byte2": "95",
+          "name": "UNION GUARD"
+        }
+      ]
+    },
+    {
+      "id": "unit",
+      "byte0": "01",
+      "byte1": "03",
+      "label": "Units",
+      "items": [
+        {
+          "byte2": "00",
+          "name": "Knight/Power"
+        },
+        {
+          "byte2": "01",
+          "name": "General/Power"
+        },
+        {
+          "byte2": "02",
+          "name": "Ogre/Power"
+        },
+        {
+          "byte2": "03",
+          "name": "God/Power"
+        },
+        {
+          "byte2": "04",
+          "name": "Priest/Mind"
+        },
+        {
+          "byte2": "05",
+          "name": "General/Mind"
+        },
+        {
+          "byte2": "06",
+          "name": "Angel/Mind"
+        },
+        {
+          "byte2": "07",
+          "name": "God/Mind"
+        },
+        {
+          "byte2": "08",
+          "name": "Marksman/Arm"
+        },
+        {
+          "byte2": "09",
+          "name": "General/Arm"
+        },
+        {
+          "byte2": "0A",
+          "name": "Elf/Arm"
+        },
+        {
+          "byte2": "0B",
+          "name": "God/Arm"
+        },
+        {
+          "byte2": "0C",
+          "name": "Thief/Legs"
+        },
+        {
+          "byte2": "0D",
+          "name": "General/Legs"
+        },
+        {
+          "byte2": "0E",
+          "name": "Elf/Legs"
+        },
+        {
+          "byte2": "0F",
+          "name": "God/Legs"
+        },
+        {
+          "byte2": "10",
+          "name": "Digger/HP"
+        },
+        {
+          "byte2": "11",
+          "name": "General/HP"
+        },
+        {
+          "byte2": "12",
+          "name": "Dragon/HP"
+        },
+        {
+          "byte2": "13",
+          "name": "God/HP"
+        },
+        {
+          "byte2": "14",
+          "name": "Magician/TP"
+        },
+        {
+          "byte2": "15",
+          "name": "General/TP"
+        },
+        {
+          "byte2": "16",
+          "name": "Angel/TP"
+        },
+        {
+          "byte2": "17",
+          "name": "God/TP"
+        },
+        {
+          "byte2": "18",
+          "name": "Warrior/Body"
+        },
+        {
+          "byte2": "19",
+          "name": "General/Body"
+        },
+        {
+          "byte2": "1A",
+          "name": "Metal/Body"
+        },
+        {
+          "byte2": "1B",
+          "name": "God/Body"
+        },
+        {
+          "byte2": "1C",
+          "name": "Angel/Luck"
+        },
+        {
+          "byte2": "1D",
+          "name": "God/Luck"
+        },
+        {
+          "byte2": "1E",
+          "name": "Master/Ability"
+        },
+        {
+          "byte2": "1F",
+          "name": "Hero/Ability"
+        },
+        {
+          "byte2": "20",
+          "name": "God/Ability"
+        },
+        {
+          "byte2": "21",
+          "name": "Resist/Fire"
+        },
+        {
+          "byte2": "22",
+          "name": "Resist/Flame"
+        },
+        {
+          "byte2": "23",
+          "name": "Resist/Burning"
+        },
+        {
+          "byte2": "24",
+          "name": "Resist/Cold"
+        },
+        {
+          "byte2": "25",
+          "name": "Resist/Freeze"
+        },
+        {
+          "byte2": "26",
+          "name": "Resist/Blizzard"
+        },
+        {
+          "byte2": "27",
+          "name": "Resist/Shock"
+        },
+        {
+          "byte2": "28",
+          "name": "Resist/Thunder"
+        },
+        {
+          "byte2": "29",
+          "name": "Resist/Storm"
+        },
+        {
+          "byte2": "2A",
+          "name": "Resist/Light"
+        },
+        {
+          "byte2": "2B",
+          "name": "Resist/Saint"
+        },
+        {
+          "byte2": "2C",
+          "name": "Resist/Holy"
+        },
+        {
+          "byte2": "2D",
+          "name": "Resist/Dark"
+        },
+        {
+          "byte2": "2E",
+          "name": "Resist/Evil"
+        },
+        {
+          "byte2": "2F",
+          "name": "Resist/Devil"
+        },
+        {
+          "byte2": "30",
+          "name": "All/Resist"
+        },
+        {
+          "byte2": "31",
+          "name": "Super/Resist"
+        },
+        {
+          "byte2": "32",
+          "name": "Perfect/Resist"
+        },
+        {
+          "byte2": "33",
+          "name": "HP/Restorate"
+        },
+        {
+          "byte2": "34",
+          "name": "HP/Generate"
+        },
+        {
+          "byte2": "35",
+          "name": "HP/Revival"
+        },
+        {
+          "byte2": "36",
+          "name": "TP/Restorate"
+        },
+        {
+          "byte2": "37",
+          "name": "TP/Generate"
+        },
+        {
+          "byte2": "38",
+          "name": "TP/Revival"
+        },
+        {
+          "byte2": "39",
+          "name": "PB/Amplifier"
+        },
+        {
+          "byte2": "3A",
+          "name": "PB/Generate"
+        },
+        {
+          "byte2": "3B",
+          "name": "PB/Create"
+        },
+        {
+          "byte2": "3C",
+          "name": "Wizard/Technique"
+        },
+        {
+          "byte2": "3D",
+          "name": "Devil/Technique"
+        },
+        {
+          "byte2": "3E",
+          "name": "God/Technique"
+        },
+        {
+          "byte2": "3F",
+          "name": "General/Battle"
+        },
+        {
+          "byte2": "40",
+          "name": "Devil/Battle"
+        },
+        {
+          "byte2": "41",
+          "name": "God/Battle"
+        },
+        {
+          "byte2": "42",
+          "name": "Cure/Poison"
+        },
+        {
+          "byte2": "43",
+          "name": "Cure/Paralysis"
+        },
+        {
+          "byte2": "44",
+          "name": "Cure/Slow"
+        },
+        {
+          "byte2": "45",
+          "name": "Cure/Confuse"
+        },
+        {
+          "byte2": "46",
+          "name": "Cure/Freeze"
+        },
+        {
+          "byte2": "47",
+          "name": "Cure/Shock"
+        },
+        {
+          "byte2": "48",
+          "name": "Yasakani Magatama"
+        },
+        {
+          "byte2": "49",
+          "name": "V101"
+        },
+        {
+          "byte2": "4A",
+          "name": "V501"
+        },
+        {
+          "byte2": "4B",
+          "name": "V502"
+        },
+        {
+          "byte2": "4C",
+          "name": "V801"
+        },
+        {
+          "byte2": "4D",
+          "name": "LIMITER"
+        },
+        {
+          "byte2": "4E",
+          "name": "ADEPT"
+        },
+        {
+          "byte2": "4F",
+          "name": "SWORDSMAN LORE"
+        },
+        {
+          "byte2": "50",
+          "name": "PROOF OF SWORD-SAINT"
+        },
+        {
+          "byte2": "51",
+          "name": "SMARTLINK"
+        },
+        {
+          "byte2": "52",
+          "name": "DIVINE PROTECTION"
+        },
+        {
+          "byte2": "53",
+          "name": "Heavenly/Battle"
+        },
+        {
+          "byte2": "54",
+          "name": "Heavenly/Power"
+        },
+        {
+          "byte2": "55",
+          "name": "Heavenly/Mind"
+        },
+        {
+          "byte2": "56",
+          "name": "Heavenly/Arms"
+        },
+        {
+          "byte2": "57",
+          "name": "Heavenly/Legs"
+        },
+        {
+          "byte2": "58",
+          "name": "Heavenly/Body"
+        },
+        {
+          "byte2": "59",
+          "name": "Heavenly/Luck"
+        },
+        {
+          "byte2": "5A",
+          "name": "Heavenly/Ability"
+        },
+        {
+          "byte2": "5B",
+          "name": "Centurion/Ability"
+        },
+        {
+          "byte2": "5C",
+          "name": "Friend Ring"
+        },
+        {
+          "byte2": "5D",
+          "name": "Heavenly/HP"
+        },
+        {
+          "byte2": "5E",
+          "name": "Heavenly/TP"
+        },
+        {
+          "byte2": "5F",
+          "name": "Heavenly/Resist"
+        },
+        {
+          "byte2": "60",
+          "name": "Heavenly/Technique"
+        },
+        {
+          "byte2": "61",
+          "name": "HP/Resurrection"
+        },
+        {
+          "byte2": "62",
+          "name": "TP/Resurrection"
+        },
+        {
+          "byte2": "63",
+          "name": "PB/Increase"
+        }
+      ]
+    },
+    {
+      "id": "tool",
+      "byte0": "03",
+      "label": "Tools & Consumables",
+      "subcategories": [
+        {
+          "byte1": "00",
+          "label": "HP Restoratives",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Monomate"
+            },
+            {
+              "byte2": "01",
+              "name": "Dimate"
+            },
+            {
+              "byte2": "02",
+              "name": "Trimate"
+            }
+          ]
+        },
+        {
+          "byte1": "01",
+          "label": "TP Restoratives",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Monofluid"
+            },
+            {
+              "byte2": "01",
+              "name": "Difluid"
+            },
+            {
+              "byte2": "02",
+              "name": "Trifluid"
+            }
+          ]
+        },
+        {
+          "byte1": "03",
+          "label": "Sol Atomizer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Sol Atomizer"
+            }
+          ]
+        },
+        {
+          "byte1": "04",
+          "label": "Moon Atomizer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Moon Atomizer"
+            }
+          ]
+        },
+        {
+          "byte1": "05",
+          "label": "Star Atomizer",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Star Atomizer"
+            }
+          ]
+        },
+        {
+          "byte1": "06",
+          "label": "Status Cures",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Antidote"
+            },
+            {
+              "byte2": "01",
+              "name": "Antiparalysis"
+            }
+          ]
+        },
+        {
+          "byte1": "07",
+          "label": "Telepipe",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Telepipe"
+            }
+          ]
+        },
+        {
+          "byte1": "08",
+          "label": "Trap Vision",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Trap Vision"
+            }
+          ]
+        },
+        {
+          "byte1": "09",
+          "label": "Scape Doll",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Scape Doll"
+            }
+          ]
+        },
+        {
+          "byte1": "0A",
+          "label": "Grinders",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Monogrinder"
+            },
+            {
+              "byte2": "01",
+              "name": "Digrinder"
+            },
+            {
+              "byte2": "02",
+              "name": "Trigrinder"
+            }
+          ]
+        },
+        {
+          "byte1": "0B",
+          "label": "Materials",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Power Material"
+            },
+            {
+              "byte2": "01",
+              "name": "Mind Material"
+            },
+            {
+              "byte2": "02",
+              "name": "Evade Material"
+            },
+            {
+              "byte2": "03",
+              "name": "HP Material"
+            },
+            {
+              "byte2": "04",
+              "name": "TP Material"
+            },
+            {
+              "byte2": "05",
+              "name": "Def Material"
+            },
+            {
+              "byte2": "06",
+              "name": "Luck Material"
+            }
+          ]
+        },
+        {
+          "byte1": "0C",
+          "label": "MAG Cells (Common)",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Cell Of MAG 502"
+            },
+            {
+              "byte2": "01",
+              "name": "Cell Of MAG 213"
+            },
+            {
+              "byte2": "02",
+              "name": "Parts Of RoboChao"
+            },
+            {
+              "byte2": "03",
+              "name": "Heart Of Opa Opa"
+            },
+            {
+              "byte2": "04",
+              "name": "Heart Of Pian"
+            },
+            {
+              "byte2": "05",
+              "name": "Heart Of Chao"
+            }
+          ]
+        },
+        {
+          "byte1": "0D",
+          "label": "Enemy Parts",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Sorcerer's Right Arm"
+            },
+            {
+              "byte2": "01",
+              "name": "S-beat's Arms"
+            },
+            {
+              "byte2": "02",
+              "name": "P-arm's Arms"
+            },
+            {
+              "byte2": "03",
+              "name": "Delsaber's Right Arm"
+            },
+            {
+              "byte2": "04",
+              "name": "C-bringer's Right Arm"
+            },
+            {
+              "byte2": "05",
+              "name": "Delsaber's Left Arm"
+            },
+            {
+              "byte2": "06",
+              "name": "S-red's Arms"
+            },
+            {
+              "byte2": "07",
+              "name": "Dragon's Claw"
+            },
+            {
+              "byte2": "08",
+              "name": "Hildebear's Head"
+            },
+            {
+              "byte2": "09",
+              "name": "Hildeblue's Head"
+            },
+            {
+              "byte2": "0A",
+              "name": "Parts of Baranz"
+            },
+            {
+              "byte2": "0B",
+              "name": "Belra's Right Arm"
+            },
+            {
+              "byte2": "0C",
+              "name": "GIGUE'S ARMS"
+            },
+            {
+              "byte2": "0D",
+              "name": "S-BERILL'S ARMS"
+            },
+            {
+              "byte2": "0E",
+              "name": "G-ASSASIN'S ARMS"
+            },
+            {
+              "byte2": "0F",
+              "name": "BOOMA'S RIGHT ARMS"
+            },
+            {
+              "byte2": "10",
+              "name": "GOBOOMA'S RIGHT ARMS"
+            },
+            {
+              "byte2": "11",
+              "name": "GIGOBOOMA'S RIGHT ARMS"
+            },
+            {
+              "byte2": "12",
+              "name": "GAL WIND"
+            },
+            {
+              "byte2": "13",
+              "name": "RAPPY'S WING"
+            },
+            {
+              "byte2": "14",
+              "name": "Cladding of Epsilon"
+            },
+            {
+              "byte2": "15",
+              "name": "De Rol Le Shell"
+            }
+          ]
+        },
+        {
+          "byte1": "0E",
+          "label": "MAG Cells (Rare)",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BERILL PHOTON"
+            },
+            {
+              "byte2": "01",
+              "name": "PARASITIC GENE FLOW"
+            },
+            {
+              "byte2": "02",
+              "name": "MAGICSTONE IRITISTA"
+            },
+            {
+              "byte2": "03",
+              "name": "BLUE BLACK STONE"
+            },
+            {
+              "byte2": "04",
+              "name": "SYNCESTA"
+            },
+            {
+              "byte2": "05",
+              "name": "MAGIC WATER"
+            },
+            {
+              "byte2": "06",
+              "name": "PARASITIC CELL TYPE D"
+            },
+            {
+              "byte2": "07",
+              "name": "MAGIC ROCK HEART KEY"
+            },
+            {
+              "byte2": "08",
+              "name": "MAGIC ROCK MOOLA"
+            },
+            {
+              "byte2": "09",
+              "name": "STAR AMPLIFIER"
+            },
+            {
+              "byte2": "0A",
+              "name": "BOOK OF HITOGATA"
+            },
+            {
+              "byte2": "0B",
+              "name": "HEART OF CHU CHU"
+            },
+            {
+              "byte2": "0C",
+              "name": "PARTS OF EGG BLASTER"
+            },
+            {
+              "byte2": "0D",
+              "name": "HEART OF ANGEL"
+            },
+            {
+              "byte2": "0E",
+              "name": "HEART OF DEVIL"
+            },
+            {
+              "byte2": "0F",
+              "name": "KIT OF HAMBERGER"
+            },
+            {
+              "byte2": "10",
+              "name": "PANTHER'S SPIRIT"
+            },
+            {
+              "byte2": "11",
+              "name": "KIT OF MARK3"
+            },
+            {
+              "byte2": "12",
+              "name": "KIT OF MASTER SYSTEM"
+            },
+            {
+              "byte2": "13",
+              "name": "KIT OF GENESIS"
+            },
+            {
+              "byte2": "14",
+              "name": "KIT OF SEGA SATURN"
+            },
+            {
+              "byte2": "15",
+              "name": "KIT OF DREAMCAST"
+            },
+            {
+              "byte2": "16",
+              "name": "AMP. RESTA"
+            },
+            {
+              "byte2": "17",
+              "name": "AMP. ANTI"
+            },
+            {
+              "byte2": "18",
+              "name": "AMP. SHIFTA"
+            },
+            {
+              "byte2": "19",
+              "name": "AMP. DEBAND"
+            },
+            {
+              "byte2": "1A",
+              "name": "Amplifier of Foie"
+            },
+            {
+              "byte2": "25",
+              "name": "AMP. YELLOW"
+            },
+            {
+              "byte2": "26",
+              "name": "HEART OF KAPUKAPU"
+            },
+            {
+              "byte2": "27",
+              "name": "PHOTON BOOSTER"
+            }
+          ]
+        },
+        {
+          "byte1": "0F",
+          "label": "Addslot",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Addslot"
+            }
+          ]
+        },
+        {
+          "byte1": "10",
+          "label": "Photon Drops",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "PHOTON DROP"
+            },
+            {
+              "byte2": "01",
+              "name": "PHOTON SPHERE"
+            },
+            {
+              "byte2": "02",
+              "name": "PHOTON CRYSTAL"
+            },
+            {
+              "byte2": "03",
+              "name": "Secret Lottery Ticket"
+            }
+          ]
+        },
+        {
+          "byte1": "11",
+          "label": "Books of Katana",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "BOOK OF KATANA 1"
+            },
+            {
+              "byte2": "01",
+              "name": "BOOK OF KATANA 2"
+            },
+            {
+              "byte2": "02",
+              "name": "BOOK OF KATANA 3"
+            }
+          ]
+        },
+        {
+          "byte1": "15",
+          "label": "Event Items",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Christmas Present"
+            },
+            {
+              "byte2": "01",
+              "name": "Easter Egg"
+            },
+            {
+              "byte2": "02",
+              "name": "Jack-O-Lantern"
+            }
+          ]
+        },
+        {
+          "byte1": "18",
+          "label": "Special Items",
+          "items": [
+            {
+              "byte2": "00",
+              "name": "Tablet"
+            },
+            {
+              "byte2": "02",
+              "name": "Dragon Scale"
+            },
+            {
+              "byte2": "03",
+              "name": "Heaven Striker Coat"
+            },
+            {
+              "byte2": "04",
+              "name": "Pioneer Parts"
+            },
+            {
+              "byte2": "05",
+              "name": "Amitie's Memo"
+            },
+            {
+              "byte2": "06",
+              "name": "Heart of Morolian"
+            },
+            {
+              "byte2": "07",
+              "name": "Rappy's Beak"
+            },
+            {
+              "byte2": "09",
+              "name": "D-Photon Core"
+            },
+            {
+              "byte2": "0A",
+              "name": "Liberta Kit"
+            },
+            {
+              "byte2": "0B",
+              "name": "Cell of MAG 0503"
+            },
+            {
+              "byte2": "0C",
+              "name": "Cell of MAG 0504"
+            },
+            {
+              "byte2": "0D",
+              "name": "Cell of MAG 0505"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

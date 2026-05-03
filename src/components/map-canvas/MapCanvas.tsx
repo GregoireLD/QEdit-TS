@@ -80,6 +80,8 @@ function renderMap(
   const DOT_R = Math.max(3 * dpr, 5 * dpr * zoom / 100);
 
   const ARROW_LEN = DOT_R * 3.5; // screen pixels for direction arrow
+  const indicatorSection = (sectionId: number, wx: number, wy: number) =>
+    data.sections.find(s => s.id === sectionId) ?? findNearestSection(wx, wy, data.sections);
 
   // Monsters
   for (let i = 0; i < floor.monsters.length; i++) {
@@ -103,7 +105,7 @@ function renderMap(
     }
     // Direction arrow for selected monster
     if (isSel) {
-      const sec = data.sections.find(s => s.id === m.mapSection);
+      const sec = indicatorSection(m.mapSection, wx, wy);
       if (sec) {
         const [dwx, dwy] = bamToWorldDir(m.direction, sec);
         const ax = sx + dwx * ARROW_LEN;
@@ -134,7 +136,7 @@ function renderMap(
     if (isSel && placementKind !== 'none') {
       if (placementKind === 'radius' && o.scaleX > 0) {
         // Faint radius disk
-        const screenR = o.scaleX * zoom * dpr;
+        const screenR = Math.max(o.scaleX * zoom * dpr, DOT_R * 2.2);
         ctx.beginPath(); ctx.arc(sx, sy, screenR, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,255,204,0.06)';
         ctx.strokeStyle = 'rgba(0,255,204,0.55)';
@@ -142,7 +144,7 @@ function renderMap(
         ctx.fill(); ctx.stroke();
       } else {
         // Direction arrow using rotY
-        const sec = data.sections.find(s => s.id === o.mapSection);
+        const sec = indicatorSection(o.mapSection, wx, wy);
         if (sec) {
           const [dwx, dwy] = bamToWorldDir(o.rotY, sec);
           const ax = sx + dwx * ARROW_LEN;
