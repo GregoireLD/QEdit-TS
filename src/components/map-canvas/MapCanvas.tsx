@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
-import { readFile, openDirectoryDialog } from '../../platform/fs';
+import { readFile } from '../../platform/fs';
 import { isTauri } from '../../platform/index';
 import type { Floor, SelectedEntity } from '../../core/model/types';
 import { parseNRel, parseCRel, toWorldPos, fromWorldPos, findNearestSection, worldDirToBAM, bamToWorldDir, sampleFloorHeight } from '../../core/formats/rel';
@@ -215,7 +215,7 @@ interface MapCanvasProps {
 }
 
 export function MapCanvas({ floor, areaId }: MapCanvasProps) {
-  const { mapDir, setMapDir, previewVariantByArea, placementTarget, clearPlacementTarget, setLoadedMapData } = useUiStore();
+  const { dataDir, previewVariantByArea, placementTarget, clearPlacementTarget, setLoadedMapData } = useUiStore();
   const { quest } = useQuestStore();
   const selectedEntity = useQuestStore(s => s.selectedEntity);
   const area = AREA_BY_ID[areaId];
@@ -269,19 +269,20 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
 
   // In web mode, probe for a server-served data folder once on mount.
   useEffect(() => {
-    if (mapDir || isTauri()) return;
+    if (dataDir || isTauri()) return;
+    const { setDataDir } = useUiStore.getState();
     fetch('./data/map/xvm/forest1.png', { method: 'HEAD' })
-      .then(r => { if (r.ok) setMapDir('./data/map'); })
+      .then(r => { if (r.ok) setDataDir('./data'); })
       .catch(() => { /* not available — user must pick folder manually */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load geometry when selectedFile or mapDir changes
+  // Load geometry when selectedFile or dataDir changes
   useEffect(() => {
-    if (!mapDir || !selectedFile) return;
-    const sep   = mapDir.includes('/') ? '/' : '\\';
-    const cPath = `${mapDir}${sep}${selectedFile}`;
-    const nPath = `${mapDir}${sep}${toNRelName(selectedFile)}`;
+    if (!dataDir || !selectedFile) return;
+    const sep   = dataDir.includes('/') ? '/' : '\\';
+    const cPath = `${dataDir}${sep}map${sep}${selectedFile}`;
+    const nPath = `${dataDir}${sep}map${sep}${toNRelName(selectedFile)}`;
     setLoadState({ status: 'loading' });
     fitted.current = false;
     Promise.all([readFile(cPath), readFile(nPath)])
@@ -292,7 +293,7 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
         setLoadedMapData({ areaId, triangles, sections });
       })
       .catch(e => setLoadState({ status: 'error', msg: String(e) }));
-  }, [mapDir, selectedFile]);
+  }, [dataDir, selectedFile]);
 
   // HiDPI-aware resize
   useLayoutEffect(() => {
@@ -480,11 +481,6 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     useQuestStore.getState().selectEntity(best);
   }, [loadState, floor, zoom, panX, panY]);
 
-  const handleSetDir = useCallback(async () => {
-    const sel = await openDirectoryDialog('Select map folder (*c.rel / *n.rel)');
-    if (sel) setMapDir(sel);
-  }, [setMapDir]);
-
   const resetView = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || loadState.status !== 'ok') return;
@@ -556,10 +552,9 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
         </div>
       )}
 
-      {!mapDir && (
-        <div className={css.overlay} style={{ flexDirection: 'column', gap: 10 }}>
-          <span>Map folder not configured.</span>
-          <button className={css.setDirBtn} style={{ pointerEvents: 'all' }} onClick={handleSetDir}>Set map folder</button>
+      {!dataDir && (
+        <div className={css.overlay}>
+          <span>No data folder selected. Use the "Data Folder" button in the toolbar.</span>
         </div>
       )}
 
@@ -570,9 +565,6 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
         <div className={css.overlay} style={{ flexDirection: 'column', gap: 6, color: '#f08080' }}>
           <span>Could not load map file</span>
           <span style={{ fontSize: 10 }}>{loadState.msg}</span>
-          <button className={css.setDirBtn} style={{ pointerEvents: 'all' }} onClick={handleSetDir}>
-            Change folder
-          </button>
         </div>
       )}
 
@@ -599,7 +591,6 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
       {/* Toolbar */}
       <div className={css.toolbar}>
         <button className={css.toolBtn} title="Reset view" onClick={resetView}>⊡</button>
-        <button className={css.toolBtn} title="Change map folder" onClick={handleSetDir}>⚙</button>
       </div>
     </div>
   );

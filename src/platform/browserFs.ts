@@ -1,37 +1,37 @@
 /**
  * Browser-side file system access via the File System Access API.
  *
- * In browser mode, the user picks their PSO map directory once per session
+ * In browser mode, the user picks their PSO data directory once per session
  * (browser security prevents persisting directory handles across reloads
  * without an extra permissions flow). The handle is kept in memory and all
  * readFile() calls resolve relative paths against it.
  *
- * mapDir is set to BROWSER_FS_PREFIX so existing path-building code
- * (`${mapDir}/${file}`) produces paths we can parse here.
+ * dataDir is set to BROWSER_FS_PREFIX so existing path-building code
+ * (`${dataDir}/${sep}/${file}`) produces paths we can parse here.
  */
 
 export const BROWSER_FS_PREFIX = '__browser__';
 
-let _mapHandle: FileSystemDirectoryHandle | null = null;
+let _dataHandle: FileSystemDirectoryHandle | null = null;
 
-export function setBrowserMapHandle(handle: FileSystemDirectoryHandle): void {
-  _mapHandle = handle;
+export function setBrowserDataHandle(handle: FileSystemDirectoryHandle): void {
+  _dataHandle = handle;
 }
 
-export function hasBrowserMapHandle(): boolean {
-  return _mapHandle !== null;
+export function hasBrowserDataHandle(): boolean {
+  return _dataHandle !== null;
 }
 
-export function clearBrowserMapHandle(): void {
-  _mapHandle = null;
+export function clearBrowserDataHandle(): void {
+  _dataHandle = null;
 }
 
 /**
- * Resolve a virtual path like `__browser__/xvm/foo.xvr` against the stored
+ * Resolve a virtual path like `__browser__/map/xvm/foo.xvr` against the stored
  * directory handle and return the file contents.
  */
 export async function browserReadFile(path: string): Promise<Uint8Array> {
-  if (!_mapHandle) throw new Error('No map directory selected');
+  if (!_dataHandle) throw new Error('No data directory selected');
 
   // Strip the sentinel prefix (and any leading separator)
   const relative = path.startsWith(BROWSER_FS_PREFIX)
@@ -42,7 +42,7 @@ export async function browserReadFile(path: string): Promise<Uint8Array> {
   if (parts.length === 0) throw new Error(`Invalid path: ${path}`);
 
   // Navigate into subdirectories, then get the file
-  let dir: FileSystemDirectoryHandle = _mapHandle;
+  let dir: FileSystemDirectoryHandle = _dataHandle;
   for (let i = 0; i < parts.length - 1; i++) {
     dir = await dir.getDirectoryHandle(parts[i]);
   }

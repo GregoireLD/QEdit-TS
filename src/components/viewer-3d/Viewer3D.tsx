@@ -405,14 +405,6 @@ function makeLabel(text: string): THREE.Sprite {
 
 // ─── Entity model helpers ─────────────────────────────────────────────────────
 
-/** Derives the data root directory from the map directory path.
- *  e.g. "/path/to/data/map" → "/path/to/data/" */
-function getDataDir(mapDir: string, sep: string): string {
-  const clean = mapDir.endsWith(sep) ? mapDir.slice(0, -1) : mapDir;
-  const idx = clean.lastIndexOf(sep);
-  return idx >= 0 ? clean.slice(0, idx + 1) : clean + sep;
-}
-
 /** Builds a Three.js Group from a parsed NjResult. */
 function buildNjGroup(
   result:   NjResult,
@@ -547,9 +539,9 @@ function computeMonsterKey(
 }
 
 function computeMonsterBase(key: string, dataDir: string, sep: string): string {
-  if (key.startsWith('npc:')) return `${dataDir}monster${sep}npc${sep}${key.slice(4)}`;
-  if (key.startsWith('../'))  return dataDir + key.slice(3).replace(/\//g, sep);
-  return `${dataDir}monster${sep}${key}`;
+  if (key.startsWith('npc:')) return `${dataDir}${sep}monster${sep}npc${sep}${key.slice(4)}`;
+  if (key.startsWith('../'))  return `${dataDir}${sep}${key.slice(3).replace(/\//g, sep)}`;
+  return `${dataDir}${sep}monster${sep}${key}`;
 }
 
 function computeObjEntry(
@@ -579,8 +571,8 @@ function computeObjEntry(
     key:      stem,
     baseStem,
     paths: [
-      `${dataDir}obj${sep}Floor${floorId}${sep}${stem}`,
-      `${dataDir}obj${sep}${stem}`,
+      `${dataDir}${sep}obj${sep}Floor${floorId}${sep}${stem}`,
+      `${dataDir}${sep}obj${sep}${stem}`,
     ],
   };
 }
@@ -846,7 +838,7 @@ export function Viewer3D() {
   const [inVR,          setInVR]          = useState(false);
   const [isFullscreen,  setIsFullscreen]  = useState(false);
 
-  const { mapDir, previewVariantByArea } = useUiStore();
+  const { dataDir, previewVariantByArea } = useUiStore();
   const { selectedFloorId } = useQuestStore();
   const selectedEntity = useQuestStore(s => s.selectedEntity);
   const floor = useSelectedFloor();
@@ -1249,7 +1241,7 @@ export function Viewer3D() {
     modelCacheRef.current    = { monster: new Map(), object: new Map(), sec: new Map() };
     loadCtxRef.current       = null;
 
-    if (selectedFloorId === null || !mapDir || !scene) return;
+    if (selectedFloorId === null || !dataDir || !scene) return;
 
     const area = AREA_BY_ID[selectedFloorId];
     if (!area) return;
@@ -1264,10 +1256,10 @@ export function Viewer3D() {
 
     // *n.rel = visual mesh, *c.rel = collision, *.xvm = textures
     const nFile   = toNRelName(cFile);
-    const sep     = mapDir.includes('/') ? '/' : '\\';
-    const cPath   = `${mapDir}${sep}${cFile}`;
-    const nPath   = `${mapDir}${sep}${nFile}`;
-    const xPath   = `${mapDir}${sep}xvm${sep}${xvmFile}`;
+    const sep     = dataDir.includes('/') ? '/' : '\\';
+    const cPath   = `${dataDir}${sep}map${sep}${cFile}`;
+    const nPath   = `${dataDir}${sep}map${sep}${nFile}`;
+    const xPath   = `${dataDir}${sep}map${sep}xvm${sep}${xvmFile}`;
 
     let cancelled = false;
     setStatus('Loading…');
@@ -1276,7 +1268,7 @@ export function Viewer3D() {
     // The mesh follows the camera every frame (handled in the render loop below).
     // PNG lives in map/xvm/ alongside the XVM files.
     if (area.sky) {
-      const skyPath = `${mapDir}${sep}xvm${sep}${area.sky}`;
+      const skyPath = `${dataDir}${sep}map${sep}xvm${sep}${area.sky}`;
       // Convert file path to a data URL via Tauri readFile, then use TextureLoader.
       readFile(skyPath).then(buf => {
         if (cancelled || !sceneRef.current) return;
@@ -1303,8 +1295,6 @@ export function Viewer3D() {
     const tamPromise = readFile(tamPath).catch(() => null);
 
     // ── Entity model loading (parallel with map files) ──────────────────────
-    // Derive the data root from mapDir (e.g. "…/data/map" → "…/data/")
-    const dataDir   = getDataDir(mapDir, sep);
     const episode   = (useQuestStore.getState().quest?.episode ?? 1) as 1 | 2 | 4;
     const floorSnap = floorRef.current;
     // NPC51_FILE and floor-subdirectory lookups use the absolute area ID (0..45),
@@ -1481,7 +1471,7 @@ export function Viewer3D() {
     return () => { cancelled = true; };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFloorId, mapDir, previewVariantByArea]);
+  }, [selectedFloorId, dataDir, previewVariantByArea]);
 
   // ── Incremental entity update — live edits without reloading map files ──────
   // Compares the current floor snapshot to the previous one and applies only

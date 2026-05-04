@@ -1,12 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuestStore } from '../../stores/questStore';
+import { useUiStore } from '../../stores/uiStore';
 import { isTauri } from '../../platform/index';
+import { openDirectoryDialog } from '../../platform/fs';
+import { CompatChecker } from '../compat-checker/CompatChecker';
 import styles from './TopBar.module.css';
 
 export function TopBar() {
   const { quest, filePath, isLoading, newQuest, openQuest, openQuestFromUrl, saveQuest, saveQuestAs } = useQuestStore();
-  const [showNewMenu, setShowNewMenu] = useState(false);
+  const { dataDir, setDataDir } = useUiStore();
+  const [showNewMenu, setShowNewMenu]         = useState(false);
+  const [showCompatChecker, setShowCompatChecker] = useState(false);
   const newMenuRef = useRef<HTMLDivElement>(null);
+
+  async function handleSelectDataDir() {
+    const sel = await openDirectoryDialog('Select PSO data folder (containing map/, monster/, obj/)');
+    if (sel) setDataDir(sel);
+  }
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
@@ -45,7 +55,25 @@ export function TopBar() {
         {filePath && (
           <button onClick={saveQuestAs} disabled={!quest || isLoading}>Save As…</button>
         )}
+        <button
+          onClick={handleSelectDataDir}
+          title={dataDir ? `Data folder: ${dataDir}` : 'Select PSO data folder'}
+          style={!dataDir ? { color: '#ff9800' } : undefined}
+        >
+          {dataDir ? 'Data Folder' : 'Data Folder…'}
+        </button>
+        <button
+          onClick={() => setShowCompatChecker(true)}
+          disabled={!quest}
+          title="Check quest compatibility against DC, PC, GC, and BB"
+        >
+          Compat Check
+        </button>
       </div>
+
+      {showCompatChecker && (
+        <CompatChecker onClose={() => setShowCompatChecker(false)} />
+      )}
 
       <div className={styles.questInfo}>
         {quest && (

@@ -9,7 +9,7 @@
  */
 
 import { isTauri } from './index';
-import { BROWSER_FS_PREFIX, browserReadFile, setBrowserMapHandle } from './browserFs';
+import { BROWSER_FS_PREFIX, browserReadFile, setBrowserDataHandle } from './browserFs';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -160,7 +160,7 @@ export async function openDirectoryDialog(title?: string): Promise<string | null
     const handle = await (window as unknown as {
       showDirectoryPicker: (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>;
     }).showDirectoryPicker({ mode: 'read' });
-    setBrowserMapHandle(handle);
+    setBrowserDataHandle(handle);
     return BROWSER_FS_PREFIX;
   } catch {
     // User cancelled or API not supported

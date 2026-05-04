@@ -21,7 +21,7 @@ export interface PlacementTarget {
   placement: PlacementType;
 }
 
-const MAP_DIR_KEY = 'qedit_mapDir';
+const DATA_DIR_KEY = 'qedit_dataDir';
 
 interface UiStore {
   mainTab:  MainTab;
@@ -31,9 +31,9 @@ interface UiStore {
   scriptHasError: boolean;
   setScriptHasError: (v: boolean) => void;
 
-  /** Absolute path to the folder containing *c.rel and *n.rel files */
-  mapDir:   string | null;
-  setMapDir: (dir: string) => void;
+  /** Absolute path to the PSO data root (containing map/, monster/, obj/ subdirectories) */
+  dataDir:   string | null;
+  setDataDir: (dir: string) => void;
 
   /**
    * Currently previewed map-variant index per absolute area ID.
@@ -70,10 +70,10 @@ export const useUiStore = create<UiStore>(set => ({
   setScriptHasError: v => set({ scriptHasError: v }),
 
   // In browser mode, directory handles don't survive page reloads — always start without one.
-  mapDir: isTauri() ? localStorage.getItem(MAP_DIR_KEY) : null,
-  setMapDir: dir => {
-    if (isTauri()) localStorage.setItem(MAP_DIR_KEY, dir);
-    set({ mapDir: dir });
+  dataDir: isTauri() ? localStorage.getItem(DATA_DIR_KEY) : null,
+  setDataDir: dir => {
+    if (isTauri()) localStorage.setItem(DATA_DIR_KEY, dir);
+    set({ dataDir: dir });
   },
 
   previewVariantByArea: {},

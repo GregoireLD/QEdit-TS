@@ -1,0 +1,169 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.dialog {
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 680px;
+  max-width: 96vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* ── Header ────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-head);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.closeBtn:hover { background: #3d3d3d; color: var(--text); }
+
+/* ── Body ──────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Version list (left panel) ─────────────────────────── */
+
+.versionList {
+  width: 120px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  overflow-y: auto;
+}
+
+.versionItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-size: 13px;
+}
+.versionItem:hover  { background: #333; }
+.versionItem.active { background: #3a3a4a; color: var(--text-head); }
+
+.icon {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.icon.ok      { color: #4caf50; }
+.icon.warning { color: #ff9800; }
+.icon.error   { color: #f44336; }
+.icon.loading { color: var(--text-dim); }
+
+.versionName {
+  flex: 1;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 11px;
+  background: #444;
+  border-radius: 10px;
+  padding: 1px 6px;
+  color: var(--text-dim);
+}
+
+/* ── Detail panel (right side) ─────────────────────────── */
+
+.detail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.message {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.errorMsg {
+  color: #f44336;
+}
+
+.sectionHead {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+}
+
+.issueList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.issueError {
+  color: #f44336;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.issueWarn {
+  color: #ff9800;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
