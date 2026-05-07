@@ -2,10 +2,10 @@
  * Quest compatibility checker.
  *
  * Validates a loaded quest against each PSO game version:
- *   0 = DC  (Dreamcast V1, ASCII format)
- *   1 = PC  (V2 / PC, Unicode format)
- *   2 = GC  (GameCube)
- *   3 = BB  (Blue Burst)
+ *   0 = DC V1          (Dreamcast V1, ASCII format)
+ *   1 = DC V2 & PC     (Dreamcast V2 / PC, Unicode format — same opcode set)
+ *   2 = GC             (GameCube Ep1&2)
+ *   3 = BB             (Blue Burst)
  *
  * Ported from TestCompatibility() in main.pas and FCompat.pas.
  */
@@ -19,7 +19,7 @@ import type { Quest } from './model/types';
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
-export const VERSION_NAMES = ['DC', 'PC', 'GC', 'BB'] as const;
+export const VERSION_NAMES = ['DC V1', 'DC V2 & PC', 'GC', 'BB'] as const;
 export type VersionIndex = 0 | 1 | 2 | 3;
 
 export interface CompatIssue {
@@ -143,12 +143,14 @@ function advancePastArgs(entry: AsmEntry, code: Uint8Array, pos: number, isDC: b
 // ─── Bytecode walker ────────────────────────────────────────────────────────
 
 interface Hit {
-  op:    number;
-  entry: AsmEntry | null;
+  op:     number;
+  entry:  AsmEntry | null;
+  lineNo: number;
 }
 
 function* walkBytecode(code: Uint8Array, table: AsmEntry[], isDC: boolean): Generator<Hit> {
-  let x = 0;
+  let x      = 0;
+  let lineNo = 1;
   while (x < code.length) {
     let op = code[x++] ?? 0;
     if (op === 0xF8 || op === 0xF9) op = (op << 8) | (code[x++] ?? 0);
@@ -161,7 +163,8 @@ function* walkBytecode(code: Uint8Array, table: AsmEntry[], isDC: boolean): Gene
       entry = e;
     }
 
-    yield { op, entry };
+    yield { op, entry, lineNo };
+    lineNo++;
 
     if (entry) x = advancePastArgs(entry, code, x, isDC);
   }
@@ -177,19 +180,27 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
   const { bin, floors, embeddedFiles, episode } = quest;
   const isDC = bin.version === BinVersion.DC;
 
+  // Opcodes that have a DC-specific variant with different parameter order.
+  // When a non-DC quest is checked for DC V1 compatibility, encountering such
+  // an opcode means the parameter layout is swapped relative to what DC expects.
+  const dcVariantOps = new Set(table.filter(e => e.order === T_DC).map(e => e.fnc));
+
   // 1. Entry point (label 0) must exist
   if (bin.functionRefs.length === 0) {
     err('Label 0 is missing — quest has no entry point.');
   }
 
   // 2. Bytecode version scan
-  for (const { op, entry } of walkBytecode(bin.bytecode, table, isDC)) {
+  for (const { op, entry, lineNo } of walkBytecode(bin.bytecode, table, isDC)) {
     if (!entry) continue;
+    // arg_push* are calling-convention helpers emitted implicitly before T_ARGS calls.
+    // Delphi does not check their version — only the function call itself is flagged.
+    if (entry.name.startsWith('arg_push')) continue;
 
-    // set_episode opcode: episode 4 (bytecode value 2) is GC-incompatible
+    // set_episode opcode: episode 4 (bytecode value 2) is not supported before BB
     if (op === 0xF8BC) {
       if (episode === 4 && verIdx < 3) {
-        err(`Episode 4 (set_episode value 2) is not supported on ${VERSION_NAMES[verIdx]}.`);
+        err(`Episode 4 is not supported on ${VERSION_NAMES[verIdx]}.`);
       }
       continue;
     }
@@ -197,13 +208,13 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
     // Opcode version compatibility
     if (WARN_ONLY_GC.has(op)) {
       if (verIdx < 2 && entry.order !== T_DC) {
-        warn(`Opcode ${entry.name} (0x${op.toString(16).toUpperCase()}) requires GC or later; may not work on ${VERSION_NAMES[verIdx]}.`);
+        warn(`Opcode may not work on this version "${entry.name}" at line ${lineNo}`);
       }
-    } else {
-      if (entry.ver > verIdx) {
-        const reqVer = VERSION_NAMES[entry.ver as VersionIndex] ?? `v${entry.ver}`;
-        err(`Opcode ${entry.name} (0x${op.toString(16).toUpperCase()}) requires ${reqVer}; not supported on ${VERSION_NAMES[verIdx]}.`);
-      }
+    } else if (entry.ver > verIdx) {
+      err(`Opcode not supported "${entry.name}" at line ${lineNo}`);
+    } else if (verIdx === 0 && !isDC && dcVariantOps.has(op)) {
+      // DC V1 expects a different parameter order for this opcode than the quest uses
+      err(`Parameter swap not allowed on this version "${entry.name}" at line ${lineNo}`);
     }
   }
 
@@ -218,7 +229,7 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
 
     // Monster checks
     for (let i = 0; i < floor.monsters.length; i++) {
-      const mon    = floor.monsters[i];
+      const mon     = floor.monsters[i];
       const isEnemy = ENEMY_SKINS.has(mon.skin);
 
       // Skin 51 = generic NPC — DC/PC don't support them

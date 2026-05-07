@@ -77,7 +77,7 @@ export function CompatChecker({ onClose }: Props) {
                     </button>
                   );
                 })
-              : ['DC', 'PC', 'GC', 'BB'].map((v, i) => (
+              : ['DC V1', 'DC V2 & PC', 'GC', 'BB'].map((v, i) => (
                   <button
                     key={v}
                     className={`${styles.versionItem} ${i === selected ? styles.active : ''}`}
