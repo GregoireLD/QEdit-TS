@@ -4,14 +4,22 @@ import { useUiStore } from '../../stores/uiStore';
 import { isTauri } from '../../platform/index';
 import { openDirectoryDialog } from '../../platform/fs';
 import { CompatChecker } from '../compat-checker/CompatChecker';
+import { SaveAsDialog } from '../save-as-dialog/SaveAsDialog';
 import styles from './TopBar.module.css';
+import type { SaveFormat } from '../../core/model/types';
 
 export function TopBar() {
-  const { quest, filePath, isLoading, newQuest, openQuest, openQuestFromUrl, saveQuest, saveQuestAs } = useQuestStore();
+  const { quest, filePath, isLoading, newQuest, openQuest, openQuestFromUrl, saveQuest, saveQuestAsFormat } = useQuestStore();
   const { dataDir, setDataDir } = useUiStore();
-  const [showNewMenu, setShowNewMenu]         = useState(false);
+  const [showNewMenu,       setShowNewMenu]       = useState(false);
   const [showCompatChecker, setShowCompatChecker] = useState(false);
+  const [showSaveAs,        setShowSaveAs]        = useState(false);
   const newMenuRef = useRef<HTMLDivElement>(null);
+
+  async function handleSaveAsConfirm(format: SaveFormat) {
+    const saved = await saveQuestAsFormat(format);
+    if (saved) setShowSaveAs(false);
+  }
 
   async function handleSelectDataDir() {
     const sel = await openDirectoryDialog('Select PSO data folder (containing map/, monster/, obj/)');
@@ -49,11 +57,11 @@ export function TopBar() {
         {!isTauri() && (
           <button onClick={openQuestFromUrl} disabled={isLoading}>Open URL…</button>
         )}
-        <button onClick={filePath ? saveQuest : saveQuestAs} disabled={!quest || isLoading}>
+        <button onClick={filePath ? saveQuest : () => setShowSaveAs(true)} disabled={!quest || isLoading}>
           {filePath ? 'Save' : 'Save As…'}
         </button>
         {filePath && (
-          <button onClick={saveQuestAs} disabled={!quest || isLoading}>Save As…</button>
+          <button onClick={() => setShowSaveAs(true)} disabled={!quest || isLoading}>Save As…</button>
         )}
         <button
           onClick={handleSelectDataDir}
@@ -73,6 +81,12 @@ export function TopBar() {
 
       {showCompatChecker && (
         <CompatChecker onClose={() => setShowCompatChecker(false)} />
+      )}
+      {showSaveAs && (
+        <SaveAsDialog
+          onClose={() => setShowSaveAs(false)}
+          onConfirm={handleSaveAsConfirm}
+        />
       )}
 
       <div className={styles.questInfo}>

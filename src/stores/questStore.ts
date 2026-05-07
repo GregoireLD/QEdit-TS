@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { openFileDialog, saveFile, saveFileDialog } from '../platform/fs';
-import { parseQst, serialiseQst } from '../core/formats/qst';
+import { parseQst, parseZipQuest, serialiseQst, serialiseForSave } from '../core/formats/qst';
+import { isZipMagic } from '../core/formats/zip';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
 import { saveSidecar, type Sidecar } from '../core/formats/sidecar';
 import { EP_OFFSET } from '../core/map/areaData';
 import { useUiStore } from './uiStore';
 import { BinVersion, QstFormat, Language } from '../core/model/types';
 import { rebuildBytecodeMapSetup } from '../core/formats/bytecodeMap';
-import type { Quest, Floor, QuestBin, Monster, QuestObject, SelectedEntity } from '../core/model/types';
+import { defaultSaveFormat } from '../core/saveFormat';
+import type { Quest, Floor, QuestBin, Monster, QuestObject, SelectedEntity, SaveFormat } from '../core/model/types';
 
 // ScriptEditor registers these on mount so saveQuest/saveQuestAs can compile
 // and flush the sidecar without depending on ScriptEditor's reactive state.
@@ -26,6 +28,8 @@ type BinMetaPatch = Partial<Pick<QuestBin, 'title' | 'info' | 'description' | 'q
 interface QuestStore {
   quest: Quest | null;
   filePath: string | null;
+  /** Format of the file currently on disk (updated after every successful save/load). */
+  savedFormat: SaveFormat | null;
   /** Absolute area ID (0-45) of the selected area, or null. */
   selectedFloorId: number | null;
   selectedEntity: SelectedEntity;
@@ -40,6 +44,8 @@ interface QuestStore {
   openQuestFromUrl: () => Promise<void>;
   saveQuest: () => Promise<void>;
   saveQuestAs: () => Promise<void>;
+  /** Save with an explicit format choice (used by SaveAsDialog). Returns true if the user completed the save. */
+  saveQuestAsFormat: (format: SaveFormat) => Promise<boolean>;
   selectFloor: (id: number) => void;
   selectEntity: (entity: SelectedEntity) => void;
   updateBinMeta: (patch: BinMetaPatch) => void;
@@ -65,6 +71,7 @@ interface QuestStore {
 export const useQuestStore = create<QuestStore>((set, get) => ({
   quest: null,
   filePath: null,
+  savedFormat: null,
   selectedFloorId: null,
   selectedEntity: null,
   isLoading: false,
@@ -105,7 +112,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     };
 
     useUiStore.getState().resetPreviews({});
-    set({ quest, filePath: null, selectedFloorId: null, isLoading: false, error: null });
+    set({ quest, filePath: null, savedFormat: defaultSaveFormat(quest), selectedFloorId: null, isLoading: false, error: null });
   },
 
   toggleArea: (absAreaId) => {
@@ -140,32 +147,34 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   openQuest: async () => {
     const opened = await openFileDialog({
       title:   'Open Quest',
-      filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin'] }],
+      filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin', 'zip'] }],
     });
     if (!opened) return;
 
     set({ isLoading: true, error: null });
     try {
-      const bytes  = opened.data;
-      const parsed = parseQst(new Uint8Array(bytes));
+      const bytes = new Uint8Array(opened.data);
 
-      // Detect episode + per-area variant from bytecode
+      let parsed: Quest;
+      let savedFmt: SaveFormat;
+
+      if (isZipMagic(bytes)) {
+        const result = parseZipQuest(bytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
+      } else {
+        parsed   = parseQst(bytes);
+        savedFmt = defaultSaveFormat(parsed);
+      }
+
       const analysis = await analyseQuestBin(parsed.bin);
+      const quest: Quest = { ...parsed, episode: analysis.episode, variantByArea: analysis.variantByArea };
 
-      const quest: Quest = {
-        ...parsed,
-        episode:       analysis.episode,
-        variantByArea: analysis.variantByArea,
-      };
-
-      // Reset UI previews to match the loaded bytecode variants
       useUiStore.getState().resetPreviews(analysis.variantByArea);
-
-      // Select the first enabled area (convert relative .dat id → absolute area id)
       const offset     = EP_OFFSET[quest.episode];
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
 
-      set({ quest, filePath: opened.path, selectedFloorId: firstAbsId, isLoading: false });
+      set({ quest, filePath: opened.path, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -176,23 +185,35 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     if (!url) return;
     set({ isLoading: true, error: null });
     try {
-      const resp = await fetch(url);
+      const resp  = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const bytes  = new Uint8Array(await resp.arrayBuffer());
-      const parsed = parseQst(bytes);
+      const bytes = new Uint8Array(await resp.arrayBuffer());
+
+      let parsed: Quest;
+      let savedFmt: SaveFormat;
+
+      if (isZipMagic(bytes)) {
+        const result = parseZipQuest(bytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
+      } else {
+        parsed   = parseQst(bytes);
+        savedFmt = defaultSaveFormat(parsed);
+      }
+
       const analysis = await analyseQuestBin(parsed.bin);
       const quest: Quest = { ...parsed, episode: analysis.episode, variantByArea: analysis.variantByArea };
       useUiStore.getState().resetPreviews(analysis.variantByArea);
       const offset     = EP_OFFSET[quest.episode];
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
-      set({ quest, filePath: url, selectedFloorId: firstAbsId, isLoading: false });
+      set({ quest, filePath: url, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
   },
 
   saveQuest: async () => {
-    const { filePath } = get();
+    const { filePath, savedFormat } = get();
     if (!get().quest || !filePath) return;
     set({ isLoading: true, error: null });
     try {
@@ -200,11 +221,16 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (_preCompiler) await _preCompiler();
       const { quest } = get(); // re-read: compile may have updated bin
       if (!quest) { set({ isLoading: false }); return; }
-      const bytes   = serialiseQst(quest);
-      await saveFile(filePath, bytes);
+
+      // Re-serialise in the same format the file was last saved/opened as.
+      const fmt         = savedFormat ?? defaultSaveFormat(quest);
+      const { data, ext } = serialiseForSave(quest, fmt);
+      await saveFile(filePath, data);
+
       const sidecar = _sidecarExtractor?.();
-      if (sidecar) await saveSidecar(filePath, sidecar);
-      set({ isLoading: false, saveVersion: get().saveVersion + 1 });
+      if (sidecar && ext === 'qst') await saveSidecar(filePath, sidecar);
+
+      set({ isLoading: false, savedFormat: fmt, saveVersion: get().saveVersion + 1 });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -228,9 +254,43 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (!dest) { set({ isLoading: false }); return; }
       const sidecar = _sidecarExtractor?.();
       if (sidecar) await saveSidecar(dest, sidecar);
-      set({ filePath: dest, isLoading: false, saveVersion: get().saveVersion + 1 });
+      set({ filePath: dest, isLoading: false, savedFormat: defaultSaveFormat(quest), saveVersion: get().saveVersion + 1 });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
+    }
+  },
+
+  saveQuestAsFormat: async (format) => {
+    if (!get().quest) return false;
+    set({ isLoading: true, error: null });
+    try {
+      if (_preCompiler) await _preCompiler();
+      const { quest } = get();
+      if (!quest) { set({ isLoading: false }); return false; }
+
+      const { data, ext } = serialiseForSave(quest, format);
+
+      const filters =
+        ext === 'qst' ? [{ name: 'PSO Quest',       extensions: ['qst'] }] :
+        ext === 'bin' ? [{ name: 'Quest Binary',     extensions: ['bin'] }] :
+                        [{ name: 'ZIP Archive',       extensions: ['zip'] }];
+
+      const dest = await saveFileDialog({
+        title:       'Save Quest As',
+        filters,
+        defaultName: `quest.${ext}`,
+        data,
+      });
+      if (!dest) { set({ isLoading: false }); return false; }
+
+      const sidecar = _sidecarExtractor?.();
+      if (sidecar && ext === 'qst') await saveSidecar(dest, sidecar);
+
+      set({ filePath: dest, isLoading: false, savedFormat: format, saveVersion: get().saveVersion + 1 });
+      return true;
+    } catch (e) {
+      set({ isLoading: false, error: String(e) });
+      return false;
     }
   },
 

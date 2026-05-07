@@ -1,0 +1,238 @@
+/* ── Overlay ─────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+/* ── Dialog ──────────────────────────────────────────────── */
+
+.dialog {
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 400px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-head);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.closeBtn:hover { background: #3d3d3d; color: var(--text); }
+
+/* ── Body ────────────────────────────────────────────────── */
+
+.body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.currentFormat {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Section ─────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.checking {
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Packaging grid (2 columns) ──────────────────────────── */
+
+.packagingGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
+
+.radioOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  color: var(--text);
+  user-select: none;
+}
+.radioOption:hover { background: #333; }
+.radioOption.selected { color: var(--text-head); }
+.radioOption input { cursor: pointer; accent-color: #7070c0; }
+
+/* ── Platform row ────────────────────────────────────────── */
+
+.platformRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.platformOption {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: #333;
+  user-select: none;
+  transition: background 0.1s, border-color 0.1s;
+}
+.platformOption:hover:not(.disabled) {
+  background: #3d3d3d;
+  border-color: #666;
+}
+.platformOption.selected {
+  background: #4a4a8a;
+  border-color: #9090e0;
+  color: #e8e8ff;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(112, 112, 192, 0.3);
+}
+.platformOption.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+/* Hide the actual radio input; the label acts as the button */
+.platformOption input { display: none; }
+
+/* ── Project note (shown instead of platform radio when packaging = project) ── */
+
+.projectNote {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.platformChip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid #606060;
+  background: #3a3a3a;
+  color: var(--text-head);
+  white-space: nowrap;
+}
+
+.projectNoteText {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ── Warnings ────────────────────────────────────────────── */
+
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.warning {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 7px 10px;
+  border-radius: 4px;
+}
+
+.destructive {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f88;
+  border: 1px solid rgba(244, 67, 54, 0.25);
+}
+
+.infoWarn {
+  background: rgba(255, 152, 0, 0.1);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 152, 0, 0.25);
+}
+
+/* ── Save error ──────────────────────────────────────────── */
+
+.saveError {
+  font-size: 12px;
+  color: #f44336;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.saveBtn {
+  background: #3a3a6a;
+  border-color: #5a5aaa;
+  color: #c8c8ff;
+}
+.saveBtn:hover:not(:disabled) {
+  background: #4a4a7a;
+  border-color: #7070c0;
+}

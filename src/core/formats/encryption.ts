@@ -88,3 +88,32 @@ export function parseEncryptedWrapper(buf: Uint8Array): { seed: number; payload:
   psoDecrypt(payload, seed);
   return { seed, payload };
 }
+
+/**
+ * Wrap PRS-compressed data with the PSO download-quest encryption header.
+ *
+ * Output layout (mirrors the input layout of parseEncryptedWrapper):
+ *   [0..2]  3 bytes  original uncompressed size (LE)
+ *   [3]     1 byte   padding (0x00)
+ *   [4..7]  4 bytes  random seed (LE u32)
+ *   [8..]   N bytes  XOR-encrypted copy of compressedData
+ *
+ * The returned buffer's length (compressedData.length + 8) is what the
+ * create-packet size field must carry so the receiver knows how many bytes
+ * to accumulate from file-data chunks.
+ */
+export function buildEncryptedWrapper(compressedData: Uint8Array, uncompressedSize: number): Uint8Array {
+  const seed = (Math.random() * 0x7FFFFFFF) >>> 0;
+  // Copy before encrypting — psoDecrypt mutates in-place.
+  const encrypted = new Uint8Array(compressedData);
+  psoDecrypt(encrypted, seed);
+
+  const out  = new Uint8Array(8 + encrypted.length);
+  out[0] =  uncompressedSize        & 0xff;
+  out[1] = (uncompressedSize >>  8) & 0xff;
+  out[2] = (uncompressedSize >> 16) & 0xff;
+  // out[3] = 0x00  (padding, already zero)
+  new DataView(out.buffer).setUint32(4, seed, true);
+  out.set(encrypted, 8);
+  return out;
+}

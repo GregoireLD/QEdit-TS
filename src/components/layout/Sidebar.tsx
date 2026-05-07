@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useQuestStore } from '../../stores/questStore';
 import { useUiStore } from '../../stores/uiStore';
 import { AREA_BY_ID, AREAS_BY_EPISODE, EP_OFFSET } from '../../core/map/areaData';
+import { describeSavedFormat } from '../../core/saveFormat';
 import styles from './Sidebar.module.css';
 
 export function Sidebar() {
-  const { quest, selectedFloorId, selectFloor, toggleArea, commitVariant } = useQuestStore();
+  const { quest, savedFormat, selectedFloorId, selectFloor, toggleArea, commitVariant } = useQuestStore();
   const { previewVariantByArea, setPreviewVariant } = useUiStore();
 
   // Which area rows are expanded to show variants
@@ -163,8 +164,12 @@ export function Sidebar() {
       <div className={styles.questInfoBox}>
         <div className={styles.sectionHead}>Quest Info</div>
         <div className={styles.infoRow}><span>Number</span><span>{quest.bin.questNumber}</span></div>
+        <div className={styles.infoRow}><span>Episode</span><span>EP{quest.episode}</span></div>
+        <div className={styles.infoRow}>
+          <span>Format</span>
+          <span>{savedFormat ? describeSavedFormat(savedFormat) : quest.bin.version}</span>
+        </div>
         <div className={styles.infoRow}><span>Language</span><span>{quest.bin.language}</span></div>
-        <div className={styles.infoRow}><span>Format</span><span>{quest.bin.version}</span></div>
         <div className={styles.infoRow}>
           <span>Bytecode</span><span>{(quest.bin.bytecode.length / 1024).toFixed(1)} KB</span>
         </div>

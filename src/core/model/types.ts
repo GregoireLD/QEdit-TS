@@ -9,6 +9,24 @@ export const enum QstFormat {
   Download = 'Download',
 }
 
+/** Outer packaging format for saving. */
+export type PackagingType =
+  | 'server'       // .qst with PSO server packets, PRS-compressed
+  | 'download'     // .qst with PSO download packets, PRS-compressed + encrypted
+  | 'compressed'   // .zip of PRS-compressed individual files
+  | 'uncompressed' // .zip of raw (uncompressed) individual files
+  | 'project'      // .zip of all embedded files as-is (no format conversion)
+  | 'rawbin';      // single .bin file only (no .dat)
+
+/** Target platform when saving. */
+export type TargetPlatform = 'PC' | 'DC' | 'GC' | 'BB' | 'Xbox';
+
+export interface SaveFormat {
+  packaging: PackagingType;
+  /** Ignored when packaging is 'project'. */
+  platform: TargetPlatform;
+}
+
 export const enum BinVersion {
   /** DC/GC — ASCII metadata, seg[0] === 0x1D4 */
   DC = 'DC',

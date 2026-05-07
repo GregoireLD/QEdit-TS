@@ -189,8 +189,29 @@ function encodeAscii(s: string, maxBytes: number): Uint8Array {
   return out;
 }
 
-export function serialiseBin(q: QuestBin): Uint8Array {
-  const { version, language, questNumber, title, info, description, bytecode, functionRefs, dataBlocks, bbData } = q;
+/**
+ * Serialise a QuestBin back to bytes.
+ *
+ * opts.targetVersion overrides the .bin layout version (DC / PC / BB).
+ * opts.targetBbContainer overrides the outer-container flag that affects
+ * header offsets and questNumber location.
+ *
+ * When converting to BB: bbData is preserved if present, otherwise a blank
+ * 0xE90-byte block is generated.
+ * When converting away from BB: bbData is omitted.
+ */
+export function serialiseBin(
+  q: QuestBin,
+  opts?: { targetVersion?: BinVersion; targetBbContainer?: boolean },
+): Uint8Array {
+  const version     = opts?.targetVersion     ?? q.version;
+  const bbContainer = opts?.targetBbContainer ?? q.bbContainer;
+  const { language, questNumber, title, info, description, bytecode, functionRefs, dataBlocks } = q;
+
+  // bbData: carry through for BB target, strip otherwise; generate blank if needed.
+  const bbData: Uint8Array | undefined = version === BinVersion.BB
+    ? (q.bbData ?? new Uint8Array(0xE90))
+    : undefined;
 
   // Determine seg[0]
   let seg0: number;
@@ -218,7 +239,7 @@ export function serialiseBin(q: QuestBin): Uint8Array {
   view.setUint32(0x08, seg2, true);
   view.setUint32(0x0C, 0xFFFFFFFF, true);
 
-  if (q.bbContainer) {
+  if (bbContainer) {
     // BB outer container: quest number at 0x10, language forced to 0
     view.setUint16(0x10, questNumber, true);
   } else {
@@ -227,7 +248,7 @@ export function serialiseBin(q: QuestBin): Uint8Array {
   }
 
   // Metadata start: BB outer containers always use 0x18 (Delphi: y=24)
-  const txtStart = q.bbContainer ? 0x18 : 0x14;
+  const txtStart = bbContainer ? 0x18 : 0x14;
   const txt = buf.subarray(txtStart, seg0);
 
   if (version === BinVersion.DC) {
