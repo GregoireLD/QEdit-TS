@@ -8,10 +8,11 @@
  *   3 = BB             (Blue Burst)
  *
  * Ported from TestCompatibility() in main.pas and FCompat.pas.
+ * Uses walkOpcodes() from disasm.ts to guarantee byte-exact navigation.
  */
 
-import { loadAsmTable } from './formats/disasm';
-import type { AsmEntry } from './formats/disasm';
+import { loadAsmTable, walkOpcodes } from './formats/disasm';
+import type { AsmEntry, WalkedOp } from './formats/disasm';
 import { EP_OFFSET } from './map/areaData';
 import { FLOOR_VERSION_DATA } from './map/floorVersionData';
 import { BinVersion } from './model/types';
@@ -34,42 +35,22 @@ export interface CompatResult {
 
 /** Run all 4 versions in parallel and return results. */
 export async function checkAllVersions(quest: Quest): Promise<CompatResult[]> {
-  const table = await loadAsmTable();
-  return Promise.all(
-    ([0, 1, 2, 3] as VersionIndex[]).map(async ver => ({
-      version: VERSION_NAMES[ver],
-      issues:  await _check(quest, ver, table),
-    }))
-  );
+  const [ops, table] = await Promise.all([walkOpcodes(quest.bin), loadAsmTable()]);
+  return ([0, 1, 2, 3] as VersionIndex[]).map(ver => ({
+    version: VERSION_NAMES[ver],
+    issues:  _check(quest, ver, ops, table),
+  }));
 }
 
 /** Check a single version. */
 export async function checkCompatibility(quest: Quest, verIdx: VersionIndex): Promise<CompatIssue[]> {
-  const table = await loadAsmTable();
-  return _check(quest, verIdx, table);
+  const [ops, table] = await Promise.all([walkOpcodes(quest.bin), loadAsmTable()]);
+  return _check(quest, verIdx, ops, table);
 }
 
-// ─── Arg type constants (must match disasm.ts) ─────────────────────────────
+// ─── Arg type constants (used only for dcVariantOps lookup) ───────────────
 
-const T_NONE      = 0;
-const T_ARGS      = 2;
-const T_DC        = 6;
-const T_REG       = 7;
-const T_BYTE      = 8;
-const T_WORD      = 9;
-const T_DWORD     = 10;
-const T_FLOAT     = 11;
-const T_STR       = 12;
-const T_RREG      = 13;
-const T_FUNC      = 14;
-const T_FUNC2     = 15;
-const T_SWITCH    = 16;
-const T_SWITCH2B  = 17;
-const T_PFLAG     = 18;
-const T_STRDATA   = 19;
-const T_DATA      = 20;
-const T_BREG      = 21;
-const T_DREG      = 22;
+const T_DC = 6;
 
 // ─── Version classification ────────────────────────────────────────────────
 
@@ -99,80 +80,14 @@ const DEF_EP1_BB   = new Set([...DEF_EP1_BASE, 950, 900, 930, 920, 910, 960, 970
 const DEF_EP24_BASE = new Set([100, 90, 120, 130, 80, 70, 60, 140, 110, 30, 50, 1, 20]);
 const DEF_EP24_BB   = new Set([...DEF_EP24_BASE, 850, 800, 830, 820, 810, 860, 870, 840, 880]);
 
-// ─── Bytecode arg-size helper ──────────────────────────────────────────────
-
-function argBytes(argType: number, code: Uint8Array, at: number, isDC: boolean): number {
-  switch (argType) {
-    case T_REG: case T_BREG: case T_RREG: case T_BYTE: return 1;
-    case T_DREG: return 4;
-    case T_WORD: case T_DATA: case T_STRDATA: case T_PFLAG: return 2;
-    case T_DWORD: case T_FLOAT: return 4;
-    case T_FUNC: return 2;
-    case T_FUNC2: return isDC ? 4 : 2;
-    case T_SWITCH: {
-      const n = code[at] ?? 0;
-      return 1 + n * 2;
-    }
-    case T_SWITCH2B: {
-      const n = code[at] ?? 0;
-      return 1 + n;
-    }
-    case T_STR: {
-      let n = 0;
-      if (!isDC) {
-        while (at + n + 1 < code.length && (code[at + n] || code[at + n + 1])) n += 2;
-        return n + 2;
-      } else {
-        while (at + n < code.length && code[at + n]) n++;
-        return n + 1;
-      }
-    }
-    default: return 0;
-  }
-}
-
-function advancePastArgs(entry: AsmEntry, code: Uint8Array, pos: number, isDC: boolean): number {
-  if (entry.order === T_ARGS || entry.order === T_NONE) return pos;
-  for (const arg of entry.args) {
-    if (arg === T_NONE) break;
-    pos += argBytes(arg, code, pos, isDC);
-  }
-  return pos;
-}
-
-// ─── Bytecode walker ────────────────────────────────────────────────────────
-
-interface Hit {
-  op:     number;
-  entry:  AsmEntry | null;
-  lineNo: number;
-}
-
-function* walkBytecode(code: Uint8Array, table: AsmEntry[], isDC: boolean): Generator<Hit> {
-  let x      = 0;
-  let lineNo = 1;
-  while (x < code.length) {
-    let op = code[x++] ?? 0;
-    if (op === 0xF8 || op === 0xF9) op = (op << 8) | (code[x++] ?? 0);
-
-    let entry: AsmEntry | null = null;
-    for (const e of table) {
-      if (e.fnc !== op) continue;
-      if (e.order === T_DC && !isDC) continue;
-      if (e.order === T_DC &&  isDC) { entry = e; break; }
-      entry = e;
-    }
-
-    yield { op, entry, lineNo };
-    lineNo++;
-
-    if (entry) x = advancePastArgs(entry, code, x, isDC);
-  }
-}
-
 // ─── Core checker ─────────────────────────────────────────────────────────
 
-async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Promise<CompatIssue[]> {
+function _check(
+  quest:  Quest,
+  verIdx: VersionIndex,
+  ops:    WalkedOp[],
+  table:  AsmEntry[],
+): CompatIssue[] {
   const issues: CompatIssue[] = [];
   const err  = (msg: string) => issues.push({ severity: 'error',   message: msg });
   const warn = (msg: string) => issues.push({ severity: 'warning', message: msg });
@@ -181,8 +96,8 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
   const isDC = bin.version === BinVersion.DC;
 
   // Opcodes that have a DC-specific variant with different parameter order.
-  // When a non-DC quest is checked for DC V1 compatibility, encountering such
-  // an opcode means the parameter layout is swapped relative to what DC expects.
+  // When a non-DC quest is checked for DC V1 compatibility and such an opcode
+  // appears, its parameters are in the wrong order for DC V1.
   const dcVariantOps = new Set(table.filter(e => e.order === T_DC).map(e => e.fnc));
 
   // 1. Entry point (label 0) must exist
@@ -190,14 +105,10 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
     err('Label 0 is missing — quest has no entry point.');
   }
 
-  // 2. Bytecode version scan
-  for (const { op, entry, lineNo } of walkBytecode(bin.bytecode, table, isDC)) {
-    if (!entry) continue;
-    // arg_push* are calling-convention helpers emitted implicitly before T_ARGS calls.
-    // Delphi does not check their version — only the function call itself is flagged.
-    if (entry.name.startsWith('arg_push')) continue;
-
-    // set_episode opcode: episode 4 (bytecode value 2) is not supported before BB
+  // 2. Bytecode version scan (walkOpcodes handles T_PUSH/T_ARGS grouping, data
+  //    blocks, and string encoding — arg_push* opcodes do not appear in `ops`)
+  for (const { op, entry, lineNo } of ops) {
+    // set_episode: episode 4 is not supported before BB
     if (op === 0xF8BC) {
       if (episode === 4 && verIdx < 3) {
         err(`Episode 4 is not supported on ${VERSION_NAMES[verIdx]}.`);
@@ -205,15 +116,13 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
       continue;
     }
 
-    // Opcode version compatibility
     if (WARN_ONLY_GC.has(op)) {
       if (verIdx < 2 && entry.order !== T_DC) {
         warn(`Opcode may not work on this version "${entry.name}" at line ${lineNo}`);
       }
     } else if (entry.ver > verIdx) {
       err(`Opcode not supported "${entry.name}" at line ${lineNo}`);
-    } else if (verIdx === 0 && !isDC && dcVariantOps.has(op)) {
-      // DC V1 expects a different parameter order for this opcode than the quest uses
+    } else if (verIdx < 2 && !isDC && (dcVariantOps.has(op) || entry.dcSwap)) {
       err(`Parameter swap not allowed on this version "${entry.name}" at line ${lineNo}`);
     }
   }
@@ -227,25 +136,21 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
     const absAreaId = floor.id + EP_OFFSET[episode];
     const vdata     = FLOOR_VERSION_DATA[absAreaId];
 
-    // Monster checks
     for (let i = 0; i < floor.monsters.length; i++) {
       const mon     = floor.monsters[i];
       const isEnemy = ENEMY_SKINS.has(mon.skin);
 
-      // Skin 51 = generic NPC — DC/PC don't support them
       if (mon.skin === 51 && verIdx < 2) {
         warn(`Floor ${floor.id} monster[${i}]: NPC (skin 51) requires GC or later.`);
       }
 
       if (!isEnemy) {
-        // NPC action label must exist in the script (unless it's a default engine label)
         const label = Math.round(mon.action);
         if (label > 0 && !defaultLabels.has(label) && label >= bin.functionRefs.length) {
           warn(`Floor ${floor.id} NPC[${i}]: action label ${label} is not defined in the script.`);
         }
       }
 
-      // Per-area version skin validation
       if (vdata) {
         const valid = vdata.monsByVer[verIdx];
         if (valid.length > 0 && !valid.includes(mon.skin)) {
@@ -254,7 +159,6 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
       }
     }
 
-    // Object checks
     for (let i = 0; i < floor.objects.length; i++) {
       const obj = floor.objects[i];
       if (obj.skin === 10000 || obj.skin === 11000) continue;
@@ -266,7 +170,6 @@ async function _check(quest: Quest, verIdx: VersionIndex, table: AsmEntry[]): Pr
       }
     }
 
-    // Count limits (400 per floor)
     if (floor.monsters.length > 400)
       warn(`Floor ${floor.id} has ${floor.monsters.length} monsters (maximum is 400).`);
     if (floor.objects.length > 400)

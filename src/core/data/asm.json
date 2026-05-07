@@ -1953,6 +1953,7 @@
       }
     ],
     "minVer": 0,
+    "dcSwap": true,
     "longDesc": ""
   },
   {

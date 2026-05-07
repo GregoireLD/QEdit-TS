@@ -44,11 +44,12 @@ const T_DREG     = 22;
 // ─── Opcode descriptor ─────────────────────────────────────────────────────
 
 export interface AsmEntry {
-  fnc:   number;      // opcode ID (u16)
-  name:  string;      // mnemonic
-  order: number;      // argument order type (T_IMED / T_ARGS / T_NONE / …)
-  ver:   number;      // 0=DC, 1=V2, 2=V3, 3=V4
-  args:  number[];    // arg types as numeric constants
+  fnc:    number;      // opcode ID (u16)
+  name:   string;      // mnemonic
+  order:  number;      // argument order type (T_IMED / T_ARGS / T_NONE / …)
+  ver:    number;      // 0=DC, 1=V2, 2=V3, 3=V4
+  args:   number[];    // arg types as numeric constants
+  dcSwap: boolean;     // true if DC V1 uses reversed parameter order
 }
 
 // ─── String → numeric maps for JSON → AsmEntry ────────────────────────────
@@ -71,13 +72,14 @@ function buildAsmTable(): AsmEntry[] {
     const args  = (raw.args as Array<string | { type: string }>).map(a =>
       ARG_MAP[typeof a === 'string' ? a : a.type] ?? T_NONE
     );
-    const ver   = raw.minVer;
+    const ver    = raw.minVer;
+    const dcSwap = !!(raw as Record<string, unknown>).dcSwap;
     let name = raw.name;
     if (seen.has(name)) {
       name = name + entries.length.toString(16).padStart(2, '0').toUpperCase();
     }
     seen.add(raw.name);
-    entries.push({ fnc, name, order, ver, args });
+    entries.push({ fnc, name, order, ver, args, dcSwap });
   }
   return entries;
 }
@@ -371,4 +373,115 @@ export async function disassemble(bin: QuestBin): Promise<DisasmResult> {
   }
 
   return { text: lines.join('\n'), lineOffsets: offsets };
+}
+
+// ─── Shared opcode walk (used by compatibility checker) ──────────────────────
+
+export interface WalkedOp {
+  /** 1-based line number matching the disassembled script view */
+  lineNo: number;
+  /** opcode ID */
+  op:     number;
+  /** matched asm table entry */
+  entry:  AsmEntry;
+}
+
+/**
+ * Walk the bytecode using the same logic as disassemble(), yielding one
+ * WalkedOp per logical instruction (labels count as lines; arg_push* opcodes
+ * are consumed silently and do NOT appear as separate entries).
+ *
+ * Used by the compatibility checker so both share identical byte-advance logic.
+ */
+export async function walkOpcodes(bin: QuestBin): Promise<WalkedOp[]> {
+  const table = await loadAsmTable();
+  const code  = bin.bytecode;
+  const isDC  = bin.version === BinVersion.DC;
+  const refs  = bin.functionRefs;
+  const blocks = bin.dataBlocks;
+
+  const labelSet = new Set<number>(refs);
+
+  // Map byte offset → data block for quick lookup (mirrors disassemble())
+  const blockMap = new Map<number, DataBlock>();
+  for (const b of blocks) blockMap.set(b.offset, b);
+  const blockOffsets = [...blockMap.keys(), code.length].sort((a, b) => a - b);
+
+  const result: WalkedOp[] = [];
+  let isV3   = !isDC;
+  let x      = 0;
+  let lineNo = 1;
+
+  while (x < code.length) {
+    // ── Labels (mirrors disassemble: blank separator + one line per ref) ──────
+    if (labelSet.has(x)) {
+      if (result.length > 0 || lineNo > 1) lineNo++; // blank line before sub
+      for (let li = 0; li < refs.length; li++) {
+        if (refs[li] === x) lineNo++;
+      }
+    }
+
+    // ── Data blocks: skip bytes without emitting an instruction ───────────────
+    if (blockMap.has(x)) {
+      const nextOff = blockOffsets.find(o => o > x) ?? code.length;
+      lineNo++; // data block is one line in the disassembled output
+      x = nextOff;
+      continue;
+    }
+
+    // ── Read opcode ───────────────────────────────────────────────────────────
+    let opcode = code[x++] ?? 0;
+    if (opcode === 0xF8 || opcode === 0xF9) opcode = (opcode << 8) | (code[x++] ?? 0);
+
+    const entry = findEntry(table, opcode, isDC && !isV3);
+    if (!entry) break; // unknown opcode — can't resume
+
+    // ── T_PUSH: advance past the inline arg, no line emitted ─────────────────
+    if (entry.order === T_PUSH) {
+      isV3 = true;
+      const argType = entry.args[0] ?? T_NONE;
+      if (argType === T_STR) {
+        x += readString(code, x, isDC).advance;
+      } else {
+        x += _pushArgBytes(argType, code, x, isDC);
+      }
+      continue;
+    }
+
+    // ── All other orders: emit one logical line ───────────────────────────────
+    result.push({ lineNo, op: opcode, entry });
+    lineNo++;
+
+    // T_ARGS reads from the push-stack, no inline bytes to skip
+    if (entry.order === T_ARGS) continue;
+
+    // T_IMED / T_NONE / T_DC / T_VASTART / T_VAEND: advance past inline args
+    for (const argType of entry.args) {
+      if (argType === T_NONE) break;
+      switch (argType) {
+        case T_STR:
+          x += readString(code, x, isDC).advance; break;
+        case T_SWITCH: { const n = code[x++] ?? 0; x += n * 2; break; }
+        case T_SWITCH2B: { const n = code[x++] ?? 0; x += n; break; }
+        case T_FUNC2:
+          x += isDC ? 4 : 2; break;
+        default:
+          x += _pushArgBytes(argType, code, x, isDC); break;
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Byte size of a single fixed-size arg — used for both T_PUSH args and inline T_IMED args. */
+function _pushArgBytes(argType: number, _code: Uint8Array, _at: number, _isDC: boolean): number {
+  switch (argType) {
+    case T_REG: case 13 /*T_RREG*/: case T_BREG: case T_BYTE: return 1;
+    case T_DREG: return 4;
+    case T_WORD: case T_DATA: case T_STRDATA: case T_PFLAG: return 2;
+    case T_DWORD: case T_FLOAT: return 4;
+    case T_FUNC: return 2;
+    default: return 0;
+  }
 }
