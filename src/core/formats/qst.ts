@@ -225,6 +225,66 @@ export function parseQst(buf: Uint8Array): Quest {
   };
 }
 
+// ─── Public: parse standalone .bin/.dat ───────────────────────────────────
+
+/** Try PRS decompression; if the raw bytes already look like a .bin header, return them as-is. */
+function decompressOrRaw(data: Uint8Array): Uint8Array {
+  if (data.length >= 4) {
+    const seg0 = new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(0, true);
+    if (seg0 === 0x1D4 || seg0 === 0x394 || seg0 === 4652) return data; // already raw
+  }
+  try {
+    return new Uint8Array(prsDecompress(data));
+  } catch {
+    return data;
+  }
+}
+
+/**
+ * Parse a standalone .bin (+ optional .dat) as found in Compressed / Uncompressed saves.
+ * Both files may be PRS-compressed or raw — auto-detected.
+ * Returns the parsed Quest and the detected SaveFormat (packaging + platform).
+ */
+export function parseStandaloneBin(
+  binData: Uint8Array,
+  datData: Uint8Array | null,
+): { quest: Quest; savedFormat: SaveFormat } {
+  const rawBin = decompressOrRaw(binData);
+  const rawDat = datData ? decompressOrRaw(datData) : null;
+
+  // If decompressOrRaw returned a different reference, decompression happened.
+  const isCompressed = rawBin !== binData;
+
+  // BB format has seg0 = 4652 = 0x132C; use isBBContainer accordingly.
+  const isBBContainer = rawBin.length >= 4 &&
+    new DataView(rawBin.buffer, rawBin.byteOffset, rawBin.byteLength).getUint32(0, true) === 4652;
+
+  const bin    = parseBin(rawBin, isBBContainer);
+  const floors = rawDat ? parseDat(rawDat) : [];
+
+  const platform: TargetPlatform =
+    bin.version === BinVersion.BB ? 'BB' :
+    bin.version === BinVersion.DC ? 'DC' : 'PC';
+
+  return {
+    quest: {
+      format:        isBBContainer ? QstFormat.BB : QstFormat.GC,
+      bin,
+      floors,
+      embeddedFiles: [
+        { name: 'quest.bin', data: rawBin },
+        ...(rawDat ? [{ name: 'quest.dat', data: rawDat }] : []),
+      ],
+      episode:       1 as const,
+      variantByArea: {},
+    },
+    savedFormat: {
+      packaging: isCompressed ? 'compressed' : 'uncompressed',
+      platform,
+    },
+  };
+}
+
 // ─── Public: parse ZIP ─────────────────────────────────────────────────────
 
 export function parseZipQuest(buf: Uint8Array): { quest: Quest; savedFormat: SaveFormat } {
@@ -395,21 +455,28 @@ function buildQstPackets(
 
 // ─── Public: serialise with explicit format ────────────────────────────────
 
+export interface SaveResult {
+  data: Uint8Array;
+  ext: 'qst' | 'bin' | 'zip';
+  /** Additional files to write alongside the primary file, keyed by extension. */
+  extraFiles?: { ext: string; data: Uint8Array }[];
+}
+
 /**
  * Serialise a quest to the chosen packaging format and platform.
  * Returns the raw bytes and the appropriate file extension.
  *
  * 'server'       → .qst  (PSO server packets, PRS-compressed)
  * 'download'     → .qst  (PSO download packets, PRS-compressed + encrypted)
- * 'compressed'   → .zip  (PRS-compressed files, no packet wrapper)
- * 'uncompressed' → .zip  (raw files, no packet wrapper)
+ * 'compressed'   → .bin + .dat  (PRS-compressed individual files, no packet wrapper)
+ * 'uncompressed' → .bin + .dat  (raw individual files, no packet wrapper)
  * 'project'      → .zip  (all embedded files as-is; no platform re-encoding)
  * 'rawbin'       → .bin  (bare .bin file only)
  */
 export function serialiseForSave(
   quest: Quest,
   format: SaveFormat,
-): { data: Uint8Array; ext: 'qst' | 'bin' | 'zip' } {
+): SaveResult {
   const { packaging, platform } = format;
 
   const binEntry  = quest.embeddedFiles.find(f => f.name.toLowerCase().endsWith('.bin'));
@@ -439,14 +506,19 @@ export function serialiseForSave(
 
   if (packaging === 'compressed' || packaging === 'uncompressed') {
     const compress = packaging === 'compressed';
-    const zipMap   = new Map<string, Uint8Array>();
-    zipMap.set(META_FILE, encodeZipMeta(format, quest));
-    zipMap.set(binName, compress ? prsCompress(rawBin) : rawBin);
-    zipMap.set(datName, compress ? prsCompress(rawDat) : rawDat);
-    for (const ef of otherFiles) {
-      zipMap.set(ef.name, compress ? prsCompress(ef.data) : ef.data);
-    }
-    return { data: buildZip(zipMap), ext: 'zip' };
+    // PVR textures are already compressed — don't double-compress them.
+    const shouldCompress = (name: string) => compress && !name.toLowerCase().endsWith('.pvr');
+    return {
+      data: compress ? prsCompress(rawBin) : rawBin,
+      ext:  'bin',
+      extraFiles: [
+        { ext: 'dat', data: compress ? prsCompress(rawDat) : rawDat },
+        ...otherFiles.map(ef => ({
+          ext:  ef.name.split('.').pop() ?? ef.name,
+          data: shouldCompress(ef.name) ? prsCompress(ef.data) : ef.data,
+        })),
+      ],
+    };
   }
 
   // 'server' or 'download'

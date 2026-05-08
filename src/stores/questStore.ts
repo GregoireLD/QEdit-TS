@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { openFileDialog, saveFile, saveFileDialog } from '../platform/fs';
-import { parseQst, parseZipQuest, serialiseQst, serialiseForSave } from '../core/formats/qst';
+import { openFileDialog, readFile, saveFile, saveFileDialog } from '../platform/fs';
+import { parseQst, parseZipQuest, parseStandaloneBin, serialiseQst, serialiseForSave } from '../core/formats/qst';
 import { isZipMagic } from '../core/formats/zip';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
 import { saveSidecar, type Sidecar } from '../core/formats/sidecar';
@@ -10,6 +10,10 @@ import { BinVersion, QstFormat, Language } from '../core/model/types';
 import { rebuildBytecodeMapSetup } from '../core/formats/bytecodeMap';
 import { defaultSaveFormat } from '../core/saveFormat';
 import type { Quest, Floor, QuestBin, Monster, QuestObject, SelectedEntity, SaveFormat } from '../core/model/types';
+
+function replaceExt(path: string, ext: string): string {
+  return path.replace(/\.[^./\\]+$/, '') + '.' + ext;
+}
 
 // ScriptEditor registers these on mount so saveQuest/saveQuestAs can compile
 // and flush the sidecar without depending on ScriptEditor's reactive state.
@@ -162,6 +166,12 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
         const result = parseZipQuest(bytes);
         parsed   = result.quest;
         savedFmt = result.savedFormat;
+      } else if (opened.path.toLowerCase().endsWith('.bin')) {
+        let datBytes: Uint8Array | null = null;
+        try { datBytes = await readFile(replaceExt(opened.path, 'dat')); } catch { /* no companion .dat */ }
+        const result = parseStandaloneBin(bytes, datBytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
       } else {
         parsed   = parseQst(bytes);
         savedFmt = defaultSaveFormat(parsed);
@@ -196,6 +206,12 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
         const result = parseZipQuest(bytes);
         parsed   = result.quest;
         savedFmt = result.savedFormat;
+      } else if (url.toLowerCase().endsWith('.bin')) {
+        let datBytes: Uint8Array | null = null;
+        try { datBytes = await readFile(replaceExt(url, 'dat')); } catch { /* no companion .dat */ }
+        const result = parseStandaloneBin(bytes, datBytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
       } else {
         parsed   = parseQst(bytes);
         savedFmt = defaultSaveFormat(parsed);
@@ -223,12 +239,17 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (!quest) { set({ isLoading: false }); return; }
 
       // Re-serialise in the same format the file was last saved/opened as.
-      const fmt         = savedFormat ?? defaultSaveFormat(quest);
-      const { data, ext } = serialiseForSave(quest, fmt);
-      await saveFile(filePath, data);
+      const fmt    = savedFormat ?? defaultSaveFormat(quest);
+      const result = serialiseForSave(quest, fmt);
+      await saveFile(filePath, result.data);
+      if (result.extraFiles) {
+        for (const ef of result.extraFiles) {
+          await saveFile(replaceExt(filePath, ef.ext), ef.data);
+        }
+      }
 
       const sidecar = _sidecarExtractor?.();
-      if (sidecar && ext === 'qst') await saveSidecar(filePath, sidecar);
+      if (sidecar && result.ext === 'qst') await saveSidecar(filePath, sidecar);
 
       set({ isLoading: false, savedFormat: fmt, saveVersion: get().saveVersion + 1 });
     } catch (e) {
@@ -268,7 +289,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const { quest } = get();
       if (!quest) { set({ isLoading: false }); return false; }
 
-      const { data, ext } = serialiseForSave(quest, format);
+      const result = serialiseForSave(quest, format);
+      const { data, ext } = result;
 
       const filters =
         ext === 'qst' ? [{ name: 'PSO Quest',       extensions: ['qst'] }] :
@@ -282,6 +304,12 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
         data,
       });
       if (!dest) { set({ isLoading: false }); return false; }
+
+      if (result.extraFiles) {
+        for (const ef of result.extraFiles) {
+          await saveFile(replaceExt(dest, ef.ext), ef.data);
+        }
+      }
 
       const sidecar = _sidecarExtractor?.();
       if (sidecar && ext === 'qst') await saveSidecar(dest, sidecar);
