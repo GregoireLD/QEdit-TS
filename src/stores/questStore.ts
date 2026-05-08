@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { openFileDialog, readFile, saveFile, saveFileDialog } from '../platform/fs';
 import { parseQst, parseZipQuest, parseStandaloneBin, serialiseQst, serialiseForSave } from '../core/formats/qst';
+import { parseQpv3, serialiseQpv3 } from '../core/formats/qpv3';
 import { isZipMagic } from '../core/formats/zip';
 import { analyseQuestBin } from '../core/formats/bytecodeAnalysis';
 import { saveSidecar, type Sidecar } from '../core/formats/sidecar';
@@ -116,7 +117,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     };
 
     useUiStore.getState().resetPreviews({});
-    set({ quest, filePath: null, savedFormat: defaultSaveFormat(quest), selectedFloorId: null, isLoading: false, error: null });
+    set({ quest, filePath: null, savedFormat: { packaging: 'qpv3', platform: 'PC' }, selectedFloorId: null, isLoading: false, error: null });
   },
 
   toggleArea: (absAreaId) => {
@@ -151,22 +152,27 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   openQuest: async () => {
     const opened = await openFileDialog({
       title:   'Open Quest',
-      filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin', 'zip'] }],
+      filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin', 'qpv3'] }],
     });
     if (!opened) return;
 
     set({ isLoading: true, error: null });
     try {
       const bytes = new Uint8Array(opened.data);
+      const lpath = opened.path.toLowerCase();
 
       let parsed: Quest;
       let savedFmt: SaveFormat;
 
-      if (isZipMagic(bytes)) {
+      if (lpath.endsWith('.qpv3')) {
+        const result = parseQpv3(bytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
+      } else if (isZipMagic(bytes)) {
         const result = parseZipQuest(bytes);
         parsed   = result.quest;
         savedFmt = result.savedFormat;
-      } else if (opened.path.toLowerCase().endsWith('.bin')) {
+      } else if (lpath.endsWith('.bin')) {
         let datBytes: Uint8Array | null = null;
         try { datBytes = await readFile(replaceExt(opened.path, 'dat')); } catch { /* no companion .dat */ }
         const result = parseStandaloneBin(bytes, datBytes);
@@ -199,14 +205,19 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const bytes = new Uint8Array(await resp.arrayBuffer());
 
+      const lurl = url.toLowerCase();
       let parsed: Quest;
       let savedFmt: SaveFormat;
 
-      if (isZipMagic(bytes)) {
+      if (lurl.endsWith('.qpv3')) {
+        const result = parseQpv3(bytes);
+        parsed   = result.quest;
+        savedFmt = result.savedFormat;
+      } else if (isZipMagic(bytes)) {
         const result = parseZipQuest(bytes);
         parsed   = result.quest;
         savedFmt = result.savedFormat;
-      } else if (url.toLowerCase().endsWith('.bin')) {
+      } else if (lurl.endsWith('.bin')) {
         let datBytes: Uint8Array | null = null;
         try { datBytes = await readFile(replaceExt(url, 'dat')); } catch { /* no companion .dat */ }
         const result = parseStandaloneBin(bytes, datBytes);
@@ -239,17 +250,23 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (!quest) { set({ isLoading: false }); return; }
 
       // Re-serialise in the same format the file was last saved/opened as.
-      const fmt    = savedFormat ?? defaultSaveFormat(quest);
-      const result = serialiseForSave(quest, fmt);
+      const fmt = savedFormat ?? defaultSaveFormat(quest);
+      let result: { data: Uint8Array; ext: string; extraFiles?: { ext: string; data: Uint8Array }[] };
+
+      if (fmt.packaging === 'qpv3') {
+        result = serialiseQpv3(quest, _sidecarExtractor?.() ?? null);
+      } else {
+        result = serialiseForSave(quest, fmt);
+        const sidecar = _sidecarExtractor?.();
+        if (sidecar && result.ext === 'qst') await saveSidecar(filePath, sidecar);
+      }
+
       await saveFile(filePath, result.data);
       if (result.extraFiles) {
         for (const ef of result.extraFiles) {
           await saveFile(replaceExt(filePath, ef.ext), ef.data);
         }
       }
-
-      const sidecar = _sidecarExtractor?.();
-      if (sidecar && result.ext === 'qst') await saveSidecar(filePath, sidecar);
 
       set({ isLoading: false, savedFormat: fmt, saveVersion: get().saveVersion + 1 });
     } catch (e) {
@@ -289,13 +306,21 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const { quest } = get();
       if (!quest) { set({ isLoading: false }); return false; }
 
-      const result = serialiseForSave(quest, format);
+      let result: { data: Uint8Array; ext: string; extraFiles?: { ext: string; data: Uint8Array }[] };
+
+      if (format.packaging === 'qpv3') {
+        result = serialiseQpv3(quest, _sidecarExtractor?.() ?? null);
+      } else {
+        result = serialiseForSave(quest, format);
+      }
+
       const { data, ext } = result;
 
       const filters =
-        ext === 'qst' ? [{ name: 'PSO Quest',       extensions: ['qst'] }] :
-        ext === 'bin' ? [{ name: 'Quest Binary',     extensions: ['bin'] }] :
-                        [{ name: 'ZIP Archive',       extensions: ['zip'] }];
+        ext === 'qst'  ? [{ name: 'PSO Quest',    extensions: ['qst']  }] :
+        ext === 'bin'  ? [{ name: 'Quest Binary',  extensions: ['bin']  }] :
+        ext === 'qpv3' ? [{ name: 'QEdit Project v3', extensions: ['qpv3'] }] :
+                         [{ name: 'ZIP Archive',    extensions: ['zip']  }];
 
       const dest = await saveFileDialog({
         title:       'Save Quest As',

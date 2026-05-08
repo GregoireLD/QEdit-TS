@@ -13,9 +13,10 @@ export const enum QstFormat {
 export type PackagingType =
   | 'server'       // .qst with PSO server packets, PRS-compressed
   | 'download'     // .qst with PSO download packets, PRS-compressed + encrypted
-  | 'compressed'   // .zip of PRS-compressed individual files
-  | 'uncompressed' // .zip of raw (uncompressed) individual files
-  | 'project'      // .zip of all embedded files as-is (no format conversion)
+  | 'compressed'   // standalone PRS-compressed .bin + .dat
+  | 'uncompressed' // standalone raw (uncompressed) .bin + .dat
+  | 'qpv3'         // .qpv3 universal project ZIP (lossless, platform-agnostic)
+  | 'project'      // legacy .qprj (not yet implemented)
   | 'rawbin';      // single .bin file only (no .dat)
 
 /** Target platform when saving. */

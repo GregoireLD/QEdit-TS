@@ -4,13 +4,19 @@
  * A .qst file is a sequence of packets that embed one or more compressed
  * (and optionally encrypted) files (.bin, .dat, etc.).
  *
- * Three outer formats exist, detected from the first byte:
+ * Four outer formats exist, detected from the first two bytes:
  *
- *   0x58 → BB (Blue Burst)  — packet size at bytes [0-1], cmd at byte [2]
- *                              each packet has an 8-byte header (4 + 4 extra)
- *   0x44 → GC/DC server     — cmd at byte [0], size at bytes [2-3]
- *                              each packet has a 4-byte header
- *   0xA6 → DC download      — same layout as GC/DC + encryption wrapper
+ *   0x58 … → BB (Blue Burst) — size at bytes [0-1], cmd at byte [2]
+ *                               8-byte header (4 base + 4 extra)
+ *   0x3C 0x00 → PC           — size at bytes [0-1], cmd at byte [2]
+ *                               4-byte header (same payload layout as GC)
+ *   0x44 … → GC/DC server    — cmd at byte [0], size at bytes [2-3]
+ *                               4-byte header
+ *   0xA6 … → GC/DC download  — cmd at byte [0], size at bytes [2-3]
+ *                               4-byte header + encryption wrapper on payload
+ *
+ * Xbox download quests use GC-style packets but with an 84-byte create header
+ * that embeds additional Xbox folder metadata (detected on write by platform).
  *
  * Packet types:
  *   cmd 0x44 / 0xA6  → "file create"   — announces a new embedded file
@@ -81,41 +87,46 @@ function readPackets(buf: Uint8Array): { format: QstFormat; files: Map<string, R
   let pos = 0;
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
 
-  // Detect format from first byte
+  // Detect format from first two bytes
   const first = buf[0];
   let format: QstFormat;
   let isBB = false;
-  let isGC = false;
+  let isGC = false; // true only for GC/DC cmd-first packets (NOT PC)
 
   if (first === 0x58) {
     format = QstFormat.BB;
     isBB = true;
-  } else if (first === 0xA6 || (buf[2] === 0xA6)) {
+  } else if (first === 0x3C && buf.length >= 3 && (buf[2] === 0x44 || buf[2] === 0xA6)) {
+    // PC: size-first header [size_lo=0x3C, size_hi=0x00, cmd, ...]
+    // Falls into the non-GC, non-BB path below: reads size from [0-1], cmd from [2], extraHeader=0.
+    format = buf[2] === 0xA6 ? QstFormat.Download : QstFormat.GC;
+  } else if (first === 0xA6 || buf[2] === 0xA6) {
+    // GC/DC download: cmd-first [0xA6, ?, size_lo, size_hi]
     format = QstFormat.Download;
     isGC = true;
   } else {
+    // GC/DC server: cmd-first [cmd, ?, size_lo, size_hi]
     format = QstFormat.GC;
     isGC = true;
   }
 
   while (pos + 4 <= buf.length) {
-    // Read the first 4 bytes of the packet
     let pktSize: number;
     let cmd: number;
 
     if (isGC) {
-      // GC/DC/Download: [cmd, ?, size_lo, size_hi]
+      // GC/DC: [cmd, ?, size_lo, size_hi]
       cmd     = buf[pos];
       pktSize = buf[pos + 2] | (buf[pos + 3] << 8);
     } else {
-      // BB: [size_lo, size_hi, cmd, ?]
+      // BB and PC: [size_lo, size_hi, cmd, ?]
       pktSize = buf[pos] | (buf[pos + 1] << 8);
       cmd     = buf[pos + 2];
     }
 
     if (pktSize < 4) break;
 
-    // For BB, there are 4 extra header bytes before the payload
+    // BB has 4 extra header bytes before the payload; PC and GC do not
     const extraHeader = isBB ? 4 : 0;
     const payloadOffset = pos + 4 + extraHeader;
     const payloadSize   = pktSize - 4 - extraHeader;
@@ -129,12 +140,11 @@ function readPackets(buf: Uint8Array): { format: QstFormat; files: Map<string, R
       let nameOff: number;
 
       if (isGC) {
-        // For GC format:  byte at payload[0x23] indicates variant
-        // If payload[0x23] >= 3: name starts at payload[0x23]
-        // Else:                  name starts at payload[0x24]
+        // DC name is at payload[0x23]; GC/Xbox at payload[0x24].
+        // Heuristic: if payload[0x23] looks like a filename char (≥ 3) it is DC.
         nameOff = payload[0x23] >= 3 ? 0x23 : 0x24;
       } else {
-        // BB: name at payload[0x24]
+        // BB and PC: name always at payload[0x24]
         nameOff = 0x24;
       }
 
@@ -352,7 +362,12 @@ export function serialiseQst(quest: Quest): Uint8Array {
     { name: binName, payload: prsCompress(serialiseBin(quest.bin))    },
   ];
 
-  return buildQstPackets(files, isBB, false);
+  const questInfo: QuestInfo = {
+    questNumber: quest.bin.questNumber,
+    title:       quest.bin.title,
+    language:    quest.bin.language,
+  };
+  return buildQstPackets(files, isBB ? 'BB' : 'GC', false, questInfo);
 }
 
 // ─── Packet builders ───────────────────────────────────────────────────────
@@ -362,33 +377,77 @@ function writeCString(buf: Uint8Array, offset: number, s: string, maxLen: number
   for (let i = 0; i < len; i++) buf[offset + i] = s.charCodeAt(i) & 0x7f;
 }
 
-function buildCreatePacket(name: string, payloadSize: number, isBB: boolean, isDownload = false): Uint8Array {
-  // BB packet size: 0x58 (88), GC: 0x3C (60)
+// Encode a title string to a fixed-length single-byte buffer (Delphi unitochar equivalent).
+// Takes the low byte of each Unicode code point — correct for Latin and accurate for
+// Shift-JIS code points that PSO DC/GC use (which all fit in one byte).
+function encodeTitle(title: string, maxBytes: number, buf: Uint8Array, offset: number): void {
+  for (let i = 0; i < maxBytes && i < title.length; i++) {
+    buf[offset + i] = title.charCodeAt(i) & 0xFF;
+  }
+}
+
+function buildCreatePacket(
+  name: string,
+  payloadSize: number,
+  platform: TargetPlatform,
+  isDownload: boolean,
+  fileCount: number,
+  questInfo: QuestInfo,
+): Uint8Array {
+  const isBB = platform === 'BB';
+  const isPC = platform === 'PC';
+  const isDC = platform === 'DC';
   const pktSize = isBB ? 0x58 : 0x3C;
   const buf     = new Uint8Array(pktSize);
   const view    = new DataView(buf.buffer);
-
-  // payloadSize = the total byte count the receiver will accumulate from file-data
-  // packets.  For download format this equals encrypted-wrapper length (compressed+8);
-  // for server format it equals the compressed length.
+  const extraFiles = fileCount > 2 ? fileCount - 2 : 0;
 
   if (isBB) {
+    // [size_lo, size_hi, cmd, 0,  qnum_lo, qnum_hi, 0, 0,  payload…]
+    // payload starts at [8]; name at payload[0x24]=[44]; payloadSize at payload[0x34]=[60]
+    // filecount-2 at payload[0x22]=[42]; secondary "_j" name at payload[0x38]=[64]
     view.setUint16(0, pktSize, true);
-    buf[2] = isDownload ? 0xA6 : 0x44; // cmd
-    writeCString(buf, 8 + 0x24, name, 16);
-    view.setUint32(8 + 0x34, payloadSize, true);
+    buf[2] = 0x44; // BB server only; no BB download format exists
+    view.setUint16(4, questInfo.questNumber, true);
+    if (extraFiles > 0) buf[42] = extraFiles;
+    writeCString(buf, 44, name, 16);
+    view.setUint32(60, payloadSize, true);
+    const secondary = name.replace(/(\.[^.]+)$/, '_j$1');
+    writeCString(buf, 64, secondary, 16);
+  } else if (isPC) {
+    // [size_lo, size_hi, cmd, qnum,  payload…]  — no title field
+    // payload starts at [4]; name at payload[0x24]=[40]; payloadSize at payload[0x34]=[56]
+    // filecount-2 at [38]
+    view.setUint16(0, pktSize, true);
+    buf[2] = isDownload ? 0xA6 : 0x44;
+    buf[3] = questInfo.questNumber & 0xFF;
+    if (extraFiles > 0) buf[38] = extraFiles;
+    writeCString(buf, 40, name, 16);
+    view.setUint32(56, payloadSize, true);
   } else {
-    buf[0] = isDownload ? 0xA6 : 0x44; // cmd
+    // GC/DC: [cmd, qnum, size_lo, size_hi,  title×32,  filecount?,  name,  payloadSize]
+    // title "PSO/<title>" at [4..35]; filecount-2 at [38]
+    // GC name at [40]=payload[0x24]; DC name at [39]=payload[0x23]
+    buf[0] = isDownload ? 0xA6 : 0x44;
+    buf[1] = questInfo.questNumber & 0xFF;
     view.setUint16(2, pktSize, true);
-    writeCString(buf, 4 + 0x24, name, 16);
-    view.setUint32(4 + 0x34, payloadSize, true);
+    encodeTitle('PSO/' + questInfo.title, 32, buf, 4);
+    if (extraFiles > 0) buf[38] = extraFiles;
+    writeCString(buf, isDC ? 39 : 40, name, 16);
+    view.setUint32(56, payloadSize, true);
   }
   return buf;
 }
 
-function buildDataPacket(name: string, chunk: Uint8Array, isBB: boolean, isDownload = false): Uint8Array {
-  // BB: 8-byte header + 0x10 name area + 0x400 data + 4 size = 0x41C padded to 8
-  // GC: 4-byte header + same payload
+function buildDataPacket(
+  name: string,
+  chunk: Uint8Array,
+  platform: TargetPlatform,
+  isDownload: boolean,
+  chunkIndex: number,
+): Uint8Array {
+  const isBB = platform === 'BB';
+  const isPC = platform === 'PC';
   const payloadBytes = 0x10 + 0x400 + 4; // 1044
   const headerBytes  = isBB ? 8 : 4;
   let pktSize        = headerBytes + payloadBytes;
@@ -398,18 +457,76 @@ function buildDataPacket(name: string, chunk: Uint8Array, isBB: boolean, isDownl
   const view = new DataView(buf.buffer);
 
   if (isBB) {
+    // [size_lo, size_hi, cmd, 0,  chunkIdx, 0, 0, 0,  name×16, data×1024, chunkSize×4]
     view.setUint16(0, pktSize, true);
-    buf[2] = isDownload ? 0xA7 : 0x13; // cmd
-    writeCString(buf, 8,        name,  16);
-    buf.set(chunk, 8 + 0x10);
-    view.setUint32(8 + 0x410, chunk.length, true);
+    buf[2] = isDownload ? 0xA7 : 0x13;
+    buf[4] = chunkIndex & 0xFF;
+    writeCString(buf, 8, name, 16);
+    buf.set(chunk, 24);
+    view.setUint32(1048, chunk.length, true);
+  } else if (isPC) {
+    // [size_lo, size_hi, cmd, chunkIdx,  name×16, data×1024, chunkSize×4]
+    view.setUint16(0, pktSize, true);
+    buf[2] = isDownload ? 0xA7 : 0x13;
+    buf[3] = chunkIndex & 0xFF;
+    writeCString(buf, 4, name, 16);
+    buf.set(chunk, 20);
+    view.setUint32(1044, chunk.length, true);
   } else {
-    buf[0] = isDownload ? 0xA7 : 0x13; // cmd
+    // GC/DC: [cmd, chunkIdx, size_lo, size_hi,  name×16, data×1024, chunkSize×4]
+    buf[0] = isDownload ? 0xA7 : 0x13;
+    buf[1] = chunkIndex & 0xFF;
     view.setUint16(2, pktSize, true);
-    writeCString(buf, 4,        name,  16);
-    buf.set(chunk, 4 + 0x10);
-    view.setUint32(4 + 0x410, chunk.length, true);
+    writeCString(buf, 4, name, 16);
+    buf.set(chunk, 20);
+    view.setUint32(1044, chunk.length, true);
   }
+  return buf;
+}
+
+// Xbox download: 84-byte GC-style create packet with extra Xbox folder metadata.
+// Layout confirmed against Delphi QEdit source (SaveDialog1 filter index 9).
+const XBOX_LANG_SUFFIX = ['_j', '_e', '_g', '_f', '_s'];
+
+function buildXboxCreatePacket(
+  name: string,
+  payloadSize: number,
+  questNumber: number,
+  title: string,
+  language: number,
+): Uint8Array {
+  const pktSize = 0x54; // 84 bytes
+  const buf     = new Uint8Array(pktSize);
+  const view    = new DataView(buf.buffer);
+
+  // GC-style header: [cmd=0xA6, 0, size_lo=0x54, size_hi=0x00]
+  buf[0] = 0xA6;
+  view.setUint16(2, pktSize, true);
+
+  // Title "PSO/<title>" at bytes [4..35] (32 bytes, ASCII)
+  const titleStr = 'PSO/' + title;
+  for (let i = 0; i < 32 && i < titleStr.length; i++) {
+    buf[4 + i] = titleStr.charCodeAt(i) & 0x7F;
+  }
+
+  // Quest number at bytes [36..37]
+  view.setUint16(36, questNumber, true);
+
+  // File name at bytes [40..55]
+  writeCString(buf, 40, name, 16);
+
+  // Payload size at bytes [56..59]
+  view.setUint32(56, payloadSize, true);
+
+  // Xbox folder filename at bytes [60..75]: name with language-specific .dat extension
+  const suffix     = XBOX_LANG_SUFFIX[language] ?? '_e';
+  const folderName = name.replace(/\.(bin|dat)$/i, suffix + '.dat');
+  writeCString(buf, 60, folderName, 16);
+
+  // Quest number again at [76..77], language byte at [79]
+  view.setUint16(76, questNumber, true);
+  buf[79] = ((language + 1) * 0x10) & 0xFF;
+
   return buf;
 }
 
@@ -427,22 +544,46 @@ function resolveBinFormat(
   return { binVersion, bbContainer: false };
 }
 
+interface QuestInfo {
+  questNumber: number;
+  title: string;
+  language: number;
+}
+
 /** Build the packet stream (server or download .qst). */
 function buildQstPackets(
   files: Array<{ name: string; payload: Uint8Array }>,
-  isBB: boolean,
+  platform: TargetPlatform,
   isDownload: boolean,
+  questInfo?: QuestInfo,
 ): Uint8Array {
-  const CHUNK = 1024;
+  const CHUNK  = 1024;
+  const isXbox = platform === 'Xbox';
   const packets: Uint8Array[] = [];
+  // Xbox data packets use GC-download layout (cmd-first, 0xA7)
+  const dataPlatform: TargetPlatform = isXbox ? 'GC' : platform;
 
   for (const file of files) {
-    packets.push(buildCreatePacket(file.name, file.payload.length, isBB, isDownload));
+    if (isXbox && questInfo) {
+      packets.push(buildXboxCreatePacket(
+        file.name, file.payload.length,
+        questInfo.questNumber, questInfo.title, questInfo.language,
+      ));
+    } else {
+      const info = questInfo ?? { questNumber: 0, title: '', language: 0 };
+      packets.push(buildCreatePacket(
+        file.name, file.payload.length, platform, isDownload, files.length, info,
+      ));
+    }
     let off = 0;
+    let chunkIndex = 0;
     while (off < file.payload.length) {
       const chunk = file.payload.slice(off, off + CHUNK);
-      packets.push(buildDataPacket(file.name, chunk, isBB, isDownload));
+      packets.push(buildDataPacket(
+        file.name, chunk, dataPlatform, isDownload || isXbox, chunkIndex,
+      ));
       off += CHUNK;
+      chunkIndex++;
     }
   }
 
@@ -457,7 +598,7 @@ function buildQstPackets(
 
 export interface SaveResult {
   data: Uint8Array;
-  ext: 'qst' | 'bin' | 'zip';
+  ext: 'qst' | 'bin' | 'zip' | 'qpv3';
   /** Additional files to write alongside the primary file, keyed by extension. */
   extraFiles?: { ext: string; data: Uint8Array }[];
 }
@@ -522,7 +663,6 @@ export function serialiseForSave(
   }
 
   // 'server' or 'download'
-  const isBB       = platform === 'BB';
   const isDownload = packaging === 'download';
 
   const files: Array<{ name: string; payload: Uint8Array }> = [];
@@ -545,5 +685,10 @@ export function serialiseForSave(
     files.push({ name: ef.name, payload });
   }
 
-  return { data: buildQstPackets(files, isBB, isDownload), ext: 'qst' };
+  const questInfo: QuestInfo = {
+    questNumber: quest.bin.questNumber,
+    title:       quest.bin.title,
+    language:    quest.bin.language,
+  };
+  return { data: buildQstPackets(files, platform, isDownload, questInfo), ext: 'qst' };
 }

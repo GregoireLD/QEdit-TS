@@ -12,12 +12,13 @@ import type { CompatResult } from './compatibility';
 
 const PACKAGING_PLATFORMS: Record<PackagingType, TargetPlatform[]> = {
   server:       ['PC', 'DC', 'GC', 'BB'],
-  // Xbox uses identical packet format to PC for download; shown as "PC / Xbox" in UI.
-  download:     ['PC', 'DC', 'GC'],
+  // Xbox download uses a distinct 84-byte create packet; PC and Xbox are separate targets.
+  download:     ['PC', 'DC', 'GC', 'Xbox'],
   compressed:   ['PC', 'DC', 'GC', 'BB'],
   uncompressed: ['PC', 'DC', 'GC', 'BB'],
   rawbin:       ['PC', 'DC', 'GC', 'BB'],
-  // Project exports all files as-is — the platform row shows an informational note.
+  // QPv3 and project are platform-agnostic — no platform selector shown.
+  qpv3:         [],
   project:      [],
 };
 
@@ -107,6 +108,8 @@ export function getSaveWarnings(format: SaveFormat, quest: Quest): SaveWarning[]
   const { packaging, platform } = format;
   const warnings: SaveWarning[] = [];
 
+  // QPv3 is lossless and platform-agnostic — no warnings ever.
+  if (packaging === 'qpv3')   return warnings;
   // Project exports all embedded files as-is — no conversion, no warnings.
   if (packaging === 'project') return warnings;
 
@@ -167,6 +170,7 @@ export function describeCurrentFormat(quest: Quest): string {
 
 /** Short label for a SaveFormat, used in the sidebar after a Save / Save As. */
 export function describeSavedFormat(format: SaveFormat): string {
+  if (format.packaging === 'qpv3')    return 'QEdit Project v3';
   if (format.packaging === 'project') return 'Project ZIP';
   if (format.packaging === 'rawbin')  return `${format.platform} · .bin only`;
   const pkgLabel: Record<string, string> = {

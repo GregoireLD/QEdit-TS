@@ -19,21 +19,20 @@ interface Props {
 }
 
 const PACKAGING_LABELS: Record<PackagingType, string> = {
+  qpv3:         'QEdit Project v3 (.qpv3)',
   server:       'Server (.qst)',
   download:     'Download (.qst)',
-  compressed:   'Compressed (.zip)',
-  uncompressed: 'Uncompressed (.zip)',
-  project:      'Quest project (.zip)',
+  compressed:   'Compressed (.bin + .dat)',
+  uncompressed: 'Uncompressed (.bin + .dat)',
+  project:      'v2 Legacy Quest Project (.qprj)  — not yet implemented',
   rawbin:       'Quest File (.bin only)',
 };
 
 const PACKAGING_ORDER: PackagingType[] = [
-  'server', 'download', 'compressed', 'uncompressed', 'project', 'rawbin',
+  'qpv3', 'server', 'download', 'compressed', 'uncompressed', 'rawbin', 'project',
 ];
 
-/** Platform display label — PC shows as "PC / Xbox" for download (identical format). */
-function platformLabel(platform: TargetPlatform, packaging: PackagingType): string {
-  if (platform === 'PC' && packaging === 'download') return 'PC / Xbox';
+function platformLabel(platform: TargetPlatform, _packaging: PackagingType): string {
   return platform;
 }
 
@@ -80,7 +79,8 @@ export function SaveAsDialog({ onClose, onConfirm }: Props) {
 
   const currentPlatformOpt = platformOptions.find(o => o.platform === platform);
   const isPlatformDisabled  = !!currentPlatformOpt?.disabledReason;
-  const canSave             = !!quest && !saving && (platforms.length === 0 || !isPlatformDisabled);
+  const isNotImplemented    = packaging === 'project';
+  const canSave             = !!quest && !saving && !isNotImplemented && (platforms.length === 0 || !isPlatformDisabled);
 
   async function handleSave() {
     if (!canSave) return;
@@ -145,12 +145,16 @@ export function SaveAsDialog({ onClose, onConfirm }: Props) {
               {compatLoading && <span className={styles.checking}> — checking…</span>}
             </div>
 
-            {packaging === 'project' ? (
-              /* Project: no conversion — show informational note */
+            {(packaging === 'qpv3' || packaging === 'project') ? (
+              /* QPv3 / project: platform-agnostic */
               <div className={styles.projectNote}>
-                <span className={styles.platformChip}>Original format</span>
+                <span className={styles.platformChip}>
+                  {packaging === 'qpv3' ? 'Platform-agnostic' : 'Original format'}
+                </span>
                 <span className={styles.projectNoteText}>
-                  Quest project exports all embedded files as-is — no platform re-encoding.
+                  {packaging === 'qpv3'
+                    ? 'QPv3 stores all quest data losslessly — no platform conversion needed.'
+                    : 'Quest project exports all embedded files as-is — no platform re-encoding.'}
                 </span>
               </div>
             ) : (
