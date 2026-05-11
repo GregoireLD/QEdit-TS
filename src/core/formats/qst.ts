@@ -450,15 +450,20 @@ function buildDataPacket(
   const isPC = platform === 'PC';
   const payloadBytes = 0x10 + 0x400 + 4; // 1044
   const headerBytes  = isBB ? 8 : 4;
-  let pktSize        = headerBytes + payloadBytes;
-  if (isBB && pktSize % 8 !== 0) pktSize += 8 - (pktSize % 8);
+  const announcedSize = headerBytes + payloadBytes; // 1052 for BB — matches Delphi
+  // BB packets are physically 8-byte aligned (4 trailing "pso bug" zero bytes make
+  // the total 1056), but the size field announces 1052 to match original PSO behaviour.
+  const physicalSize = isBB
+    ? (announcedSize % 8 === 0 ? announcedSize : announcedSize + (8 - announcedSize % 8))
+    : announcedSize;
 
-  const buf  = new Uint8Array(pktSize);
+  const buf  = new Uint8Array(physicalSize);
   const view = new DataView(buf.buffer);
 
   if (isBB) {
-    // [size_lo, size_hi, cmd, 0,  chunkIdx, 0, 0, 0,  name×16, data×1024, chunkSize×4]
-    view.setUint16(0, pktSize, true);
+    // [size_lo, size_hi, cmd, 0,  chunkIdx, 0, 0, 0,  name×16, data×1024, chunkSize×4, zeros×4]
+    // Announce 1052 (Delphi-compatible); physical size is 1056 (pso bug padding).
+    view.setUint16(0, announcedSize, true);
     buf[2] = isDownload ? 0xA7 : 0x13;
     buf[4] = chunkIndex & 0xFF;
     writeCString(buf, 8, name, 16);
@@ -466,7 +471,7 @@ function buildDataPacket(
     view.setUint32(1048, chunk.length, true);
   } else if (isPC) {
     // [size_lo, size_hi, cmd, chunkIdx,  name×16, data×1024, chunkSize×4]
-    view.setUint16(0, pktSize, true);
+    view.setUint16(0, announcedSize, true);
     buf[2] = isDownload ? 0xA7 : 0x13;
     buf[3] = chunkIndex & 0xFF;
     writeCString(buf, 4, name, 16);
@@ -476,7 +481,7 @@ function buildDataPacket(
     // GC/DC: [cmd, chunkIdx, size_lo, size_hi,  name×16, data×1024, chunkSize×4]
     buf[0] = isDownload ? 0xA7 : 0x13;
     buf[1] = chunkIndex & 0xFF;
-    view.setUint16(2, pktSize, true);
+    view.setUint16(2, announcedSize, true);
     writeCString(buf, 4, name, 16);
     buf.set(chunk, 20);
     view.setUint32(1044, chunk.length, true);
@@ -638,7 +643,7 @@ export function serialiseForSave(
 
   // For all other formats: re-encode .bin and .dat for the target platform
   const { binVersion, bbContainer } = resolveBinFormat(platform, quest.bin.version);
-  const rawBin = serialiseBin(quest.bin, { targetVersion: binVersion, targetBbContainer: bbContainer });
+  const rawBin = serialiseBin(quest.bin, { targetVersion: binVersion, targetBbContainer: bbContainer, targetPlatform: platform });
   const rawDat = serialiseDat(quest.floors);
 
   if (packaging === 'rawbin') {
@@ -676,13 +681,10 @@ export function serialiseForSave(
     files.push({ name, payload });
   }
 
-  // Pass through other embedded files
+  // Pass through other embedded files (e.g. .pvr textures).
+  // Delphi never compresses or encrypts non-.bin/.dat files — copy raw.
   for (const ef of otherFiles) {
-    const compressed = prsCompress(ef.data);
-    const payload    = isDownload
-      ? buildEncryptedWrapper(compressed, ef.data.length)
-      : compressed;
-    files.push({ name: ef.name, payload });
+    files.push({ name: ef.name, payload: ef.data });
   }
 
   const questInfo: QuestInfo = {

@@ -70,6 +70,7 @@ export function serialiseQpv3(quest: Quest, sidecar: Sidecar | null): SaveResult
     language:     quest.bin.language,
     binVersion:   quest.bin.version,
     bbContainer:  quest.bin.bbContainer,
+    gcFlag:       quest.bin.gcFlag,
     functionRefs: quest.bin.functionRefs,
     dataBlocks:   quest.bin.dataBlocks,
     bbData:       quest.bin.bbData ? toBase64(quest.bin.bbData) : null,
@@ -137,6 +138,7 @@ export function parseQpv3(buf: Uint8Array): { quest: Quest; savedFormat: SaveFor
     language:     number;
     binVersion:   string;
     bbContainer:  boolean;
+    gcFlag?:      boolean;
     functionRefs: number[];
     dataBlocks:   Array<{ offset: number; type: number }>;
     bbData?:      string | null;
@@ -148,6 +150,7 @@ export function parseQpv3(buf: Uint8Array): { quest: Quest; savedFormat: SaveFor
   const bin: QuestBin = {
     version:      qj.binVersion as BinVersion,
     bbContainer:  qj.bbContainer,
+    gcFlag:       qj.gcFlag ?? false,
     language:     qj.language as Language,
     questNumber:  qj.questNumber,
     title:        qj.title,

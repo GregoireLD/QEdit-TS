@@ -232,6 +232,9 @@ export function serialiseDat(floors: Floor[]): Uint8Array {
     off += data.length;
   }
 
+  // Write in the same order as Delphi and Phantasmal World:
+  // all objects (all floors) → all monsters → all events → d04 → d05.
+  // Both references group by entity type first, not by floor.
   for (const f of floors) {
     if (f.objects.length) {
       const data = new Uint8Array(f.objects.length * OBJECT_SIZE);
@@ -239,15 +242,23 @@ export function serialiseDat(floors: Floor[]): Uint8Array {
       f.objects.forEach((o, i) => writeObject(dv, i * OBJECT_SIZE, o));
       writeGroup(1, f.id, data);
     }
+  }
+  for (const f of floors) {
     if (f.monsters.length) {
       const data = new Uint8Array(f.monsters.length * MONSTER_SIZE);
       const dv = new DataView(data.buffer);
       f.monsters.forEach((m, i) => writeMonster(dv, i * MONSTER_SIZE, m));
       writeGroup(2, f.id, data);
     }
-    if (f.events.length)  writeGroup(3, f.id, f.events);
-    if (f.d04.length)     writeGroup(4, f.id, f.d04);
-    if (f.d05.length)     writeGroup(5, f.id, f.d05);
+  }
+  for (const f of floors) {
+    if (f.events.length) writeGroup(3, f.id, f.events);
+  }
+  for (const f of floors) {
+    if (f.d04.length) writeGroup(4, f.id, f.d04);
+  }
+  for (const f of floors) {
+    if (f.d05.length) writeGroup(5, f.id, f.d05);
   }
 
   // End marker: all-zero header

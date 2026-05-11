@@ -34,13 +34,19 @@ function createKey(seed: number): PlayerKey {
   key[56] = seed >>> 0;
   key[55] = seed >>> 0;
 
-  let esi = seed >>> 0;
+  // Delphi: esi := 1; ebx := val; then each iteration:
+  //   ebx := ebx - esi; Key[edx] := esi; esi := ebx; ebx := Key[edx]
+  // → esi/ebx swap with subtraction (Fibonacci-like LFG sequence).
+  let esi = 1;
+  let ebx = seed >>> 0;
   let edi = 0x15;
   while (edi <= 0x46e) {
     const edx = edi % 0x37;
-    esi = (esi - 1) >>> 0;
-    key[edx] = esi; // matches: Key[edx] := esi; (after esi := ebx - 1 via "ebx := ebx - esi; ... esi := ebx")
+    ebx = (ebx - esi) >>> 0;
     edi += 0x15;
+    key[edx] = esi;
+    esi = ebx;
+    ebx = key[edx]; // reload saved esi (completing the swap)
   }
 
   const pk: PlayerKey = {

@@ -256,8 +256,10 @@ export async function assemble(source: string, template: QuestBin): Promise<Ques
     }
   }
   if (pushw) {
+    // Delphi QuestBuild uses arg_pushw (0x4B) for T_FUNC and T_FUNC2, not arg_pusho (0x4D).
+    // Force these mappings even if arg_pusho already claimed T_FUNC via the table scan.
     for (const t of [T_FUNC, T_FUNC2]) {
-      if (!pushForType.has(t)) pushForType.set(t, pushw);
+      pushForType.set(t, pushw);
     }
   }
   if (pushr) {
@@ -338,12 +340,25 @@ export async function assemble(source: string, template: QuestBin): Promise<Ques
       // Collapsed push-stack form: expand each arg to a push opcode, then emit T_ARGS opcode
       const tokens = splitArgs(argsStr);
       for (let i = 0; i < entry.args.length; i++) {
-        const argType   = entry.args[i];
-        const token     = tokens[i] ?? '00000000';
-        const pushEntry = pushForType.get(argType);
-        if (pushEntry) {
-          emitOpcode(out, pushEntry.fnc);
-          emitPushArg(out, argType, token, isDC);
+        const argType = entry.args[i];
+        const token   = tokens[i] ?? '00000000';
+
+        // Mirror Delphi QuestBuild's else-clause (Unit1.pas:1648-1667):
+        // if the token is a register reference (RN) but the declared type is not a
+        // register type, emit arg_pushr + register byte instead of the type's normal
+        // push opcode. This is how "unlock_door2 R1, R2" (ARGS + DWORD args) assembles
+        // to arg_pushr+arg_pushr rather than arg_pushl+arg_pushl with zero values.
+        const isRegToken = /^[Rr]\d+$/.test(token);
+        const isRegType  = argType === T_REG || argType === T_BREG || argType === T_DREG || argType === 13;
+        if (isRegToken && !isRegType && pushr) {
+          emitOpcode(out, pushr.fnc);
+          out.push(parseInt(token.slice(1), 10) & 0xFF);
+        } else {
+          const pushEntry = pushForType.get(argType);
+          if (pushEntry) {
+            emitOpcode(out, pushEntry.fnc);
+            emitPushArg(out, argType, token, isDC);
+          }
         }
       }
       emitOpcode(out, entry.fnc);

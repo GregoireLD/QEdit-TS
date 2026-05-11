@@ -94,6 +94,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     const bin: QuestBin = {
       version:     BinVersion.PC,
       bbContainer: false,
+      gcFlag:      false,
       language:    Language.EN,
       questNumber: 0,
       title:       'New Quest',

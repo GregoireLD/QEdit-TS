@@ -55,6 +55,13 @@ export interface QuestBin {
   version: BinVersion;
   /** True when the outer .qst container is BB format (affects header offsets). */
   bbContainer: boolean;
+  /**
+   * True for GC-format quests: byte 0x11 of the .bin header = 0x02.
+   * This byte tells the game/server to use the GC bytecode interpreter (AsmMode=2)
+   * rather than the DC interpreter (AsmMode=0).  Must be preserved on round-trip
+   * and re-applied when explicitly saving for a GC target platform.
+   */
+  gcFlag: boolean;
   language: Language;
   questNumber: number;
   title: string;

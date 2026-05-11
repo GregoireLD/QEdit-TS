@@ -69,11 +69,17 @@ export function parseBin(buf: Uint8Array, isBBFormat = false): QuestBin {
   //   0x14+     metadata
   let language: number;
   let questNumber: number;
+  // gcFlag: byte 0x11 of the header is 0x02 for GC quests (AsmMode discriminator).
+  // Delphi writes language + 0x200 for GC, making byte 0x11 = 2. We preserve this
+  // so that re-saving a GC quest restores the byte without needing extra context.
+  let gcFlag = false;
   if (isBBFormat) {
     questNumber = view.getUint16(0x10, true);
     language = 0; // forced to 0 in Delphi for BB
   } else {
-    language = view.getUint16(0x10, true) & 0xff;
+    const langWord = view.getUint16(0x10, true);
+    language = langWord & 0xff;
+    gcFlag = (langWord & 0xff00) === 0x0200; // byte 0x11 === 2
     questNumber = view.getUint16(0x12, true);
   }
 
@@ -156,6 +162,7 @@ export function parseBin(buf: Uint8Array, isBBFormat = false): QuestBin {
   return {
     version,
     bbContainer: isBBFormat,
+    gcFlag,
     language: language as Language,
     questNumber,
     title,
@@ -202,11 +209,17 @@ function encodeAscii(s: string, maxBytes: number): Uint8Array {
  */
 export function serialiseBin(
   q: QuestBin,
-  opts?: { targetVersion?: BinVersion; targetBbContainer?: boolean },
+  opts?: { targetVersion?: BinVersion; targetBbContainer?: boolean; targetPlatform?: import('../model/types').TargetPlatform },
 ): Uint8Array {
   const version     = opts?.targetVersion     ?? q.version;
   const bbContainer = opts?.targetBbContainer ?? q.bbContainer;
   const { language, questNumber, title, info, description, bytecode, functionRefs, dataBlocks } = q;
+
+  // GC quests need byte 0x11 = 0x02 in the .bin header (AsmMode discriminator).
+  // Use an explicit target if provided, otherwise preserve the parsed gcFlag.
+  const isGC = opts?.targetPlatform !== undefined
+    ? opts.targetPlatform === 'GC'
+    : q.gcFlag;
 
   // bbData: carry through for BB target, strip otherwise; generate blank if needed.
   const bbData: Uint8Array | undefined = version === BinVersion.BB
@@ -243,7 +256,13 @@ export function serialiseBin(
     // BB outer container: quest number at 0x10, language forced to 0
     view.setUint16(0x10, questNumber, true);
   } else {
-    view.setUint16(0x10, language, true);
+    // For GC quests byte 0x11 must be 0x02 (AsmMode discriminator: tells the
+    // game/server to use GC bytecode interpreter rather than DC interpreter).
+    // Delphi achieves this by writing language + 0x200 as the u32 at 0x10.
+    const langWord = (isGC && version === BinVersion.DC)
+      ? (language | 0x200)
+      : language;
+    view.setUint16(0x10, langWord, true);
     view.setUint16(0x12, questNumber, true);
   }
 
