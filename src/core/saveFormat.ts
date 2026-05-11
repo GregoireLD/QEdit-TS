@@ -150,7 +150,7 @@ export function defaultSaveFormat(quest: Quest): SaveFormat {
   if (quest.bin.version === BinVersion.BB) {
     platform = 'BB';
   } else if (quest.bin.version === BinVersion.DC) {
-    platform = 'DC';
+    platform = quest.bin.gcFlag ? 'GC' : 'DC';
   } else {
     // PC bin — could be in BB or GC container
     platform = quest.format === QstFormat.BB ? 'BB' : 'PC';
