@@ -1,6 +1,6 @@
 [package]
 name = "qedit"
-version = "3.0.56"
+version = "3.0.57"
 description = "QEdit - Phantasy Star Online Quest Editor"
 authors = []
 edition = "2021"
@@ -24,4 +24,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.5"
 

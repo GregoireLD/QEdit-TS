@@ -42,6 +42,8 @@ interface QuestStore {
   error: string | null;
   /** Incremented each time the quest is written to disk. */
   saveVersion: number;
+  /** True when the in-memory quest has changes not yet written to disk. */
+  isDirty: boolean;
 
   newQuest: (episode: 1 | 2 | 4) => void;
   toggleArea: (absAreaId: number) => void;
@@ -82,6 +84,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   isLoading: false,
   error: null,
   saveVersion: 0,
+  isDirty: false,
 
   newQuest: (episode) => {
     const epIdx   = episode === 1 ? 0 : episode === 2 ? 1 : 2;
@@ -118,7 +121,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     };
 
     useUiStore.getState().resetPreviews({});
-    set({ quest, filePath: null, savedFormat: { packaging: 'qpv3', platform: 'PC' }, selectedFloorId: null, isLoading: false, error: null });
+    set({ quest, filePath: null, savedFormat: { packaging: 'qpv3', platform: 'PC' }, selectedFloorId: null, isLoading: false, error: null, isDirty: false });
   },
 
   toggleArea: (absAreaId) => {
@@ -147,7 +150,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     }
 
     const bytecode = rebuildBytecodeMapSetup(quest.bin.bytecode, quest.episode, variantByArea, quest.bin.version);
-    set({ quest: { ...quest, floors, variantByArea, bin: { ...quest.bin, bytecode } } });
+    set({ quest: { ...quest, floors, variantByArea, bin: { ...quest.bin, bytecode } }, isDirty: true });
   },
 
   openQuest: async () => {
@@ -191,7 +194,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const offset     = EP_OFFSET[quest.episode];
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
 
-      set({ quest, filePath: opened.path, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false });
+      set({ quest, filePath: opened.path, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false, isDirty: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -234,7 +237,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       useUiStore.getState().resetPreviews(analysis.variantByArea);
       const offset     = EP_OFFSET[quest.episode];
       const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
-      set({ quest, filePath: url, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false });
+      set({ quest, filePath: url, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false, isDirty: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -269,7 +272,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
         }
       }
 
-      set({ isLoading: false, savedFormat: fmt, saveVersion: get().saveVersion + 1 });
+      set({ isLoading: false, savedFormat: fmt, saveVersion: get().saveVersion + 1, isDirty: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -293,7 +296,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       if (!dest) { set({ isLoading: false }); return; }
       const sidecar = _sidecarExtractor?.();
       if (sidecar) await saveSidecar(dest, sidecar);
-      set({ filePath: dest, isLoading: false, savedFormat: defaultSaveFormat(quest), saveVersion: get().saveVersion + 1 });
+      set({ filePath: dest, isLoading: false, savedFormat: defaultSaveFormat(quest), saveVersion: get().saveVersion + 1, isDirty: false });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -340,7 +343,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const sidecar = _sidecarExtractor?.();
       if (sidecar && ext === 'qst') await saveSidecar(dest, sidecar);
 
-      set({ filePath: dest, isLoading: false, savedFormat: format, saveVersion: get().saveVersion + 1 });
+      set({ filePath: dest, isLoading: false, savedFormat: format, saveVersion: get().saveVersion + 1, isDirty: false });
       return true;
     } catch (e) {
       set({ isLoading: false, error: String(e) });
@@ -354,13 +357,13 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   updateBinMeta: (patch) => {
     const { quest } = get();
     if (!quest) return;
-    set({ quest: { ...quest, bin: { ...quest.bin, ...patch } } });
+    set({ quest: { ...quest, bin: { ...quest.bin, ...patch } }, isDirty: true });
   },
 
   updateBin: (bin) => {
     const { quest } = get();
     if (!quest) return;
-    set({ quest: { ...quest, bin } });
+    set({ quest: { ...quest, bin }, isDirty: true });
   },
 
   updateMonster: (floorId, index, patch) => {
@@ -371,7 +374,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const monsters = f.monsters.map((m, i) => i === index ? { ...m, ...patch } : m);
       return { ...f, monsters };
     });
-    set({ quest: { ...quest, floors } });
+    set({ quest: { ...quest, floors }, isDirty: true });
   },
 
   updateObject: (floorId, index, patch) => {
@@ -382,7 +385,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const objects = f.objects.map((o, i) => i === index ? { ...o, ...patch } : o);
       return { ...f, objects };
     });
-    set({ quest: { ...quest, floors } });
+    set({ quest: { ...quest, floors }, isDirty: true });
   },
 
   addMonster: (floorId, monster) => {
@@ -395,7 +398,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       return { ...f, monsters: [...f.monsters, entry] };
     });
     const newIndex = (quest.floors.find(f => f.id === floorId)?.monsters.length ?? 0);
-    set({ quest: { ...quest, floors }, selectedEntity: { type: 'monster', index: newIndex } });
+    set({ quest: { ...quest, floors }, selectedEntity: { type: 'monster', index: newIndex }, isDirty: true });
   },
 
   addObject: (floorId, obj) => {
@@ -406,7 +409,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       return { ...f, objects: [...f.objects, obj] };
     });
     const newIndex = (quest.floors.find(f => f.id === floorId)?.objects.length ?? 0);
-    set({ quest: { ...quest, floors }, selectedEntity: { type: 'object', index: newIndex } });
+    set({ quest: { ...quest, floors }, selectedEntity: { type: 'object', index: newIndex }, isDirty: true });
   },
 
   deleteMonster: (floorId, index) => {
@@ -431,7 +434,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       else if (selectedEntity.index > index)
         newSel = { type: 'monster', index: selectedEntity.index - 1 };
     }
-    set({ quest: { ...quest, floors }, selectedEntity: newSel });
+    set({ quest: { ...quest, floors }, selectedEntity: newSel, isDirty: true });
   },
 
   deleteObject: (floorId, index) => {
@@ -447,7 +450,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       else if (selectedEntity.index > index)
         newSel = { type: 'object', index: selectedEntity.index - 1 };
     }
-    set({ quest: { ...quest, floors }, selectedEntity: newSel });
+    set({ quest: { ...quest, floors }, selectedEntity: newSel, isDirty: true });
   },
 
   duplicateMonster: (floorId, index) => {
@@ -473,7 +476,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     if (!quest) return;
     const variantByArea = { ...quest.variantByArea, [areaId]: variantIdx };
     const bytecode = rebuildBytecodeMapSetup(quest.bin.bytecode, quest.episode, variantByArea, quest.bin.version);
-    set({ quest: { ...quest, variantByArea, bin: { ...quest.bin, bytecode } } });
+    set({ quest: { ...quest, variantByArea, bin: { ...quest.bin, bytecode } }, isDirty: true });
     useUiStore.getState().setPreviewVariant(areaId, variantIdx);
   },
 

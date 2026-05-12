@@ -1,9 +1,11 @@
-import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
+import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
 import { readFile } from '../../platform/fs';
 import { isTauri } from '../../platform/index';
 import type { Floor, SelectedEntity } from '../../core/model/types';
 import { parseNRel, parseCRel, toWorldPos, fromWorldPos, findNearestSection, worldDirToBAM, bamToWorldDir, sampleFloorHeight } from '../../core/formats/rel';
 import type { RelSection, RelTriangle } from '../../core/formats/rel';
+import { checkEntityPlacement } from '../../core/placement';
+import type { PlacementWarning, PlacementKind } from '../../core/placement';
 import { getPlacementType } from '../../core/data/presets';
 import { toNRelName } from '../../core/map/mapFileNames';
 import { AREA_BY_ID } from '../../core/map/areaData';
@@ -26,6 +28,18 @@ type LoadState =
 
 // ─── Rendering ──────────────────────────────────────────────────────────────
 
+function placementBadgeColor(kind: PlacementKind): string {
+  if (kind === 'out-of-world') return '#cc2020'; // red   — ?
+  if (kind === 'on-wall')      return '#cc6600'; // orange — W
+  return '#998800';                              // amber  — ! (non-grounded)
+}
+
+function placementBadgeLabel(kind: PlacementKind): string {
+  if (kind === 'out-of-world') return '?';
+  if (kind === 'on-wall')      return 'W';
+  return '!';
+}
+
 function renderMap(
   canvas: HTMLCanvasElement,
   data: MapData,
@@ -34,6 +48,7 @@ function renderMap(
   panX: number,
   panY: number,
   selectedEntity: SelectedEntity = null,
+  placementWarnings: PlacementWarning[] = [],
 ) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -63,10 +78,11 @@ function renderMap(
     const minY = Math.min(y0, y1, y2), maxY = Math.max(y0, y1, y2);
     if (maxX < 0 || minX > PW || maxY < 0 || minY > PH) continue;
 
-    if      (tri.flags & 64) ctx.strokeStyle = '#3060ff';
-    else if (tri.flags & 16) ctx.strokeStyle = '#408040';
-    else if (tri.flags & 1)  ctx.strokeStyle = '#404040';
-    else                     ctx.strokeStyle = '#555555';
+    if      (tri.flags & 0x40) ctx.strokeStyle = '#3060ff'; // section transition (matches Delphi blue)
+    else if (tri.flags & 0x10) ctx.strokeStyle = '#408040'; // platform
+    else if (tri.flags & 0x01) ctx.strokeStyle = '#404040'; // floor
+    else if (tri.isWall)       ctx.strokeStyle = '#4a9a4a'; // derived wall (steep normal) — light green
+    else                       ctx.strokeStyle = '#555555';
 
     ctx.beginPath();
     ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2);
@@ -154,6 +170,29 @@ function renderMap(
           drawArrowHead(ctx, sx, sy, ax, ay, DOT_R * 1.2, '#00ffcc', dpr);
         }
       }
+    }
+  }
+
+  // Placement warning badges — drawn last so they appear on top
+  if (placementWarnings.length > 0) {
+    const BR = Math.max(4 * dpr, DOT_R * 0.6);
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.max(7 * dpr, BR * 1.4)}px sans-serif`;
+
+    for (const w of placementWarnings) {
+      const m = floor.monsters[w.index];
+      if (!m) continue;
+      const [wx, wy] = toWorldPos(m.posX, m.posY, m.mapSection, data.sections);
+      const [sx, sy] = toScreen(wx, wy);
+      if (sx < -BR * 4 || sx > PW + BR * 4 || sy < -BR * 4 || sy > PH + BR * 4) continue;
+      const bx = sx + DOT_R * 0.9 + BR * 0.5;
+      const by = sy - DOT_R * 0.9 - BR * 0.5;
+      ctx.beginPath(); ctx.arc(bx, by, BR, 0, Math.PI * 2);
+      ctx.fillStyle = placementBadgeColor(w.kind);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(placementBadgeLabel(w.kind), bx, by);
     }
   }
 }
@@ -315,6 +354,12 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
     return () => obs.disconnect();
   }, []);
 
+  // Placement warnings — recomputed whenever floor entities or collision data change
+  const placementWarnings = useMemo(() => {
+    if (loadState.status !== 'ok' || !floor) return [];
+    return checkEntityPlacement(floor, loadState.data.triangles, loadState.data.sections);
+  }, [floor, loadState]);
+
   // Render loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -329,7 +374,7 @@ export function MapCanvas({ floor, areaId }: MapCanvasProps) {
       fitted.current = true;
       return;
     }
-    renderMap(canvas, data, floor, zoom, panX, panY, selectedEntity);
+    renderMap(canvas, data, floor, zoom, panX, panY, selectedEntity, placementWarnings);
   });
 
   // Zoom toward cursor

@@ -16,6 +16,9 @@ export interface RelSection {
   cx: number;
   /** Section center Y in world units (from TMapSection.dy — "depth" axis in 2D) */
   cy: number;
+  /** Section height offset in world units (from TMapSection.dz = miz in Delphi).
+   *  Entity world-Y = posZ + cz.  Used for non-grounded placement checks. */
+  cz: number;
   /** Rotation value; angle = -rotation / 10430.37835 radians */
   rotation: number;
 }
@@ -24,8 +27,18 @@ export interface RelTriangle {
   x0: number; y0: number; z0: number;
   x1: number; y1: number; z1: number;
   x2: number; y2: number; z2: number;
-  /** Face flags from c.rel (bit 0=floor, bit 4=platform, bit 6=wall) */
+  /** Face flags from c.rel (bit 0=floor, bit 4=platform, bit 6=section transition).
+   *  There is no explicit wall bit — wall status is derived from the face normal. */
   flags: number;
+  /** Face normal X component (from c.rel, bytes 8-11 of the 36-byte face record). */
+  nx: number;
+  /** Face normal Y component.  |ny| < 0.3 → wall (normal nearly horizontal). */
+  ny: number;
+  /** Face normal Z component. */
+  nz: number;
+  /** True when this face is a wall: |ny| < 0.3 (normal is more than ~72° from up).
+   *  Computed at parse time from the stored face normal. */
+  isWall: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -64,12 +77,12 @@ export function parseNRel(buf: Uint8Array): RelSection[] {
 
     const id       = v.getUint32(off,       true);
     const dx       = v.getFloat32(off + 4,  true);
-    // dz at off+8 = height, skip for 2D
+    const dz       = v.getFloat32(off + 8,  true); // section height offset (= miz in Delphi)
     const dy       = v.getFloat32(off + 12, true);
     const rotation = v.getUint32(off + 20,  true);
 
     if (id < 25566) {
-      sections.push({ id, cx: dx, cy: dy, rotation });
+      sections.push({ id, cx: dx, cy: dy, cz: dz, rotation });
     }
   }
 
@@ -129,6 +142,10 @@ export function parseCRel(buf: Uint8Array): RelTriangle[] {
       const i1    = v.getUint16(fBase + 2, true);
       const i2    = v.getUint16(fBase + 4, true);
       const flags = v.getUint16(fBase + 6, true);
+      // Normal vector stored at bytes 8-19 of the 36-byte face record
+      const nx    = v.getFloat32(fBase + 8,  true);
+      const ny    = v.getFloat32(fBase + 12, true);
+      const nz    = v.getFloat32(fBase + 16, true);
 
       if (i0 >= vertexCount || i1 >= vertexCount || i2 >= vertexCount) continue;
 
@@ -147,11 +164,48 @@ export function parseCRel(buf: Uint8Array): RelTriangle[] {
         y2: v.getFloat32(v2 + 4,  true),
         z2: v.getFloat32(v2 + 8,  true),
         flags,
+        nx, ny, nz,
+        isWall: Math.abs(ny) < 0.3,
       });
     }
   }
 
   return triangles;
+}
+
+/**
+ * Sample the height at world position (wx, wy) across ALL triangle types
+ * (floor, transition, platform, walls — no flag filter).
+ * Nearly-vertical triangles are naturally excluded because their XZ projection
+ * is degenerate (denom ≈ 0).
+ * Returns null only when the point is completely outside all map geometry —
+ * i.e. the entity is in void space ("out of world").
+ */
+export function sampleAnyHeight(wx: number, wy: number, triangles: RelTriangle[]): number | null {
+  let best: number | null = null;
+  for (const tri of triangles) {
+    const ax = tri.x0, az = tri.z0, ay = tri.y0;
+    const bx = tri.x1, bz = tri.z1, by = tri.y1;
+    const cx = tri.x2, cz = tri.z2, cy = tri.y2;
+    const v0x = bx - ax, v0z = bz - az;
+    const v1x = cx - ax, v1z = cz - az;
+    const v2x = wx - ax, v2z = wy - az;
+    const d00 = v0x * v0x + v0z * v0z;
+    const d01 = v0x * v1x + v0z * v1z;
+    const d11 = v1x * v1x + v1z * v1z;
+    const d02 = v0x * v2x + v0z * v2z;
+    const d12 = v1x * v2x + v1z * v2z;
+    const denom = d00 * d11 - d01 * d01;
+    if (Math.abs(denom) < 1e-10) continue;
+    const inv = 1 / denom;
+    const u = (d11 * d02 - d01 * d12) * inv;
+    const v = (d00 * d12 - d01 * d02) * inv;
+    if (u >= 0 && v >= 0 && u + v <= 1) {
+      const y = ay + u * (by - ay) + v * (cy - ay);
+      if (best === null || y < best) best = y;
+    }
+  }
+  return best;
 }
 
 // ─── Coordinate transform ────────────────────────────────────────────────────
@@ -247,13 +301,19 @@ export function bamToWorldDir(bam: number, sec: RelSection): [number, number] {
 }
 
 /**
- * Sample the floor height (Y coordinate) at world position (wx, wy) by testing
- * floor triangles (flags & 1) using barycentric coordinates in the XZ plane.
- * Returns null when no floor triangle contains the point.
+ * Sample the floor height (Y coordinate) at world position (wx, wy) using
+ * barycentric coordinates in the XZ plane.
+ *
+ * Matches Delphi YFromBBRELFile: accepts floor triangles (flags & 0x01) and
+ * section-transition triangles (flags & 0x40).  Platform triangles (flags & 0x10)
+ * are excluded, matching Delphi behaviour.  Returns the minimum Y among all
+ * matching triangles that contain the point (Delphi picks the lowest hit).
+ * Returns null when no valid triangle contains the point.
  */
 export function sampleFloorHeight(wx: number, wy: number, triangles: RelTriangle[]): number | null {
+  let best: number | null = null;
   for (const tri of triangles) {
-    if (!(tri.flags & 1)) continue;
+    if (!(tri.flags & 0x01) && !(tri.flags & 0x40)) continue;
     const ax = tri.x0, az = tri.z0, ay = tri.y0;
     const bx = tri.x1, bz = tri.z1, by = tri.y1;
     const cx = tri.x2, cz = tri.z2, cy = tri.y2;
@@ -271,8 +331,9 @@ export function sampleFloorHeight(wx: number, wy: number, triangles: RelTriangle
     const u = (d11 * d02 - d01 * d12) * inv;
     const v = (d00 * d12 - d01 * d02) * inv;
     if (u >= 0 && v >= 0 && u + v <= 1) {
-      return ay + u * (by - ay) + v * (cy - ay);
+      const y = ay + u * (by - ay) + v * (cy - ay);
+      if (best === null || y < best) best = y;
     }
   }
-  return null;
+  return best;
 }

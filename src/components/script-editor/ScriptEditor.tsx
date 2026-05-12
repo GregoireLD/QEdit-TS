@@ -41,12 +41,14 @@ export function ScriptEditor() {
   // Set to true by handleCompile so the post-compile re-disassembly reuses the
   // in-memory sidecar rather than reloading from disk.
   const postCompileRef    = useRef(false);
+  // Last text that matches the saved/compiled state — used to detect user edits
+  const cleanTextRef      = useRef<string>('');
 
   // Disassemble whenever quest changes, then weave sidecar comments in.
   // After a compile (postCompileRef) the in-memory sidecar is reused so edits
   // are not lost; on any other quest change it is reloaded from disk.
   useEffect(() => {
-    if (!quest) { setSource('// No quest loaded'); return; }
+    if (!quest) { cleanTextRef.current = '// No quest loaded'; setSource('// No quest loaded'); return; }
     setIsDisasming(true);
     setError(null);
     errorRef.current = null;
@@ -75,6 +77,9 @@ export function ScriptEditor() {
           currentSidecarRef.current = sidecar;
         }
         const { text: wovenText } = weaveSidecar(text, lineOffsets, sidecar);
+        // Must be set before setValue/setSource so the onChange handler doesn't
+        // mark the quest dirty when Monaco fires for the programmatic content update.
+        cleanTextRef.current = wovenText;
         if (isPostCompile && editorRef.current) {
           // Apply new content and restore view state synchronously in the same
           // turn. This prevents the race condition where the user types a character
@@ -240,6 +245,9 @@ export function ScriptEditor() {
           value={source}
           onChange={v => {
             setSource(v ?? '');
+            if ((v ?? '') !== cleanTextRef.current && !useQuestStore.getState().isDirty) {
+              useQuestStore.setState({ isDirty: true });
+            }
             // Re-enable auto-compile on next tab switch, but keep the error message
             // visible so the user sees what failed (it clears when compile starts)
             errorRef.current = null;

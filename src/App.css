@@ -90,3 +90,60 @@
   opacity: 0.7;
   font-size: 11px;
 }
+
+/* ─── Close-confirm dialog ─────────────────────────────────────────────── */
+.close-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 700;
+}
+
+.close-confirm-dialog {
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 340px;
+  max-width: 96vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.close-confirm-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-head);
+}
+
+.close-confirm-body {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.close-confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.close-discard-btn {
+  background: rgba(180, 70, 0, 0.3);
+  border-color: #a05020;
+  color: #ffaa66;
+}
+.close-discard-btn:hover { background: rgba(180, 70, 0, 0.5); }
+
+.close-save-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.close-save-btn:hover { background: var(--accent-hot); }

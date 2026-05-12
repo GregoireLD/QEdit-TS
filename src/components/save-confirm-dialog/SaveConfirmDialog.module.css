@@ -1,0 +1,117 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+}
+
+.dialog {
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 420px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-head);
+}
+
+.body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.target {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.target strong {
+  color: var(--text);
+}
+
+.issueList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.issueError,
+.issueWarn {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 5px 8px;
+  border-radius: 3px;
+}
+
+.issueError {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f88;
+  border-left: 2px solid #f44336;
+}
+
+.issueWarn {
+  background: rgba(255, 152, 0, 0.08);
+  color: #ffb74d;
+  border-left: 2px solid #ff9800;
+}
+
+.notice {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.saveAsBtn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.saveAsBtn:hover:not(:disabled) {
+  background: var(--accent-hot);
+  border-color: var(--accent-hot);
+}
+
+.saveAnywayBtn {
+  background: rgba(180, 70, 0, 0.35);
+  border-color: #a05020;
+  color: #ffaa66;
+}
+.saveAnywayBtn:hover:not(:disabled) {
+  background: rgba(180, 70, 0, 0.55);
+  border-color: #c07040;
+  color: #ffc080;
+}

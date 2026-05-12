@@ -5,15 +5,35 @@ import { isTauri } from '../../platform/index';
 import { openDirectoryDialog } from '../../platform/fs';
 import { CompatChecker } from '../compat-checker/CompatChecker';
 import { SaveAsDialog } from '../save-as-dialog/SaveAsDialog';
+import { SaveConfirmDialog } from '../save-confirm-dialog/SaveConfirmDialog';
+import type { SaveCheckIssue } from '../save-confirm-dialog/SaveConfirmDialog';
+import { checkCompatibility } from '../../core/compatibility';
+import type { VersionIndex } from '../../core/compatibility';
+import { formatPlacementWarning } from '../../core/placement';
+import { loadAllPlacementWarnings } from '../../core/loadPlacement';
+import { defaultSaveFormat, describeSavedFormat } from '../../core/saveFormat';
 import styles from './TopBar.module.css';
-import type { SaveFormat } from '../../core/model/types';
+import type { SaveFormat, TargetPlatform } from '../../core/model/types';
+
+function platformToVerIdx(platform: TargetPlatform): VersionIndex {
+  if (platform === 'DC')           return 0;
+  if (platform === 'PC' || platform === 'Xbox') return 1;
+  if (platform === 'GC')           return 2;
+  return 3; // BB
+}
+
+type SaveCheckState =
+  | { phase: 'idle' }
+  | { phase: 'checking' }
+  | { phase: 'confirm'; issues: SaveCheckIssue[]; fmt: SaveFormat };
 
 export function TopBar() {
-  const { quest, filePath, isLoading, newQuest, openQuest, openQuestFromUrl, saveQuest, saveQuestAsFormat } = useQuestStore();
+  const { quest, filePath, isLoading, newQuest, openQuest, openQuestFromUrl, saveQuest, saveQuestAsFormat, savedFormat } = useQuestStore();
   const { dataDir, setDataDir } = useUiStore();
   const [showNewMenu,       setShowNewMenu]       = useState(false);
   const [showCompatChecker, setShowCompatChecker] = useState(false);
   const [showSaveAs,        setShowSaveAs]        = useState(false);
+  const [saveCheck,         setSaveCheck]         = useState<SaveCheckState>({ phase: 'idle' });
   const newMenuRef = useRef<HTMLDivElement>(null);
 
   async function handleSaveAsConfirm(format: SaveFormat) {
@@ -24,6 +44,53 @@ export function TopBar() {
   async function handleSelectDataDir() {
     const sel = await openDirectoryDialog('Select PSO data folder (containing map/, monster/, obj/)');
     if (sel) setDataDir(sel);
+  }
+
+  async function handleDirectSave() {
+    if (!quest || !filePath) return;
+
+    const fmt = savedFormat ?? defaultSaveFormat(quest);
+
+    // QPv3/project are lossless authoring formats — no PSO constraints, skip checks
+    if (fmt.packaging === 'qpv3' || fmt.packaging === 'project') {
+      await saveQuest();
+      return;
+    }
+
+    setSaveCheck({ phase: 'checking' });
+    try {
+      const verIdx = platformToVerIdx(fmt.platform);
+      const [compatIssues, placementWarns] = await Promise.all([
+        checkCompatibility(quest, verIdx),
+        dataDir ? loadAllPlacementWarnings(quest, dataDir) : Promise.resolve([]),
+      ]);
+
+      const issues: SaveCheckIssue[] = [
+        ...compatIssues,
+        ...placementWarns.map(w => ({ severity: 'warning' as const, message: formatPlacementWarning(w) })),
+      ];
+
+      if (issues.length === 0) {
+        setSaveCheck({ phase: 'idle' });
+        await saveQuest();
+      } else {
+        setSaveCheck({ phase: 'confirm', issues, fmt });
+      }
+    } catch {
+      // Check failed — save anyway rather than blocking the user
+      setSaveCheck({ phase: 'idle' });
+      await saveQuest();
+    }
+  }
+
+  async function handleSaveAnyway() {
+    setSaveCheck({ phase: 'idle' });
+    await saveQuest();
+  }
+
+  function handleSaveConfirmSaveAs() {
+    setSaveCheck({ phase: 'idle' });
+    setShowSaveAs(true);
   }
 
   useEffect(() => {
@@ -37,6 +104,7 @@ export function TopBar() {
 
   const title = quest?.bin.title ?? '';
   const fileName = filePath ? filePath.split('/').pop() ?? filePath : null;
+  const isChecking = saveCheck.phase === 'checking';
 
   return (
     <header className={styles.bar}>
@@ -57,8 +125,11 @@ export function TopBar() {
         {!isTauri() && (
           <button onClick={openQuestFromUrl} disabled={isLoading}>Open URL…</button>
         )}
-        <button onClick={filePath ? saveQuest : () => setShowSaveAs(true)} disabled={!quest || isLoading}>
-          {filePath ? 'Save' : 'Save As…'}
+        <button
+          onClick={filePath ? handleDirectSave : () => setShowSaveAs(true)}
+          disabled={!quest || isLoading || isChecking}
+        >
+          {isChecking ? 'Checking…' : filePath ? 'Save' : 'Save As…'}
         </button>
         {filePath && (
           <button onClick={() => setShowSaveAs(true)} disabled={!quest || isLoading}>Save As…</button>
@@ -86,6 +157,15 @@ export function TopBar() {
         <SaveAsDialog
           onClose={() => setShowSaveAs(false)}
           onConfirm={handleSaveAsConfirm}
+        />
+      )}
+      {saveCheck.phase === 'confirm' && (
+        <SaveConfirmDialog
+          formatLabel={describeSavedFormat(saveCheck.fmt)}
+          issues={saveCheck.issues}
+          onCancel={() => setSaveCheck({ phase: 'idle' })}
+          onSaveAs={handleSaveConfirmSaveAs}
+          onSaveAnyway={handleSaveAnyway}
         />
       )}
 
