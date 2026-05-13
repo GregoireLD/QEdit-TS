@@ -23,6 +23,17 @@ type CloseCheckState =
   | { phase: 'idle' }
   | { phase: 'confirm'; issues: SaveCheckIssue[]; fmt: SaveFormat };
 
+// Converts a file:// URL from tauri-plugin-deep-link into a plain filesystem path.
+function deepLinkUrlToPath(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'file:') return null;
+    return decodeURIComponent(u.pathname);
+  } catch {
+    return null;
+  }
+}
+
 function platformToVerIdx(platform: TargetPlatform): VersionIndex {
   if (platform === 'DC')                    return 0;
   if (platform === 'PC' || platform === 'Xbox') return 1;
@@ -119,7 +130,16 @@ export default function App() {
         const { invoke }           = await import('@tauri-apps/api/core');
         const win = getCurrentWindow();
 
-        // Open file passed at launch (Windows/Linux argv or macOS early RunEvent::Opened).
+        // macOS: tauri-plugin-deep-link intercepts application:openURLs: before tao's
+        // run-callback is set up, so getCurrent() safely returns any launch-time file URL.
+        const { getCurrent, onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
+        const launchUrls = await getCurrent();
+        if (launchUrls && launchUrls.length > 0) {
+          const path = deepLinkUrlToPath(launchUrls[0]);
+          if (path) void useQuestStore.getState().openQuestFromPath(path);
+        }
+
+        // Windows / Linux: file associations pass the path via argv[1] (Rust side).
         const startupFile = await invoke<string | null>('get_startup_file');
         if (startupFile) {
           void useQuestStore.getState().openQuestFromPath(startupFile);
@@ -145,9 +165,10 @@ export default function App() {
           }
         });
 
-        // macOS: files opened while the app is already running arrive via this event.
-        unlistenOpenFile = await win.listen<string>('open-file', (event) => {
-          const path = event.payload;
+        // macOS: files opened while the app is already running.
+        unlistenOpenFile = await onOpenUrl((urls) => {
+          const path = urls.length > 0 ? deepLinkUrlToPath(urls[0]) : null;
+          if (!path) return;
           if (!useQuestStore.getState().quest) {
             void useQuestStore.getState().openQuestFromPath(path);
           } else {
