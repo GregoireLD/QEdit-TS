@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager};
 
 // ─── Recent files ────────────────────────────────────────────────────────────
@@ -44,6 +45,21 @@ fn add_recent_file(state: tauri::State<'_, RecentFiles>, path: String) {
     state.persist();
 }
 
+// ─── Startup file ────────────────────────────────────────────────────────────
+
+struct StartupFile {
+    path: Mutex<Option<String>>,
+    // Flipped to true after JS calls get_startup_file; subsequent RunEvent::Opened
+    // events are runtime opens (app already shown) rather than launch-time opens.
+    consumed: AtomicBool,
+}
+
+#[tauri::command]
+fn get_startup_file(state: tauri::State<'_, StartupFile>) -> Option<String> {
+    let result = state.path.lock().unwrap().take();
+    state.consumed.store(true, Ordering::Release);
+    result
+}
 
 // ─── Window / app commands ───────────────────────────────────────────────────
 
@@ -80,7 +96,24 @@ pub fn run() {
                 .unwrap_or_else(|_| PathBuf::from("recent.txt"));
             app.manage(RecentFiles::load(recent_path));
 
-            // macOS: replace the default Quit so Cmd+Q emits "menu-quit" to JS
+            // Windows / Linux: file associations pass the path as the first CLI argument.
+            // macOS uses RunEvent::Opened in the run loop instead.
+            let startup_path: Option<String> = {
+                #[cfg(not(target_os = "macos"))]
+                {
+                    std::env::args().nth(1).filter(|arg| {
+                        std::path::Path::new(arg).exists()
+                    })
+                }
+                #[cfg(target_os = "macos")]
+                { None }
+            };
+            app.manage(StartupFile {
+                path: Mutex::new(startup_path),
+                consumed: AtomicBool::new(false),
+            });
+
+            // macOS: replace the default Quit so Cmd+Q emits "wants-quit" to JS
             // instead of terminating via NSTerminateNow, bypassing the dirty guard.
             #[cfg(target_os = "macos")]
             {
@@ -119,7 +152,33 @@ pub fn run() {
             set_document_edited,
             get_recent_files,
             add_recent_file,
+            get_startup_file,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // macOS delivers file-open requests via RunEvent::Opened.
+            // If consumed=false the app is just launching; store for get_startup_file.
+            // If consumed=true the app is already running; route to the first window.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = &event {
+                let startup = app.state::<StartupFile>();
+                let paths: Vec<String> = urls.iter()
+                    .filter_map(|u| u.to_file_path().ok())
+                    .filter_map(|p| p.to_str().map(String::from))
+                    .collect();
+                for path in paths {
+                    if !startup.consumed.load(Ordering::Acquire) {
+                        *startup.path.lock().unwrap() = Some(path);
+                        break;
+                    } else {
+                        let wins = app.webview_windows();
+                        if let Some((_, win)) = wins.into_iter().next() {
+                            let _ = win.emit("open-file", &path);
+                        }
+                        break;
+                    }
+                }
+            }
+        });
 }

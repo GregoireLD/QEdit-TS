@@ -2794,7 +2794,7 @@ dependencies = [
 
 [[package]]
 name = "qedit"
-version = "3.0.57"
+version = "3.0.58"
 dependencies = [
  "objc2 0.5.2",
  "serde",

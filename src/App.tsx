@@ -113,9 +113,17 @@ export default function App() {
     if (isTauri()) {
       let unlisten:          (() => void) | undefined;
       let unlistenWantsQuit: (() => void) | undefined;
+      let unlistenOpenFile:  (() => void) | undefined;
       (async () => {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const { invoke }           = await import('@tauri-apps/api/core');
         const win = getCurrentWindow();
+
+        // Open file passed at launch (Windows/Linux argv or macOS early RunEvent::Opened).
+        const startupFile = await invoke<string | null>('get_startup_file');
+        if (startupFile) {
+          void useQuestStore.getState().openQuestFromPath(startupFile);
+        }
 
         unlisten = await win.onCloseRequested((event) => {
           if (!forcingClose.current && useQuestStore.getState().isDirty) {
@@ -136,8 +144,20 @@ export default function App() {
             void win.close();
           }
         });
+
+        // macOS: files opened while the app is already running arrive via this event.
+        unlistenOpenFile = await win.listen<string>('open-file', (event) => {
+          const path = event.payload;
+          if (!useQuestStore.getState().quest) {
+            void useQuestStore.getState().openQuestFromPath(path);
+          } else {
+            void import('./platform/windows').then(({ openExistingQuestWindow }) =>
+              openExistingQuestWindow(path)
+            );
+          }
+        });
       })();
-      return () => { unlisten?.(); unlistenWantsQuit?.(); };
+      return () => { unlisten?.(); unlistenWantsQuit?.(); unlistenOpenFile?.(); };
     } else {
       const handler = (e: BeforeUnloadEvent) => {
         if (useQuestStore.getState().isDirty) {
