@@ -88,7 +88,7 @@ export function WelcomeScreen() {
 
       <div className={styles.left}>
         <div className={styles.hero}>
-          <img src="/logo.png" alt="QEdit" className={styles.logo} draggable={false} />
+          <img src="./logo.png" alt="QEdit" className={styles.logo} draggable={false} />
           <div className={styles.appName}>QEdit</div>
           <div className={styles.tagline}>Quest Editor for Phantasy Star Online</div>
         </div>
