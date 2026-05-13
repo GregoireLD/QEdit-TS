@@ -41,7 +41,8 @@ function platformLabel(platform: TargetPlatform, _packaging: PackagingType): str
 
 
 export function SaveAsDialog({ onClose, onConfirm }: Props) {
-  const quest   = useQuestStore(s => s.quest);
+  const quest       = useQuestStore(s => s.quest);
+  const savedFormat = useQuestStore(s => s.savedFormat);
   const dataDir = useUiStore(s => s.dataDir);
 
   const [compatResults,     setCompatResults]     = useState<CompatResult[] | null>(null);
@@ -50,9 +51,8 @@ export function SaveAsDialog({ onClose, onConfirm }: Props) {
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const defaultFmt = quest
-    ? defaultSaveFormat(quest)
-    : { packaging: 'server' as PackagingType, platform: 'PC' as TargetPlatform };
+  const defaultFmt = savedFormat
+    ?? (quest ? defaultSaveFormat(quest) : { packaging: 'server' as PackagingType, platform: 'PC' as TargetPlatform });
 
   const [packaging, setPackaging] = useState<PackagingType>(defaultFmt.packaging);
   const [platform,  setPlatform]  = useState<TargetPlatform>(defaultFmt.platform);

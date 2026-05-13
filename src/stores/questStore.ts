@@ -28,6 +28,37 @@ export function registerSidecarExtractor(fn: (() => Sidecar) | null): void {
   _sidecarExtractor = fn;
 }
 
+/** Parses quest bytes into a Quest + SaveFormat, handling all supported formats. */
+async function parseQuestBytes(path: string, bytes: Uint8Array): Promise<{ quest: Quest; savedFmt: SaveFormat }> {
+  const lpath = path.toLowerCase();
+  if (lpath.endsWith('.qpv3')) {
+    const r = parseQpv3(bytes);
+    return { quest: r.quest, savedFmt: r.savedFormat };
+  }
+  if (isZipMagic(bytes)) {
+    const r = parseZipQuest(bytes);
+    return { quest: r.quest, savedFmt: r.savedFormat };
+  }
+  if (lpath.endsWith('.bin')) {
+    let datBytes: Uint8Array | null = null;
+    try { datBytes = await readFile(replaceExt(path, 'dat')); } catch { /* no companion .dat */ }
+    const r = parseStandaloneBin(bytes, datBytes);
+    return { quest: r.quest, savedFmt: r.savedFormat };
+  }
+  const q = parseQst(bytes);
+  return { quest: q, savedFmt: defaultSaveFormat(q) };
+}
+
+/** Analyses the bin, resets UI previews, and returns the state slice to set. */
+async function finaliseLoad(quest: Quest, path: string, savedFmt: SaveFormat) {
+  const analysis = await analyseQuestBin(quest.bin);
+  const loaded: Quest = { ...quest, episode: analysis.episode, variantByArea: analysis.variantByArea };
+  useUiStore.getState().resetPreviews(analysis.variantByArea);
+  const offset = EP_OFFSET[loaded.episode];
+  const firstAbsId = loaded.floors[0] != null ? loaded.floors[0].id + offset : null;
+  return { quest: loaded, filePath: path, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false as const, isDirty: false as const };
+}
+
 type BinMetaPatch = Partial<Pick<QuestBin, 'title' | 'info' | 'description' | 'questNumber'> & { language: Language }>;
 
 interface QuestStore {
@@ -48,6 +79,7 @@ interface QuestStore {
   newQuest: (episode: 1 | 2 | 4) => void;
   toggleArea: (absAreaId: number) => void;
   openQuest: () => Promise<void>;
+  openQuestFromPath: (path: string) => Promise<void>;
   openQuestFromUrl: () => Promise<void>;
   saveQuest: () => Promise<void>;
   saveQuestAs: () => Promise<void>;
@@ -159,42 +191,21 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       filters: [{ name: 'PSO Quest', extensions: ['qst', 'bin', 'qpv3'] }],
     });
     if (!opened) return;
-
     set({ isLoading: true, error: null });
     try {
-      const bytes = new Uint8Array(opened.data);
-      const lpath = opened.path.toLowerCase();
+      const { quest, savedFmt } = await parseQuestBytes(opened.path, new Uint8Array(opened.data));
+      set(await finaliseLoad(quest, opened.path, savedFmt));
+    } catch (e) {
+      set({ isLoading: false, error: String(e) });
+    }
+  },
 
-      let parsed: Quest;
-      let savedFmt: SaveFormat;
-
-      if (lpath.endsWith('.qpv3')) {
-        const result = parseQpv3(bytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else if (isZipMagic(bytes)) {
-        const result = parseZipQuest(bytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else if (lpath.endsWith('.bin')) {
-        let datBytes: Uint8Array | null = null;
-        try { datBytes = await readFile(replaceExt(opened.path, 'dat')); } catch { /* no companion .dat */ }
-        const result = parseStandaloneBin(bytes, datBytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else {
-        parsed   = parseQst(bytes);
-        savedFmt = defaultSaveFormat(parsed);
-      }
-
-      const analysis = await analyseQuestBin(parsed.bin);
-      const quest: Quest = { ...parsed, episode: analysis.episode, variantByArea: analysis.variantByArea };
-
-      useUiStore.getState().resetPreviews(analysis.variantByArea);
-      const offset     = EP_OFFSET[quest.episode];
-      const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
-
-      set({ quest, filePath: opened.path, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false, isDirty: false });
+  openQuestFromPath: async (path: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const bytes = new Uint8Array(await readFile(path));
+      const { quest, savedFmt } = await parseQuestBytes(path, bytes);
+      set(await finaliseLoad(quest, path, savedFmt));
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -205,39 +216,11 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     if (!url) return;
     set({ isLoading: true, error: null });
     try {
-      const resp  = await fetch(url);
+      const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const bytes = new Uint8Array(await resp.arrayBuffer());
-
-      const lurl = url.toLowerCase();
-      let parsed: Quest;
-      let savedFmt: SaveFormat;
-
-      if (lurl.endsWith('.qpv3')) {
-        const result = parseQpv3(bytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else if (isZipMagic(bytes)) {
-        const result = parseZipQuest(bytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else if (lurl.endsWith('.bin')) {
-        let datBytes: Uint8Array | null = null;
-        try { datBytes = await readFile(replaceExt(url, 'dat')); } catch { /* no companion .dat */ }
-        const result = parseStandaloneBin(bytes, datBytes);
-        parsed   = result.quest;
-        savedFmt = result.savedFormat;
-      } else {
-        parsed   = parseQst(bytes);
-        savedFmt = defaultSaveFormat(parsed);
-      }
-
-      const analysis = await analyseQuestBin(parsed.bin);
-      const quest: Quest = { ...parsed, episode: analysis.episode, variantByArea: analysis.variantByArea };
-      useUiStore.getState().resetPreviews(analysis.variantByArea);
-      const offset     = EP_OFFSET[quest.episode];
-      const firstAbsId = quest.floors[0] != null ? quest.floors[0].id + offset : null;
-      set({ quest, filePath: url, savedFormat: savedFmt, selectedFloorId: firstAbsId, isLoading: false, isDirty: false });
+      const { quest, savedFmt } = await parseQuestBytes(url, bytes);
+      set(await finaliseLoad(quest, url, savedFmt));
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
