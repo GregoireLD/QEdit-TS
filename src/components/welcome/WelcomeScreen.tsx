@@ -67,7 +67,7 @@ const CREDITS: CreditLine[] = [
 ];
 
 export function WelcomeScreen() {
-  const { newQuest, openQuest, openQuestFromPath, isLoading } = useQuestStore();
+  const { newQuest, openQuest, openQuestFromPath, openQuestFromUrl, isLoading } = useQuestStore();
   const [recentFiles, setRecentFiles] = useState<string[]>([]);
   const [showRecent,  setShowRecent]  = useState(false);
 
@@ -103,6 +103,9 @@ export function WelcomeScreen() {
             <button className="primary" onClick={() => void openQuest()} disabled={isLoading}>
               {isLoading ? 'Loading...' : 'Open File...'}
             </button>
+            {!isTauri() && (
+              <button onClick={() => void openQuestFromUrl()} disabled={isLoading}>Open URL...</button>
+            )}
             {isTauri() && recentFiles.length > 0 && (
               <div className={styles.recentWrap} onClick={e => e.stopPropagation()}>
                 <button onClick={() => setShowRecent(v => !v)} disabled={isLoading}>
