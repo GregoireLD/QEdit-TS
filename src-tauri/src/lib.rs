@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
@@ -110,29 +111,92 @@ pub fn run() {
 
             // macOS: replace the default Quit so Cmd+Q emits "wants-quit" to JS
             // instead of terminating via NSTerminateNow, bypassing the dirty guard.
+            // Also restore the standard Edit and Window menus that the custom menu
+            // replacement would otherwise remove, breaking Cmd+C/V/X/Z/A/W/M.
             #[cfg(target_os = "macos")]
             {
                 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+
                 let quit = MenuItem::with_id(app, "quit", "Quit QEdit", true, Some("cmd+q"))?;
-                let submenu = Submenu::with_items(app, "QEdit", true, &[
+                let app_menu = Submenu::with_items(app, "QEdit", true, &[
                     &PredefinedMenuItem::about(app, None, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::services(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, None)?,
+                    &PredefinedMenuItem::hide_others(app, None)?,
+                    &PredefinedMenuItem::show_all(app, None)?,
                     &PredefinedMenuItem::separator(app)?,
                     &quit,
                 ])?;
-                app.set_menu(Menu::with_items(app, &[&submenu])?)?;
+
+                let new_window = MenuItem::with_id(app, "new-window", "New Window", true, Some("cmd+n"))?;
+                let save = MenuItem::with_id(app, "save", "Save", true, Some("cmd+s"))?;
+                let file_menu = Submenu::with_items(app, "File", true, &[
+                    &new_window,
+                    &PredefinedMenuItem::separator(app)?,
+                    &save,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::close_window(app, None)?,
+                ])?;
+
+                // Standard Edit menu — routes Cmd+C/V/X/Z/A to the WKWebView first responder.
+                let edit_menu = Submenu::with_items(app, "Edit", true, &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                ])?;
+
+                let window_menu = Submenu::with_items(app, "Window", true, &[
+                    &PredefinedMenuItem::minimize(app, None)?,
+                    &PredefinedMenuItem::fullscreen(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::bring_all_to_front(app, None)?,
+                ])?;
+
+                app.set_menu(Menu::with_items(app, &[&app_menu, &file_menu, &edit_menu, &window_menu])?)?;
             }
             Ok(())
         })
         .on_menu_event(|app, event| {
-            if event.id() == "quit" {
-                let wins = app.webview_windows();
-                if wins.is_empty() {
-                    app.exit(0);
-                } else {
-                    for (_, win) in &wins {
-                        let _ = win.emit("wants-quit", ());
+            match event.id().as_ref() {
+                "quit" => {
+                    let wins = app.webview_windows();
+                    if wins.is_empty() {
+                        app.exit(0);
+                    } else {
+                        for (_, win) in &wins {
+                            let _ = win.emit("wants-quit", ());
+                        }
                     }
                 }
+                "save" => {
+                    // Emit only to the focused window so other open quests aren't saved.
+                    for (_, win) in app.webview_windows() {
+                        if win.is_focused().unwrap_or(false) {
+                            let _ = win.emit("menu-save", ());
+                            break;
+                        }
+                    }
+                }
+                "new-window" => {
+                    static WIN_UID: AtomicU64 = AtomicU64::new(0);
+                    let label = format!("welcome-{}", WIN_UID.fetch_add(1, Ordering::Relaxed));
+                    let _ = tauri::WebviewWindowBuilder::new(
+                        app,
+                        label,
+                        tauri::WebviewUrl::App("/".into()),
+                    )
+                    .title("QEdit")
+                    .inner_size(760.0, 500.0)
+                    .center()
+                    .build();
+                }
+                _ => {}
             }
         })
         .on_window_event(|window, event| {

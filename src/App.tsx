@@ -91,6 +91,20 @@ export default function App() {
     );
   }, [isDirty]);
 
+  // Cmd+S (macOS) / Ctrl+S (Windows, Linux, Web) global save shortcut.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const isMac = /Mac/.test(navigator.userAgent) && !/iPhone/.test(navigator.userAgent);
+      if ((isMac ? e.metaKey : e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 's') {
+        e.preventDefault();
+        const { quest: q, filePath: fp, saveQuest: save } = useQuestStore.getState();
+        if (q && fp) void save();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Sync the OS window title with the current quest state.
   const questTitle = quest?.bin.title ?? null;
   useEffect(() => {
@@ -125,6 +139,7 @@ export default function App() {
       let unlisten:          (() => void) | undefined;
       let unlistenWantsQuit: (() => void) | undefined;
       let unlistenOpenFile:  (() => void) | undefined;
+      let unlistenMenuSave:  (() => void) | undefined;
       (async () => {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const { invoke }           = await import('@tauri-apps/api/core');
@@ -165,6 +180,13 @@ export default function App() {
           }
         });
 
+        // macOS File > Save menu item (Cmd+S). The JS keydown listener handles
+        // Windows/Linux/Web; the native menu intercepts before the WebView on macOS.
+        unlistenMenuSave = await win.listen('menu-save', () => {
+          const { quest: q, filePath: fp, saveQuest: save } = useQuestStore.getState();
+          if (q && fp) void save();
+        });
+
         // macOS: files opened while the app is already running.
         unlistenOpenFile = await onOpenUrl((urls) => {
           const path = urls.length > 0 ? deepLinkUrlToPath(urls[0]) : null;
@@ -178,7 +200,7 @@ export default function App() {
           }
         });
       })();
-      return () => { unlisten?.(); unlistenWantsQuit?.(); unlistenOpenFile?.(); };
+      return () => { unlisten?.(); unlistenWantsQuit?.(); unlistenMenuSave?.(); unlistenOpenFile?.(); };
     } else {
       const handler = (e: BeforeUnloadEvent) => {
         if (useQuestStore.getState().isDirty) {
