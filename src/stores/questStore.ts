@@ -29,24 +29,24 @@ export function registerSidecarExtractor(fn: (() => Sidecar) | null): void {
 }
 
 /** Parses quest bytes into a Quest + SaveFormat, handling all supported formats. */
-async function parseQuestBytes(path: string, bytes: Uint8Array): Promise<{ quest: Quest; savedFmt: SaveFormat }> {
+async function parseQuestBytes(path: string, bytes: Uint8Array): Promise<{ quest: Quest; savedFmt: SaveFormat; embeddedSidecar: Sidecar | null }> {
   const lpath = path.toLowerCase();
   if (lpath.endsWith('.qpv3')) {
     const r = parseQpv3(bytes);
-    return { quest: r.quest, savedFmt: r.savedFormat };
+    return { quest: r.quest, savedFmt: r.savedFormat, embeddedSidecar: r.sidecar };
   }
   if (isZipMagic(bytes)) {
     const r = parseZipQuest(bytes);
-    return { quest: r.quest, savedFmt: r.savedFormat };
+    return { quest: r.quest, savedFmt: r.savedFormat, embeddedSidecar: null };
   }
   if (lpath.endsWith('.bin')) {
     let datBytes: Uint8Array | null = null;
     try { datBytes = await readFile(replaceExt(path, 'dat')); } catch { /* no companion .dat */ }
     const r = parseStandaloneBin(bytes, datBytes);
-    return { quest: r.quest, savedFmt: r.savedFormat };
+    return { quest: r.quest, savedFmt: r.savedFormat, embeddedSidecar: null };
   }
   const q = parseQst(bytes);
-  return { quest: q, savedFmt: defaultSaveFormat(q) };
+  return { quest: q, savedFmt: defaultSaveFormat(q), embeddedSidecar: null };
 }
 
 /** Analyses the bin, resets UI previews, and returns the state slice to set. */
@@ -75,6 +75,8 @@ interface QuestStore {
   saveVersion: number;
   /** True when the in-memory quest has changes not yet written to disk. */
   isDirty: boolean;
+  /** Sidecar embedded in a QPv3 file at load time; consumed by ScriptEditor on first disassembly. */
+  embeddedSidecar: Sidecar | null;
 
   newQuest: (episode: 1 | 2 | 4) => void;
   toggleArea: (absAreaId: number) => void;
@@ -117,6 +119,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   error: null,
   saveVersion: 0,
   isDirty: false,
+  embeddedSidecar: null,
 
   newQuest: (episode) => {
     const epIdx   = episode === 1 ? 0 : episode === 2 ? 1 : 2;
@@ -193,8 +196,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     if (!opened) return;
     set({ isLoading: true, error: null });
     try {
-      const { quest, savedFmt } = await parseQuestBytes(opened.path, new Uint8Array(opened.data));
-      set(await finaliseLoad(quest, opened.path, savedFmt));
+      const { quest, savedFmt, embeddedSidecar } = await parseQuestBytes(opened.path, new Uint8Array(opened.data));
+      set({ ...await finaliseLoad(quest, opened.path, savedFmt), embeddedSidecar });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -204,8 +207,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const bytes = new Uint8Array(await readFile(path));
-      const { quest, savedFmt } = await parseQuestBytes(path, bytes);
-      set(await finaliseLoad(quest, path, savedFmt));
+      const { quest, savedFmt, embeddedSidecar } = await parseQuestBytes(path, bytes);
+      set({ ...await finaliseLoad(quest, path, savedFmt), embeddedSidecar });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }
@@ -219,8 +222,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const bytes = new Uint8Array(await resp.arrayBuffer());
-      const { quest, savedFmt } = await parseQuestBytes(url, bytes);
-      set(await finaliseLoad(quest, url, savedFmt));
+      const { quest, savedFmt, embeddedSidecar } = await parseQuestBytes(url, bytes);
+      set({ ...await finaliseLoad(quest, url, savedFmt), embeddedSidecar });
     } catch (e) {
       set({ isLoading: false, error: String(e) });
     }

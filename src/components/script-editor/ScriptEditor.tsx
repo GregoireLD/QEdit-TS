@@ -73,7 +73,8 @@ export function ScriptEditor() {
           sidecar = extractSidecar(monacoText, text, lineOffsets);
           currentSidecarRef.current = sidecar;
         } else {
-          sidecar = await loadSidecar(filePath);
+          const embedded = useQuestStore.getState().embeddedSidecar;
+          sidecar = embedded ?? await loadSidecar(filePath);
           currentSidecarRef.current = sidecar;
         }
         const { text: wovenText } = weaveSidecar(text, lineOffsets, sidecar);

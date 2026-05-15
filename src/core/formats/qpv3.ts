@@ -117,7 +117,7 @@ export function serialiseQpv3(quest: Quest, sidecar: Sidecar | null): SaveResult
 
 // ─── Parse ────────────────────────────────────────────────────────────────────
 
-export function parseQpv3(buf: Uint8Array): { quest: Quest; savedFormat: SaveFormat } {
+export function parseQpv3(buf: Uint8Array): { quest: Quest; savedFormat: SaveFormat; sidecar: Sidecar | null } {
   const entries = readZip(buf);
 
   const mRaw = entries.get('manifest.json');
@@ -213,5 +213,22 @@ export function parseQpv3(buf: Uint8Array): { quest: Quest; savedFormat: SaveFor
     variantByArea,
   };
 
-  return { quest, savedFormat: { packaging: 'qpv3', platform: 'PC' } };
+  let sidecar: Sidecar | null = null;
+  const sidecarRaw = entries.get('sidecar.json');
+  if (sidecarRaw) {
+    try {
+      const obj = jdec(sidecarRaw) as Partial<Sidecar>;
+      if (obj?.version === 1) {
+        sidecar = {
+          version:          1,
+          comments:         Array.isArray(obj.comments)         ? obj.comments         : [],
+          regions:          Array.isArray(obj.regions)          ? obj.regions          : [],
+          trailingComments: Array.isArray(obj.trailingComments) ? obj.trailingComments : [],
+          labelComments:    Array.isArray(obj.labelComments)    ? obj.labelComments    : [],
+        };
+      }
+    } catch { /* ignore malformed sidecar */ }
+  }
+
+  return { quest, savedFormat: { packaging: 'qpv3', platform: 'PC' }, sidecar };
 }
