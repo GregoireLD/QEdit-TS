@@ -145,19 +145,26 @@ export default function App() {
         const { invoke }           = await import('@tauri-apps/api/core');
         const win = getCurrentWindow();
 
+        // Spawned windows already have their quest encoded in ?new / ?path — skip
+        // process-level file sources which would otherwise clobber the URL params.
+        const spawnParams = new URLSearchParams(window.location.search);
+        const isSpawnedWindow = spawnParams.has('new') || spawnParams.has('path');
+
         // macOS: tauri-plugin-deep-link intercepts application:openURLs: before tao's
         // run-callback is set up, so getCurrent() safely returns any launch-time file URL.
         const { getCurrent, onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
-        const launchUrls = await getCurrent();
-        if (launchUrls && launchUrls.length > 0) {
-          const path = deepLinkUrlToPath(launchUrls[0]);
-          if (path) void useQuestStore.getState().openQuestFromPath(path);
-        }
+        if (!isSpawnedWindow) {
+          const launchUrls = await getCurrent();
+          if (launchUrls && launchUrls.length > 0) {
+            const path = deepLinkUrlToPath(launchUrls[0]);
+            if (path) void useQuestStore.getState().openQuestFromPath(path);
+          }
 
-        // Windows / Linux: file associations pass the path via argv[1] (Rust side).
-        const startupFile = await invoke<string | null>('get_startup_file');
-        if (startupFile) {
-          void useQuestStore.getState().openQuestFromPath(startupFile);
+          // Windows / Linux: file associations pass the path via argv[1] (Rust side).
+          const startupFile = await invoke<string | null>('get_startup_file');
+          if (startupFile) {
+            void useQuestStore.getState().openQuestFromPath(startupFile);
+          }
         }
 
         unlisten = await win.onCloseRequested((event) => {
